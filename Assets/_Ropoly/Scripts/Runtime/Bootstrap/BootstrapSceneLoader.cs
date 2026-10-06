@@ -1,26 +1,32 @@
 using Ropoly.Presentation.Navigation;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Ropoly.Bootstrap
 {
     /// <summary>
-    /// P-1's small entry point. Persistent application services are introduced in P-2.
+    /// Requests the first application scene after AppRoot initializes its services.
     /// </summary>
     public sealed class BootstrapSceneLoader : MonoBehaviour
     {
+        [SerializeField]
+        private AppRoot _appRoot;
+
         [SerializeField]
         private string _firstScene = AppSceneNames.MainMenu;
 
         private void Start()
         {
-            if (string.IsNullOrWhiteSpace(_firstScene))
+            if (_appRoot == null)
             {
-                Debug.LogError("The bootstrap first scene has not been configured.", this);
+                TryGetComponent(out _appRoot);
+            }
+
+            if (_appRoot == null || AppRoot.Instance != _appRoot)
+            {
                 return;
             }
 
-            SceneManager.LoadSceneAsync(_firstScene, LoadSceneMode.Single);
+            _appRoot.SceneFlow.TryLoad(_firstScene);
         }
     }
 }

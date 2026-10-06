@@ -1,5 +1,5 @@
+using Ropoly.Application.Navigation;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Ropoly.Presentation.Navigation
 {
@@ -11,29 +11,22 @@ namespace Ropoly.Presentation.Navigation
         [SerializeField]
         private string _destinationScene = string.Empty;
 
-        private bool _isLoading;
+        private ISceneFlowService _sceneFlow;
+
+        public void Initialize(ISceneFlowService sceneFlow)
+        {
+            _sceneFlow = sceneFlow;
+        }
 
         public void LoadDestination()
         {
-            if (_isLoading)
+            if (_sceneFlow == null)
             {
+                Debug.LogError("Scene navigation has not been initialized by AppRoot.", this);
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(_destinationScene))
-            {
-                Debug.LogError("A destination scene has not been configured.", this);
-                return;
-            }
-
-            if (!Application.CanStreamedLevelBeLoaded(_destinationScene))
-            {
-                Debug.LogError($"Scene '{_destinationScene}' is not available in Build Settings.", this);
-                return;
-            }
-
-            _isLoading = true;
-            SceneManager.LoadSceneAsync(_destinationScene, LoadSceneMode.Single);
+            _sceneFlow.TryLoad(_destinationScene);
         }
     }
 }

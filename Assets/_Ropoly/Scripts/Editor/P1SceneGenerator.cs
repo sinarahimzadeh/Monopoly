@@ -34,7 +34,7 @@ namespace Ropoly.Editor
         [MenuItem("Ropoly/Development/Generate Missing P-1 Scenes")]
         public static void GenerateMissingScenes()
         {
-            if (Application.isPlaying)
+            if (UnityEngine.Application.isPlaying)
             {
                 Debug.LogWarning("P-1 scenes cannot be generated while the game is running.");
                 return;
@@ -80,7 +80,7 @@ namespace Ropoly.Editor
 
         private static void GenerateAutomaticallyIfRequired()
         {
-            if (Application.isPlaying)
+            if (UnityEngine.Application.isPlaying)
             {
                 return;
             }
@@ -100,8 +100,18 @@ namespace Ropoly.Editor
         private static void CreateBootstrapScene()
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            GameObject bootstrap = new GameObject("BootstrapSceneLoader");
-            bootstrap.AddComponent<BootstrapSceneLoader>();
+            GameObject bootstrap = new GameObject("AppRoot");
+            SceneFlowService sceneFlow = bootstrap.AddComponent<SceneFlowService>();
+            AppRoot appRoot = bootstrap.AddComponent<AppRoot>();
+            BootstrapSceneLoader sceneLoader = bootstrap.AddComponent<BootstrapSceneLoader>();
+
+            SerializedObject appRootObject = new SerializedObject(appRoot);
+            appRootObject.FindProperty("_sceneFlowService").objectReferenceValue = sceneFlow;
+            appRootObject.ApplyModifiedPropertiesWithoutUndo();
+
+            SerializedObject sceneLoaderObject = new SerializedObject(sceneLoader);
+            sceneLoaderObject.FindProperty("_appRoot").objectReferenceValue = appRoot;
+            sceneLoaderObject.ApplyModifiedPropertiesWithoutUndo();
             EditorSceneManager.SaveScene(scene, BootstrapScenePath);
         }
 
@@ -443,6 +453,13 @@ namespace Ropoly.Editor
 
         private static void ConfigurePlayModeStartScene()
         {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                // The Unity Test Framework needs its generated runner scene in batch mode.
+                EditorSceneManager.playModeStartScene = null;
+                return;
+            }
+
             SceneAsset bootstrapScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BootstrapScenePath);
             if (bootstrapScene != null)
             {

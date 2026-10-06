@@ -129,8 +129,10 @@ GameObject:
   m_Component:
   - component: {fileID: 874399409}
   - component: {fileID: 874399408}
+  - component: {fileID: 874399411}
+  - component: {fileID: 874399410}
   m_Layer: 0
-  m_Name: BootstrapSceneLoader
+  m_Name: AppRoot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -146,8 +148,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 821f8cc7a5f1316438f9ac8018c94b47, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Ropoly.Bootstrap::Ropoly.Bootstrap.BootstrapSceneLoader
+  _appRoot: {fileID: 874399410}
   _firstScene: MainMenu
 --- !u!4 &874399409
 Transform:
@@ -164,6 +167,31 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &874399410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 874399407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7fa264a9f3a5b54f99e15b86bd1d4dd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Ropoly.Bootstrap::Ropoly.Bootstrap.AppRoot
+  _sceneFlowService: {fileID: 874399411}
+--- !u!114 &874399411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 874399407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b7f65ca7639ce442b0d748d22a234fe, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Ropoly.Bootstrap::Ropoly.Bootstrap.SceneFlowService
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
