@@ -4,7 +4,8 @@
   "references": [
     "Ropoly.Core",
     "Ropoly.Application",
-    "Ropoly.AI"
+    "Ropoly.AI",
+    "Ropoly.Infrastructure"
   ],
   "includePlatforms": [
     "Editor"
