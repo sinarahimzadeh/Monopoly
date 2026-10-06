@@ -1,0 +1,21 @@
+{
+  "name": "Ropoly.Bootstrap",
+  "rootNamespace": "Ropoly.Bootstrap",
+  "references": [
+    "Ropoly.Core",
+    "Ropoly.Application",
+    "Ropoly.AI",
+    "Ropoly.Infrastructure",
+    "Ropoly.Presentation"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
+

@@ -1,0 +1,27 @@
+{
+  "name": "Ropoly.PlayModeTests",
+  "rootNamespace": "Ropoly.Tests.PlayMode",
+  "references": [
+    "Ropoly.Core",
+    "Ropoly.Application",
+    "Ropoly.AI",
+    "Ropoly.Infrastructure",
+    "Ropoly.Presentation",
+    "Ropoly.Bootstrap"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
+

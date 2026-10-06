@@ -1,0 +1,23 @@
+{
+  "name": "Ropoly.Editor",
+  "rootNamespace": "Ropoly.Editor",
+  "references": [
+    "Ropoly.Core",
+    "Ropoly.Application",
+    "Ropoly.AI",
+    "Ropoly.Infrastructure",
+    "Ropoly.Presentation",
+    "Ropoly.Bootstrap"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

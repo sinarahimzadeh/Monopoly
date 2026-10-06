@@ -1,0 +1,17 @@
+{
+  "name": "Ropoly.Application",
+  "rootNamespace": "Ropoly.Application",
+  "references": [
+    "Ropoly.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}
+
