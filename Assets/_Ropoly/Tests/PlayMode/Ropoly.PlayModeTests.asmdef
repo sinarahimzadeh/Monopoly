@@ -7,7 +7,8 @@
     "Ropoly.AI",
     "Ropoly.Infrastructure",
     "Ropoly.Presentation",
-    "Ropoly.Bootstrap"
+    "Ropoly.Bootstrap",
+    "UnityEngine.UI"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

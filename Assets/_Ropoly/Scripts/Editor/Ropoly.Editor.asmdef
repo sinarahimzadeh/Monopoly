@@ -7,7 +7,9 @@
     "Ropoly.AI",
     "Ropoly.Infrastructure",
     "Ropoly.Presentation",
-    "Ropoly.Bootstrap"
+    "Ropoly.Bootstrap",
+    "UnityEngine.UI",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [
     "Editor"
