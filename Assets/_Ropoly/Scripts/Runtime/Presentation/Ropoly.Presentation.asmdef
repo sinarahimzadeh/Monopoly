@@ -3,7 +3,9 @@
   "rootNamespace": "Ropoly.Presentation",
   "references": [
     "Ropoly.Core",
-    "Ropoly.Application"
+    "Ropoly.Application",
+    "Ropoly.Infrastructure",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

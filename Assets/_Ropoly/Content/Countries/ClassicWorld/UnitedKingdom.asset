@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00ef015a9ad3df546bad06faa0fcefd5, type: 3}
+  m_Name: UnitedKingdom
+  m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CountryDefinition
+  _countryId: country-united-kingdom
+  _displayName: United Kingdom
+  _expectedCityCount: 3
+  _setColor: {r: 0.17254902, g: 0.24313726, b: 0.3137255, a: 1}
+  _flag: {fileID: 0}
+  _cities:
+  - {fileID: 11400000, guid: 596881613a20b384db461a9abe5c3e6c, type: 2}
+  - {fileID: 11400000, guid: c2f434479e35b53418d591423b573730, type: 2}
+  - {fileID: 11400000, guid: 3fdf4d14d26f9c145a084de7cecbe9bc, type: 2}
+  _gdpPerCapitaUsd: 53341
+  _economicDataYear: 2024
+  _economicDataSource: World Bank, World Development Indicators (NY.GDP.PCAP.CD)

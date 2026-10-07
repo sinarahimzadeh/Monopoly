@@ -8,7 +8,8 @@
     "Ropoly.Infrastructure",
     "Ropoly.Presentation",
     "Ropoly.Bootstrap",
-    "UnityEngine.UI"
+    "UnityEngine.UI",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

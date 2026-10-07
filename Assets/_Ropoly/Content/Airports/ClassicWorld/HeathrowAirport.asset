@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25b391435318b5e448aa55fc9b3caa17, type: 3}
+  m_Name: HeathrowAirport
+  m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.AirportDefinition
+  _contentId: airport-heathrow
+  _displayName: Heathrow Airport
+  _artwork: {fileID: 0}
+  _purchasePrice: 200
+  _mortgageValue: 100
+  _rentByOwnedCount: 190000003200000064000000c8000000

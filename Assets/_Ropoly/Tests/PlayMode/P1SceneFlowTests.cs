@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using Ropoly.Bootstrap;
 using Ropoly.Presentation.Navigation;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -17,6 +18,14 @@ namespace Ropoly.Tests.PlayMode
         {
             SceneManager.LoadScene(AppSceneNames.Bootstrap, LoadSceneMode.Single);
             yield return WaitForScene(AppSceneNames.MainMenu);
+            Assert.That(
+                Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None),
+                Is.Not.Empty,
+                "MainMenu is missing its SDF text components.");
+            Assert.That(
+                Object.FindObjectsByType<Text>(FindObjectsSortMode.None),
+                Is.Empty,
+                "MainMenu still contains legacy blurry UI text.");
 
             AppRoot appRoot = AppRoot.Instance;
             Assert.That(appRoot, Is.Not.Null, "Bootstrap did not create an AppRoot.");

@@ -1,6 +1,7 @@
 using System.IO;
 using Ropoly.Bootstrap;
 using Ropoly.Presentation.Navigation;
+using TMPro;
 using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
@@ -20,11 +21,19 @@ namespace Ropoly.Editor
     public static class P1SceneGenerator
     {
         private const string SceneFolder = "Assets/_Ropoly/Scenes";
-        private const string BootstrapScenePath = SceneFolder + "/Bootstrap.unity";
-        private const string MainMenuScenePath = SceneFolder + "/MainMenu.unity";
-        private const string GameScenePath = SceneFolder + "/Game.unity";
+        private const string AppSceneFolder = SceneFolder + "/App";
+        private const string FrontendSceneFolder = SceneFolder + "/Frontend";
+        private const string GameplaySceneFolder = SceneFolder + "/Gameplay";
+        private const string BootstrapScenePath = AppSceneFolder + "/Bootstrap.unity";
+        private const string MainMenuScenePath = FrontendSceneFolder + "/MainMenu.unity";
+        private const string GameScenePath = GameplaySceneFolder + "/Game.unity";
+        private const string LegacyBootstrapScenePath = SceneFolder + "/Bootstrap.unity";
+        private const string LegacyMainMenuScenePath = SceneFolder + "/MainMenu.unity";
+        private const string LegacyGameScenePath = SceneFolder + "/Game.unity";
         private const string MenuBackgroundPath =
             "Assets/_Ropoly/Art/Placeholder/ropoly-menu-background-placeholder.png";
+        private const string FontAssetPath =
+            "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
 
         static P1SceneGenerator()
         {
@@ -47,7 +56,7 @@ namespace Ropoly.Editor
                 return;
             }
 
-            EnsureFolderExists(SceneFolder);
+            EnsureSceneFoldersAndMigrate();
 
             bool createdAnyScene = false;
             if (!File.Exists(BootstrapScenePath))
@@ -85,6 +94,14 @@ namespace Ropoly.Editor
                 return;
             }
 
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.isDirty)
+            {
+                return;
+            }
+
+            EnsureSceneFoldersAndMigrate();
+
             if (File.Exists(BootstrapScenePath) &&
                 File.Exists(MainMenuScenePath) &&
                 File.Exists(GameScenePath))
@@ -95,6 +112,32 @@ namespace Ropoly.Editor
             }
 
             GenerateMissingScenes();
+        }
+
+        private static void EnsureSceneFoldersAndMigrate()
+        {
+            EnsureFolderExists(AppSceneFolder);
+            EnsureFolderExists(FrontendSceneFolder);
+            EnsureFolderExists(GameplaySceneFolder);
+            MigrateLegacySceneIfRequired(LegacyBootstrapScenePath, BootstrapScenePath);
+            MigrateLegacySceneIfRequired(LegacyMainMenuScenePath, MainMenuScenePath);
+            MigrateLegacySceneIfRequired(LegacyGameScenePath, GameScenePath);
+            AssetDatabase.SaveAssets();
+        }
+
+        private static void MigrateLegacySceneIfRequired(string legacyPath, string organizedPath)
+        {
+            if (!File.Exists(legacyPath) || File.Exists(organizedPath))
+            {
+                return;
+            }
+
+            string error = AssetDatabase.MoveAsset(legacyPath, organizedPath);
+            if (!string.IsNullOrEmpty(error))
+            {
+                throw new IOException(
+                    $"Could not organize scene '{legacyPath}' as '{organizedPath}': {error}");
+            }
         }
 
         private static void CreateBootstrapScene()
@@ -146,39 +189,39 @@ namespace Ropoly.Editor
                 "Title",
                 "ROPOLY",
                 82,
-                FontStyle.Bold,
+                FontStyles.Bold,
                 new Color(0.93f, 0.91f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, -112f),
                 new Vector2(540f, 110f),
-                TextAnchor.MiddleCenter);
+                TextAlignmentOptions.Center);
 
             CreateText(
                 panel.transform,
                 "Subtitle",
                 "BUILD CITIES  •  MAKE DEALS  •  OWN THE MAP",
                 18,
-                FontStyle.Normal,
+                FontStyles.Normal,
                 new Color(0.47f, 0.86f, 0.91f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, -196f),
                 new Vector2(530f, 52f),
-                TextAnchor.MiddleCenter);
+                TextAlignmentOptions.Center);
 
             CreateText(
                 panel.transform,
                 "Welcome",
                 "A world of cities, countries, and clever trades awaits.",
                 22,
-                FontStyle.Normal,
+                FontStyles.Normal,
                 new Color(0.82f, 0.8f, 0.9f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 55f),
                 new Vector2(490f, 90f),
-                TextAnchor.MiddleCenter);
+                TextAlignmentOptions.Center);
 
             CreateNavigationButton(
                 panel.transform,
@@ -196,13 +239,13 @@ namespace Ropoly.Editor
                 "MilestoneLabel",
                 "P-1  •  FOUNDATION BUILD",
                 14,
-                FontStyle.Normal,
+                FontStyles.Normal,
                 new Color(0.53f, 0.5f, 0.66f),
                 new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f),
                 new Vector2(0f, 38f),
                 new Vector2(420f, 32f),
-                TextAnchor.MiddleCenter);
+                TextAlignmentOptions.Center);
 
             EditorSceneManager.SaveScene(scene, MainMenuScenePath);
         }
@@ -243,26 +286,26 @@ namespace Ropoly.Editor
                 "GameReadyTitle",
                 "GAME SCENE READY",
                 58,
-                FontStyle.Bold,
+                FontStyles.Bold,
                 new Color(0.93f, 0.91f, 1f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 80f),
                 new Vector2(900f, 100f),
-                TextAnchor.MiddleCenter);
+                TextAlignmentOptions.Center);
 
             CreateText(
                 canvas.transform,
                 "EnvironmentLabel",
                 "P-1  •  3D WORLD, 2D PRESENTATION",
                 20,
-                FontStyle.Normal,
+                FontStyles.Normal,
                 new Color(0.47f, 0.86f, 0.91f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 5f),
                 new Vector2(650f, 50f),
-                TextAnchor.MiddleCenter);
+                TextAlignmentOptions.Center);
 
             CreateNavigationButton(
                 canvas.transform,
@@ -311,6 +354,11 @@ namespace Ropoly.Editor
             GameObject canvasObject = new GameObject(name, typeof(RectTransform));
             Canvas canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.additionalShaderChannels =
+                AdditionalCanvasShaderChannels.TexCoord1 |
+                AdditionalCanvasShaderChannels.TexCoord2 |
+                AdditionalCanvasShaderChannels.Normal |
+                AdditionalCanvasShaderChannels.Tangent;
 
             CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -352,31 +400,41 @@ namespace Ropoly.Editor
             return image;
         }
 
-        private static Text CreateText(
+        private static TextMeshProUGUI CreateText(
             Transform parent,
             string name,
             string value,
             int fontSize,
-            FontStyle fontStyle,
+            FontStyles fontStyle,
             Color color,
             Vector2 anchorMin,
             Vector2 anchorMax,
             Vector2 anchoredPosition,
             Vector2 sizeDelta,
-            TextAnchor alignment)
+            TextAlignmentOptions alignment)
         {
             GameObject textObject = new GameObject(name, typeof(RectTransform));
             textObject.transform.SetParent(parent, false);
-            Text text = textObject.AddComponent<Text>();
+            TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
             text.text = value;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
+            if (text.font == null)
+            {
+                throw new FileNotFoundException(
+                    $"TextMesh Pro Essential Resources are missing. Expected '{FontAssetPath}'.");
+            }
+
             text.fontSize = fontSize;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = Mathf.Max(12f, fontSize * 0.82f);
+            text.fontSizeMax = fontSize;
             text.fontStyle = fontStyle;
             text.color = color;
             text.alignment = alignment;
             text.raycastTarget = false;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.overflowMode = TextOverflowModes.Ellipsis;
+            text.extraPadding = true;
             SetRect(text.rectTransform, anchorMin, anchorMax, anchoredPosition, sizeDelta);
             return text;
         }
@@ -418,13 +476,13 @@ namespace Ropoly.Editor
                 "Label",
                 label,
                 fontSize,
-                FontStyle.Bold,
+                FontStyles.Bold,
                 Color.white,
                 Vector2.zero,
                 Vector2.one,
                 Vector2.zero,
                 Vector2.zero,
-                TextAnchor.MiddleCenter);
+                TextAlignmentOptions.Center);
         }
 
         private static void SetRect(

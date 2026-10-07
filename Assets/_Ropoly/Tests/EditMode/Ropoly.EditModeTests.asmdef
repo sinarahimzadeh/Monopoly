@@ -5,7 +5,9 @@
     "Ropoly.Core",
     "Ropoly.Application",
     "Ropoly.AI",
-    "Ropoly.Infrastructure"
+    "Ropoly.Infrastructure",
+    "Ropoly.Presentation",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [
     "Editor"

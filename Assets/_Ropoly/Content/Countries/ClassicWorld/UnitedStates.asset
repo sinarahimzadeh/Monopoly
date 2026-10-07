@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00ef015a9ad3df546bad06faa0fcefd5, type: 3}
+  m_Name: UnitedStates
+  m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CountryDefinition
+  _countryId: country-united-states
+  _displayName: United States
+  _expectedCityCount: 3
+  _setColor: {r: 0.15294118, g: 0.68235296, b: 0.3764706, a: 1}
+  _flag: {fileID: 0}
+  _cities:
+  - {fileID: 11400000, guid: 71fcd4de566cfcf4ea483f864f70caec, type: 2}
+  - {fileID: 11400000, guid: cc7164d7342e5ae469fecad262c0d3c5, type: 2}
+  - {fileID: 11400000, guid: bdd8128f082d9b54c81e0a09ff6702cf, type: 2}
+  _gdpPerCapitaUsd: 86170
+  _economicDataYear: 2024
+  _economicDataSource: World Bank, World Development Indicators (NY.GDP.PCAP.CD)

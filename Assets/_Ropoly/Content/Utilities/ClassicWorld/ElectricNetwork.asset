@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 817e6543c33a22f4f82a2d17b82e28d8, type: 3}
+  m_Name: ElectricNetwork
+  m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.UtilityDefinition
+  _contentId: utility-electric-network
+  _displayName: Electric Network
+  _artwork: {fileID: 0}
+  _purchasePrice: 150
+  _mortgageValue: 75
+  _rentMultiplierByOwnedCount: 040000000a000000

@@ -9,7 +9,8 @@
     "Ropoly.Presentation",
     "Ropoly.Bootstrap",
     "UnityEngine.UI",
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [
     "Editor"
