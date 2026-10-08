@@ -18,9 +18,18 @@ namespace Ropoly.Presentation.Board
         private readonly Dictionary<Color32, Material> _materials = new Dictionary<Color32, Material>();
         private Transform _generatedRoot;
         private TMP_FontAsset _font;
+        private TMP_Text _statusText;
 
         public BoardDefinition BoardDefinition => _boardDefinition;
         public BoardPreviewTheme Theme => _theme;
+
+        public void SetStatusText(string value)
+        {
+            if (_statusText != null)
+            {
+                _statusText.text = value;
+            }
+        }
 
         private void Awake()
         {
@@ -181,9 +190,9 @@ namespace Ropoly.Presentation.Board
                 _theme.SecondaryTextColor,
                 new Vector2(9f, 1.0f),
                 _generatedRoot);
-            CreateWorldText(
+            _statusText = CreateWorldText(
                 "Preview Status",
-                "BOARD PREVIEW  •  GAMEPLAY SYSTEMS COMING NEXT",
+                "LOCAL LOBBY  •  CHOOSE YOUR CREATURE",
                 new Vector3(0f, 0.34f, -2.35f),
                 rotation,
                 0.50f,
@@ -599,6 +608,7 @@ namespace Ropoly.Presentation.Board
                 }
 
                 _generatedRoot = null;
+                _statusText = null;
             }
 
             foreach (Material material in _materials.Values)
