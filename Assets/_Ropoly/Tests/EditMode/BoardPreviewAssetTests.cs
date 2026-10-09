@@ -14,7 +14,7 @@ namespace Ropoly.Tests.EditMode
         private const string ThemePath = "Assets/_Ropoly/Settings/Presentation/BoardPreviewTheme.asset";
         private const string PrefabPath = "Assets/_Ropoly/Prefabs/Board/BoardPreviewRoot.prefab";
         private const string FontPath =
-            "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
+            "Assets/_Ropoly/Art/Fonts/Ropoly UI SDF.asset";
 
         [Test]
         public void OrganizedScenes_ArePresentAndEnabledInBuildOrder()
@@ -46,7 +46,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(controller.Theme, Is.SameAs(theme));
             Assert.That(theme.Font, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(theme.Font), Is.EqualTo(FontPath));
-            Assert.That(theme.Font.atlasWidth, Is.GreaterThanOrEqualTo(1024));
+            Assert.That(theme.Font.atlasWidth, Is.GreaterThanOrEqualTo(2048));
         }
     }
 }

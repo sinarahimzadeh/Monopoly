@@ -25,7 +25,7 @@ namespace Ropoly.Editor
         public const string PrefabPath =
             "Assets/_Ropoly/Prefabs/Board/BoardPreviewRoot.prefab";
         public const string FontAssetPath =
-            "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
+            "Assets/_Ropoly/Art/Fonts/Ropoly UI SDF.asset";
 
         private const string LegacyBootstrapScenePath = "Assets/_Ropoly/Scenes/Bootstrap.unity";
         private const string LegacyMainMenuScenePath = "Assets/_Ropoly/Scenes/MainMenu.unity";

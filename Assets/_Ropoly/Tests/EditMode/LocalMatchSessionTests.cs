@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Collections.Generic;
 using NUnit.Framework;
 using Ropoly.Core.Match;
 
@@ -66,6 +67,81 @@ namespace Ropoly.Tests.EditMode
             Assert.That(session.TrySetPlayerCount(5), Is.False);
             Assert.That(session.TrySetPlayerCount(4), Is.True);
             Assert.That(session.State.Players[3].IsReady, Is.False);
+        }
+
+        [Test]
+        public void AuthoritativeDiceRoll_RecordsValuesAndControlsTurnOrder()
+        {
+            LocalMatchSession session = CreateStartedTwoPlayerSession();
+
+            Assert.That(session.State.Turn, Is.Not.Null);
+            Assert.That(session.State.Turn.CurrentPlayerIndex, Is.Zero);
+            Assert.That(session.State.Turn.TurnNumber, Is.EqualTo(1));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingRoll));
+
+            Assert.That(
+                session.TryRollDice(new FixedDiceRollSource(3, 5), out DiceRoll roll),
+                Is.True);
+            Assert.That(roll.FirstDie, Is.EqualTo(3));
+            Assert.That(roll.SecondDie, Is.EqualTo(5));
+            Assert.That(roll.Total, Is.EqualTo(8));
+            Assert.That(roll.IsDouble, Is.False);
+            Assert.That(session.State.Turn.LastRoll, Is.SameAs(roll));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingMovement));
+            Assert.That(
+                session.TryRollDice(new FixedDiceRollSource(1, 1), out _),
+                Is.False,
+                "A player cannot roll twice before the turn advances.");
+
+            Assert.That(session.TryAdvanceTurn(), Is.True);
+            Assert.That(session.State.Turn.CurrentPlayerIndex, Is.EqualTo(1));
+            Assert.That(session.State.Turn.TurnNumber, Is.EqualTo(2));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingRoll));
+            Assert.That(session.State.Turn.LastRoll, Is.Null);
+
+            Assert.That(
+                session.TryRollDice(new FixedDiceRollSource(6, 6), out DiceRoll doubleRoll),
+                Is.True);
+            Assert.That(doubleRoll.IsDouble, Is.True);
+            Assert.That(session.TryAdvanceTurn(), Is.True);
+            Assert.That(session.State.Turn.CurrentPlayerIndex, Is.Zero);
+            Assert.That(session.State.Turn.TurnNumber, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void AuthoritativeDiceRoll_RejectsInvalidSourceValues()
+        {
+            LocalMatchSession session = CreateStartedTwoPlayerSession();
+
+            Assert.That(
+                session.TryRollDice(new FixedDiceRollSource(0, 7), out DiceRoll roll),
+                Is.False);
+            Assert.That(roll, Is.Null);
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingRoll));
+        }
+
+        private static LocalMatchSession CreateStartedTwoPlayerSession()
+        {
+            LocalMatchSession session = new LocalMatchSession(2, 1500, CreatureIds);
+            session.TrySelectCreature(0, "pip");
+            session.TrySelectCreature(1, "bubu");
+            Assert.That(session.TryStartMatch(), Is.True);
+            return session;
+        }
+
+        private sealed class FixedDiceRollSource : IDiceRollSource
+        {
+            private readonly Queue<int> _values;
+
+            public FixedDiceRollSource(params int[] values)
+            {
+                _values = new Queue<int>(values);
+            }
+
+            public int NextDieValue()
+            {
+                return _values.Dequeue();
+            }
         }
     }
 }

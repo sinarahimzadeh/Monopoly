@@ -22,6 +22,8 @@ namespace Ropoly.Core.Match
 
         public MatchPhase Phase { get; internal set; }
 
+        public TurnState Turn { get; internal set; }
+
         public IReadOnlyList<PlayerState> Players => _players;
 
         internal List<PlayerState> MutablePlayers => _players;

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0708eaeed5686841a5ef28aafcbd4d7, type: 3}
+  m_Name: DicePresentationSettings
+  m_EditorClassIdentifier: Ropoly.Presentation::Ropoly.Presentation.Dice.DicePresentationSettings
+  _dieSize: 1.05
+  _bodyColor: {r: 0.96, g: 0.95, b: 1, a: 1}
+  _pipColor: {r: 0.055, g: 0.035, b: 0.09, a: 1}
+  _boardCenter: {x: 0, y: 0.84, z: 0.45}
+  _dieSeparation: 1.55
+  _rollDuration: 1.2
+  _throwHeight: 2.25
+  _minimumSpinTurns: 3
+  _maximumSpinTurns: 6
+  _sidewaysMotion: 0.28

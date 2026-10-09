@@ -275,27 +275,29 @@ namespace Ropoly.Presentation.Board
             Transform parent)
         {
             Quaternion rotation = Quaternion.LookRotation(Vector3.down, textUp);
-            float labelSize = label.Length > 20 ? 0.32f : label.Length > 13 ? 0.38f : 0.46f;
-            Vector2 labelBounds = new Vector2(Mathf.Max(0.8f, tileSize.x - 0.14f), 0.68f);
-            CreateWorldText(
+            int longestLineLength = GetLongestLineLength(label);
+            float labelSize = longestLineLength > 12 ? 0.40f : longestLineLength > 9 ? 0.45f : 0.50f;
+            Vector2 labelBounds = new Vector2(Mathf.Max(0.8f, tileSize.x - 0.12f), 0.82f);
+            TextMeshPro nameText = CreateWorldText(
                 "Name",
                 label,
-                center + (textUp * 0.13f) + new Vector3(0f, 0.39f, 0f),
+                center + (textUp * 0.16f) + new Vector3(0f, 0.39f, 0f),
                 rotation,
                 labelSize,
                 FontStyles.Bold,
                 _theme.PrimaryTextColor,
                 labelBounds,
                 parent);
+            nameText.lineSpacing = -8f;
             CreateWorldText(
                 "Detail",
                 detail,
                 center - (textUp * 0.56f) + new Vector3(0f, 0.39f, 0f),
                 rotation,
-                0.24f,
+                0.30f,
                 FontStyles.Bold,
                 _theme.PriceTextColor,
-                new Vector2(Mathf.Max(0.8f, tileSize.x - 0.14f), 0.30f),
+                new Vector2(Mathf.Max(0.8f, tileSize.x - 0.12f), 0.34f),
                 parent);
         }
 
@@ -318,7 +320,7 @@ namespace Ropoly.Presentation.Board
             text.font = _font;
             text.fontSize = fontSize;
             text.enableAutoSizing = true;
-            text.fontSizeMin = Mathf.Max(0.10f, fontSize * 0.35f);
+            text.fontSizeMin = Mathf.Max(0.18f, fontSize * 0.70f);
             text.fontSizeMax = fontSize;
             text.fontStyle = style;
             text.color = color;
@@ -329,6 +331,30 @@ namespace Ropoly.Presentation.Board
             text.richText = false;
             text.rectTransform.sizeDelta = bounds;
             return text;
+        }
+
+        private static int GetLongestLineLength(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return 0;
+            }
+
+            int longest = 0;
+            int current = 0;
+            foreach (char character in value)
+            {
+                if (character == '\n')
+                {
+                    longest = Mathf.Max(longest, current);
+                    current = 0;
+                    continue;
+                }
+
+                current++;
+            }
+
+            return Mathf.Max(longest, current);
         }
 
         private GameObject CreateCube(

@@ -127,6 +127,45 @@ namespace Ropoly.Core.Match
             }
 
             State.Phase = MatchPhase.InProgress;
+            State.Turn = new TurnState(currentPlayerIndex: 0);
+            return true;
+        }
+
+        public bool TryRollDice(IDiceRollSource rollSource, out DiceRoll roll)
+        {
+            roll = null;
+            if (rollSource == null ||
+                State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.AwaitingRoll)
+            {
+                return false;
+            }
+
+            int firstValue = rollSource.NextDieValue();
+            int secondValue = rollSource.NextDieValue();
+            if (!DiceRoll.IsDieValueValid(firstValue) ||
+                !DiceRoll.IsDieValueValid(secondValue))
+            {
+                return false;
+            }
+
+            roll = new DiceRoll(firstValue, secondValue);
+            State.Turn.LastRoll = roll;
+            State.Turn.Phase = TurnPhase.AwaitingMovement;
+            return true;
+        }
+
+        public bool TryAdvanceTurn()
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.AwaitingMovement)
+            {
+                return false;
+            }
+
+            State.Turn.Advance(State.Players.Count);
             return true;
         }
 

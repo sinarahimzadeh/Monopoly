@@ -77,6 +77,8 @@ namespace Ropoly.Presentation.Lobby
         public GameObject MatchHudPanel => _matchHudPanel;
         public IReadOnlyList<CreatureChoiceView> CreatureChoices => _creatureChoices;
 
+        public event Action<LocalMatchSession> MatchStarted;
+
         private void Awake()
         {
             if (!ValidateConfiguration())
@@ -165,7 +167,8 @@ namespace Ropoly.Presentation.Lobby
             RefreshMatchHud();
             _lobbyOverlay.SetActive(false);
             _matchHudPanel.SetActive(true);
-            _boardPreview.SetStatusText("MATCH READY  •  DICE AND MOVEMENT COME NEXT");
+            _boardPreview.SetStatusText("MATCH READY  •  ROLL THE DICE");
+            MatchStarted?.Invoke(_session);
         }
 
         private bool ValidateConfiguration()
