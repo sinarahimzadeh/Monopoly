@@ -25,6 +25,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(snapshot.DisplayName, Is.EqualTo("Classic Ropoly"));
             Assert.That(snapshot.PlayerCount, Is.EqualTo(4));
             Assert.That(snapshot.StartingCash, Is.EqualTo(1500));
+            Assert.That(snapshot.PassStartCash, Is.EqualTo(200));
             Assert.That(snapshot.TurnDurationSeconds, Is.EqualTo(60));
             Assert.That(snapshot.DisconnectGraceSeconds, Is.EqualTo(120));
             Assert.That(snapshot.MortgageEnabled, Is.True);
@@ -45,6 +46,7 @@ namespace Ropoly.Tests.EditMode
                 displayName: string.Empty,
                 playerCount: 1,
                 startingCash: 0,
+                passStartCash: -1,
                 turnDurationSeconds: 0,
                 disconnectGraceSeconds: -1,
                 mortgageEnabled: true,
@@ -61,6 +63,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(result.Contains(RulesetValidationErrorCode.InvalidDisplayName), Is.True);
             Assert.That(result.Contains(RulesetValidationErrorCode.PlayerCountOutOfRange), Is.True);
             Assert.That(result.Contains(RulesetValidationErrorCode.StartingCashOutOfRange), Is.True);
+            Assert.That(result.Contains(RulesetValidationErrorCode.PassStartCashOutOfRange), Is.True);
             Assert.That(result.Contains(RulesetValidationErrorCode.TurnDurationOutOfRange), Is.True);
             Assert.That(result.Contains(RulesetValidationErrorCode.DisconnectGraceOutOfRange), Is.True);
             Assert.That(result.Contains(RulesetValidationErrorCode.FullSetRentMultiplierOutOfRange), Is.True);
@@ -76,6 +79,7 @@ namespace Ropoly.Tests.EditMode
             serializedDefinition.FindProperty("_displayName").stringValue = "Quick Test";
             serializedDefinition.FindProperty("_playerCount").intValue = 2;
             serializedDefinition.FindProperty("_startingCash").intValue = 900;
+            serializedDefinition.FindProperty("_passStartCash").intValue = 175;
             serializedDefinition.FindProperty("_turnDurationSeconds").intValue = 30;
             serializedDefinition.FindProperty("_disconnectGraceSeconds").intValue = 45;
             serializedDefinition.FindProperty("_mortgageEnabled").boolValue = false;
@@ -92,6 +96,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(snapshot.DisplayName, Is.EqualTo("Quick Test"));
             Assert.That(snapshot.PlayerCount, Is.EqualTo(2));
             Assert.That(snapshot.StartingCash, Is.EqualTo(900));
+            Assert.That(snapshot.PassStartCash, Is.EqualTo(175));
             Assert.That(snapshot.TurnDurationSeconds, Is.EqualTo(30));
             Assert.That(snapshot.DisconnectGraceSeconds, Is.EqualTo(45));
             Assert.That(snapshot.MortgageEnabled, Is.False);

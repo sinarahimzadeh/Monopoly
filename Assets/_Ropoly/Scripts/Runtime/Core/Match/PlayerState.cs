@@ -35,5 +35,20 @@ namespace Ropoly.Core.Match
         {
             CreatureId = creatureId;
         }
+
+        internal void MoveTo(int boardPosition)
+        {
+            BoardPosition = boardPosition;
+        }
+
+        internal void AddCash(int amount)
+        {
+            if (amount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(amount));
+            }
+
+            Cash = checked(Cash + amount);
+        }
     }
 }

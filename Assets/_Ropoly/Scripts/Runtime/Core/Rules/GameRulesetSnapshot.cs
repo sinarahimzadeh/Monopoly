@@ -15,6 +15,7 @@ namespace Ropoly.Core.Rules
             string displayName,
             int playerCount,
             int startingCash,
+            int passStartCash,
             int turnDurationSeconds,
             int disconnectGraceSeconds,
             bool mortgageEnabled,
@@ -28,6 +29,7 @@ namespace Ropoly.Core.Rules
             DisplayName = displayName;
             PlayerCount = playerCount;
             StartingCash = startingCash;
+            PassStartCash = passStartCash;
             TurnDurationSeconds = turnDurationSeconds;
             DisconnectGraceSeconds = disconnectGraceSeconds;
             MortgageEnabled = mortgageEnabled;
@@ -46,6 +48,8 @@ namespace Ropoly.Core.Rules
         public int PlayerCount { get; }
 
         public int StartingCash { get; }
+
+        public int PassStartCash { get; }
 
         public int TurnDurationSeconds { get; }
 

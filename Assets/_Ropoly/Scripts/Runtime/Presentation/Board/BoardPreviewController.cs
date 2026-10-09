@@ -15,6 +15,15 @@ namespace Ropoly.Presentation.Board
         [SerializeField]
         private BoardPreviewTheme _theme;
 
+        [Header("Player tokens")]
+        [SerializeField]
+        [Min(0f)]
+        private float _tokenElevation = 0.66f;
+
+        [SerializeField]
+        [Range(0f, 0.6f)]
+        private float _tokenSlotOffset = 0.34f;
+
         private readonly Dictionary<Color32, Material> _materials = new Dictionary<Color32, Material>();
         private Transform _generatedRoot;
         private TMP_FontAsset _font;
@@ -22,6 +31,9 @@ namespace Ropoly.Presentation.Board
 
         public BoardDefinition BoardDefinition => _boardDefinition;
         public BoardPreviewTheme Theme => _theme;
+        public int TileCount => _boardDefinition == null
+            ? 0
+            : _boardDefinition.CreateSnapshot().Tiles.Count;
 
         public void SetStatusText(string value)
         {
@@ -29,6 +41,86 @@ namespace Ropoly.Presentation.Board
             {
                 _statusText.text = value;
             }
+        }
+
+        public bool TryGetTokenPosition(int tileIndex, int playerIndex, out Vector3 position)
+        {
+            position = default;
+            if (_boardDefinition == null ||
+                tileIndex < 0 ||
+                tileIndex >= TileCount ||
+                playerIndex < 0 ||
+                playerIndex >= 4)
+            {
+                return false;
+            }
+
+            GetTileLayout(tileIndex, out Vector3 center, out _, out _, out _);
+            float x = playerIndex % 2 == 0 ? -_tokenSlotOffset : _tokenSlotOffset;
+            float z = playerIndex < 2 ? _tokenSlotOffset : -_tokenSlotOffset;
+            position = center + new Vector3(x, _tokenElevation, z);
+            return true;
+        }
+
+        public string GetTileDisplayName(int tileIndex)
+        {
+            if (_boardDefinition == null)
+            {
+                return string.Empty;
+            }
+
+            BoardSnapshot board = _boardDefinition.CreateSnapshot();
+            if (tileIndex < 0 || tileIndex >= board.Tiles.Count)
+            {
+                return string.Empty;
+            }
+
+            BoardTileSnapshot tile = board.Tiles[tileIndex];
+            switch (tile.Kind)
+            {
+                case BoardTileKind.City:
+                    foreach (CitySnapshot city in board.Cities)
+                    {
+                        if (city.CityId == tile.ContentId)
+                        {
+                            return city.DisplayName;
+                        }
+                    }
+
+                    break;
+                case BoardTileKind.Airport:
+                    foreach (AirportSnapshot airport in board.Airports)
+                    {
+                        if (airport.AirportId == tile.ContentId)
+                        {
+                            return airport.DisplayName;
+                        }
+                    }
+
+                    break;
+                case BoardTileKind.Utility:
+                    foreach (UtilitySnapshot utility in board.Utilities)
+                    {
+                        if (utility.UtilityId == tile.ContentId)
+                        {
+                            return utility.DisplayName;
+                        }
+                    }
+
+                    break;
+                default:
+                    foreach (SpecialSpaceSnapshot special in board.SpecialSpaces)
+                    {
+                        if (special.SpaceId == tile.ContentId)
+                        {
+                            return special.DisplayName;
+                        }
+                    }
+
+                    break;
+            }
+
+            return tile.ContentId;
         }
 
         private void Awake()

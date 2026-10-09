@@ -27,6 +27,11 @@ namespace Ropoly.Infrastructure.Content
         private int _startingCash = 1500;
 
         [SerializeField]
+        [Min(GameRulesetLimits.MinimumPassStartCash)]
+        [Tooltip("Cash awarded each time a player passes or lands on Start.")]
+        private int _passStartCash = 200;
+
+        [SerializeField]
         [Range(
             GameRulesetLimits.MinimumTurnDurationSeconds,
             GameRulesetLimits.MaximumTurnDurationSeconds)]
@@ -67,6 +72,7 @@ namespace Ropoly.Infrastructure.Content
                 _displayName,
                 _playerCount,
                 _startingCash,
+                _passStartCash,
                 _turnDurationSeconds,
                 _disconnectGraceSeconds,
                 _mortgageEnabled,
@@ -91,6 +97,10 @@ namespace Ropoly.Infrastructure.Content
                 _startingCash,
                 GameRulesetLimits.MinimumStartingCash,
                 GameRulesetLimits.MaximumStartingCash);
+            _passStartCash = Mathf.Clamp(
+                _passStartCash,
+                GameRulesetLimits.MinimumPassStartCash,
+                GameRulesetLimits.MaximumPassStartCash);
             _turnDurationSeconds = Mathf.Clamp(
                 _turnDurationSeconds,
                 GameRulesetLimits.MinimumTurnDurationSeconds,

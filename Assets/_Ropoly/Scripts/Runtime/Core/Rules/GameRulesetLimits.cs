@@ -5,13 +5,16 @@ namespace Ropoly.Core.Rules
     /// </summary>
     public static class GameRulesetLimits
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         public const int MinimumPlayers = 2;
         public const int MaximumPlayers = 4;
 
         public const int MinimumStartingCash = 1;
         public const int MaximumStartingCash = 1_000_000;
+
+        public const int MinimumPassStartCash = 0;
+        public const int MaximumPassStartCash = 1_000_000;
 
         public const int MinimumTurnDurationSeconds = 10;
         public const int MaximumTurnDurationSeconds = 600;

@@ -13,11 +13,15 @@ namespace Ropoly.Core.Match
 
         private readonly HashSet<string> _availableCreatureIds;
         private readonly int _startingCash;
+        private readonly int _boardTileCount;
+        private readonly int _passStartCash;
 
         public LocalMatchSession(
             int playerCount,
             int startingCash,
-            IEnumerable<string> availableCreatureIds)
+            IEnumerable<string> availableCreatureIds,
+            int boardTileCount = 40,
+            int passStartCash = 200)
         {
             if (playerCount < MinimumPlayers || playerCount > MaximumPlayers)
             {
@@ -27,6 +31,16 @@ namespace Ropoly.Core.Match
             if (startingCash < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startingCash));
+            }
+
+            if (boardTileCount < 2)
+            {
+                throw new ArgumentOutOfRangeException(nameof(boardTileCount));
+            }
+
+            if (passStartCash < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(passStartCash));
             }
 
             _availableCreatureIds = new HashSet<string>(
@@ -40,6 +54,8 @@ namespace Ropoly.Core.Match
             }
 
             _startingCash = startingCash;
+            _boardTileCount = boardTileCount;
+            _passStartCash = passStartCash;
             State = new MatchState(CreateLocalMatchId(), CreatePlayers(playerCount));
         }
 
@@ -160,12 +176,58 @@ namespace Ropoly.Core.Match
         {
             if (State.Phase != MatchPhase.InProgress ||
                 State.Turn == null ||
-                State.Turn.Phase != TurnPhase.AwaitingMovement)
+                State.Turn.Phase != TurnPhase.AwaitingTurnEnd)
             {
                 return false;
             }
 
             State.Turn.Advance(State.Players.Count);
+            return true;
+        }
+
+        public bool TryBeginMovement(out PlayerMovement movement)
+        {
+            movement = null;
+            if (State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.AwaitingMovement ||
+                State.Turn.LastRoll == null)
+            {
+                return false;
+            }
+
+            int playerIndex = State.Turn.CurrentPlayerIndex;
+            PlayerState player = State.MutablePlayers[playerIndex];
+            int fromIndex = player.BoardPosition;
+            int spaces = State.Turn.LastRoll.Total;
+            int absoluteDestination = fromIndex + spaces;
+            int completedLaps = absoluteDestination / _boardTileCount;
+            int destinationIndex = absoluteDestination % _boardTileCount;
+            int cashAward = checked(completedLaps * _passStartCash);
+
+            player.MoveTo(destinationIndex);
+            player.AddCash(cashAward);
+            movement = new PlayerMovement(
+                playerIndex,
+                fromIndex,
+                destinationIndex,
+                spaces,
+                completedLaps,
+                cashAward);
+            State.Turn.Phase = TurnPhase.Moving;
+            return true;
+        }
+
+        public bool TryCompleteMovement()
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.Moving)
+            {
+                return false;
+            }
+
+            State.Turn.Phase = TurnPhase.AwaitingTurnEnd;
             return true;
         }
 

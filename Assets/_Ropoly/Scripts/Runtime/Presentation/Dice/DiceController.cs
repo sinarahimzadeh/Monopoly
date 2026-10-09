@@ -2,6 +2,7 @@ using System.Collections;
 using Ropoly.Core.Match;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Lobby;
+using Ropoly.Presentation.Players;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,6 +32,15 @@ namespace Ropoly.Presentation.Dice
         [SerializeField]
         private DieView _secondDie;
 
+        [Header("Player movement")]
+        [SerializeField]
+        [Range(0.05f, 1f)]
+        private float _moveStepDuration = 0.18f;
+
+        [SerializeField]
+        [Range(0f, 2f)]
+        private float _moveHopHeight = 0.48f;
+
         [Header("Interface")]
         [SerializeField]
         private Button _primaryButton;
@@ -46,11 +56,14 @@ namespace Ropoly.Presentation.Dice
 
         private readonly SystemDiceRollSource _rollSource = new SystemDiceRollSource();
         private Coroutine _rollRoutine;
+        private Coroutine _movementRoutine;
         private DiceRoll _lastCompletedRoll;
         private float _firstYaw;
         private float _secondYaw;
 
         public bool IsRolling => _rollRoutine != null;
+        public bool IsMoving => _movementRoutine != null;
+        public bool IsBusy => IsRolling || IsMoving;
         public DiceRoll LastCompletedRoll => _lastCompletedRoll;
         public GameObject DiceRoot => _diceRoot;
         public DieView FirstDie => _firstDie;
@@ -88,7 +101,7 @@ namespace Ropoly.Presentation.Dice
 
         public void HandlePrimaryAction()
         {
-            if (_lobby.Session == null || IsRolling)
+            if (_lobby.Session == null || IsBusy)
             {
                 return;
             }
@@ -97,7 +110,7 @@ namespace Ropoly.Presentation.Dice
             {
                 RollDice();
             }
-            else if (_lobby.Session.State.Turn.Phase == TurnPhase.AwaitingMovement)
+            else if (_lobby.Session.State.Turn.Phase == TurnPhase.AwaitingTurnEnd)
             {
                 AdvanceTurn();
             }
@@ -106,7 +119,7 @@ namespace Ropoly.Presentation.Dice
         public void RollDice()
         {
             if (_lobby.Session == null ||
-                IsRolling ||
+                IsBusy ||
                 !_lobby.Session.TryRollDice(_rollSource, out DiceRoll roll))
             {
                 return;
@@ -117,7 +130,7 @@ namespace Ropoly.Presentation.Dice
 
         public void AdvanceTurn()
         {
-            if (IsRolling ||
+            if (IsBusy ||
                 _lobby.Session == null ||
                 !_lobby.Session.TryAdvanceTurn())
             {
@@ -200,10 +213,96 @@ namespace Ropoly.Presentation.Dice
             _resultLabel.text = roll.IsDouble
                 ? $"DOUBLE {roll.FirstDie}  •  TOTAL {roll.Total}"
                 : $"{roll.FirstDie} + {roll.SecondDie}  •  TOTAL {roll.Total}";
+            BeginMovement();
+        }
+
+        private void BeginMovement()
+        {
+            if (_lobby.Session == null ||
+                !_lobby.Session.TryBeginMovement(out PlayerMovement movement))
+            {
+                _primaryButtonLabel.text = "MOVEMENT ERROR";
+                _boardPreview.SetStatusText("COULD NOT MOVE THE CURRENT PLAYER");
+                return;
+            }
+
+            _primaryButton.interactable = false;
+            _primaryButtonLabel.text = "MOVING...";
+            PlayerState player = _lobby.Session.State.Players[movement.PlayerIndex];
+            _boardPreview.SetStatusText(
+                $"{player.DisplayName}  •  MOVING {movement.Spaces} SPACES");
+            _movementRoutine = StartCoroutine(AnimateMovement(movement));
+        }
+
+        private IEnumerator AnimateMovement(PlayerMovement movement)
+        {
+            // Ensure StartCoroutine has assigned the handle before any early completion path.
+            yield return null;
+            CreatureTokenView token = _lobby.GetToken(movement.PlayerIndex);
+            if (token == null)
+            {
+                Debug.LogError($"Player {movement.PlayerIndex + 1} has no spawned creature token.", this);
+                CompleteMovement(movement);
+                yield break;
+            }
+
+            int tileCount = _boardPreview.TileCount;
+            for (int step = 1; step <= movement.Spaces; step++)
+            {
+                int fromTile = (movement.FromIndex + step - 1) % tileCount;
+                int toTile = (movement.FromIndex + step) % tileCount;
+                if (!_boardPreview.TryGetTokenPosition(
+                        fromTile,
+                        movement.PlayerIndex,
+                        out Vector3 fromPosition) ||
+                    !_boardPreview.TryGetTokenPosition(
+                        toTile,
+                        movement.PlayerIndex,
+                        out Vector3 toPosition))
+                {
+                    Debug.LogError("The board could not provide a token movement path.", _boardPreview);
+                    CompleteMovement(movement);
+                    yield break;
+                }
+
+                float elapsed = 0f;
+                while (elapsed < _moveStepDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float time = Mathf.Clamp01(elapsed / _moveStepDuration);
+                    float eased = time * time * (3f - (2f * time));
+                    float hop = Mathf.Sin(time * Mathf.PI) * _moveHopHeight;
+                    token.transform.position =
+                        Vector3.Lerp(fromPosition, toPosition, eased) + (Vector3.up * hop);
+                    yield return null;
+                }
+
+                token.transform.position = toPosition;
+            }
+
+            CompleteMovement(movement);
+        }
+
+        private void CompleteMovement(PlayerMovement movement)
+        {
+            _movementRoutine = null;
+            if (!_lobby.Session.TryCompleteMovement())
+            {
+                _primaryButtonLabel.text = "MOVEMENT ERROR";
+                _boardPreview.SetStatusText("COULD NOT COMPLETE PLAYER MOVEMENT");
+                return;
+            }
+
+            _lobby.RefreshMatchHud();
+            string tileName = _boardPreview.GetTileDisplayName(movement.DestinationIndex);
+            string startReward = movement.PassedStart
+                ? $"  •  PASSED START +${movement.CashAward}"
+                : string.Empty;
+            _resultLabel.text = $"LANDED ON {tileName.ToUpperInvariant()}";
             _primaryButtonLabel.text = "NEXT PLAYER";
             _primaryButton.interactable = true;
             _boardPreview.SetStatusText(
-                $"ROLLED {roll.Total}  •  MOVEMENT COMES NEXT");
+                $"LANDED ON {tileName.ToUpperInvariant()}{startReward}");
         }
 
         private void UpdateAnimatedDie(

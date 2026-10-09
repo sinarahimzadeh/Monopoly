@@ -14,14 +14,6 @@ namespace Ropoly.Presentation.Lobby
     [DisallowMultipleComponent]
     public sealed class LocalLobbyController : MonoBehaviour
     {
-        private static readonly Vector3[] SpawnOffsets =
-        {
-            new Vector3(-0.34f, 0f, 0.34f),
-            new Vector3(0.34f, 0f, 0.34f),
-            new Vector3(-0.34f, 0f, -0.34f),
-            new Vector3(0.34f, 0f, -0.34f),
-        };
-
         [Header("Content")]
         [SerializeField]
         private GameRulesetDefinition _ruleset;
@@ -70,6 +62,8 @@ namespace Ropoly.Presentation.Lobby
 
         private LocalMatchSession _session;
         private int _activePlayerIndex;
+        private readonly CreatureTokenView[] _spawnedTokens =
+            new CreatureTokenView[LocalMatchSession.MaximumPlayers];
 
         public LocalMatchSession Session => _session;
         public int ActivePlayerIndex => _activePlayerIndex;
@@ -94,7 +88,12 @@ namespace Ropoly.Presentation.Lobby
             }
 
             var rules = _ruleset.CreateSnapshot();
-            _session = new LocalMatchSession(rules.PlayerCount, rules.StartingCash, creatureIds);
+            _session = new LocalMatchSession(
+                rules.PlayerCount,
+                rules.StartingCash,
+                creatureIds,
+                _boardPreview.TileCount,
+                rules.PassStartCash);
             BindInterface();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);
@@ -268,7 +267,7 @@ namespace Ropoly.Presentation.Lobby
                 : $"SELECT {players.Count - readyCount} MORE";
         }
 
-        private void RefreshMatchHud()
+        public void RefreshMatchHud()
         {
             IReadOnlyList<PlayerState> players = _session.State.Players;
             for (int index = 0; index < _hudRows.Length; index++)
@@ -288,21 +287,20 @@ namespace Ropoly.Presentation.Lobby
         private void SpawnSelectedCreatures()
         {
             ClearSpawnedTokens();
-            BoardPreviewTileView startTile = FindStartTile();
-            if (startTile == null)
+            if (!_boardPreview.TryGetTokenPosition(0, 0, out _))
             {
                 Debug.LogError("The board has no generated start tile for player spawning.", this);
                 return;
             }
 
-            Vector3 basePosition = startTile.transform.position + new Vector3(0f, 0.42f, 0f);
             IReadOnlyList<PlayerState> players = _session.State.Players;
             for (int index = 0; index < players.Count; index++)
             {
                 CreatureDefinition creature = FindCreature(players[index].CreatureId);
+                _boardPreview.TryGetTokenPosition(0, index, out Vector3 spawnPosition);
                 GameObject tokenObject = Instantiate(
                     creature.TokenPrefab,
-                    basePosition + SpawnOffsets[index],
+                    spawnPosition,
                     Quaternion.identity,
                     _spawnedTokenRoot);
                 CreatureTokenView token = tokenObject.GetComponent<CreatureTokenView>();
@@ -314,22 +312,18 @@ namespace Ropoly.Presentation.Lobby
                 }
 
                 token.Configure(creature, index);
+                _spawnedTokens[index] = token;
             }
         }
 
-        private BoardPreviewTileView FindStartTile()
+        public CreatureTokenView GetToken(int playerIndex)
         {
-            BoardPreviewTileView[] tiles = FindObjectsByType<BoardPreviewTileView>(
-                FindObjectsSortMode.None);
-            foreach (BoardPreviewTileView tile in tiles)
+            if (playerIndex < 0 || playerIndex >= _spawnedTokens.Length)
             {
-                if (tile.Index == 0)
-                {
-                    return tile;
-                }
+                return null;
             }
 
-            return null;
+            return _spawnedTokens[playerIndex];
         }
 
         private CreatureDefinition FindCreature(string creatureId)
@@ -391,6 +385,7 @@ namespace Ropoly.Presentation.Lobby
 
         private void ClearSpawnedTokens()
         {
+            Array.Clear(_spawnedTokens, 0, _spawnedTokens.Length);
             for (int index = _spawnedTokenRoot.childCount - 1; index >= 0; index--)
             {
                 GameObject token = _spawnedTokenRoot.GetChild(index).gameObject;

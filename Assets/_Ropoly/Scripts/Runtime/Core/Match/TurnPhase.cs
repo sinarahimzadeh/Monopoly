@@ -5,5 +5,7 @@ namespace Ropoly.Core.Match
         Inactive = 0,
         AwaitingRoll = 1,
         AwaitingMovement = 2,
+        Moving = 3,
+        AwaitingTurnEnd = 4,
     }
 }

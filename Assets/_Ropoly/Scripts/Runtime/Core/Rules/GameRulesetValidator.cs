@@ -51,6 +51,14 @@ namespace Ropoly.Core.Rules
 
             AddRangeErrorIfNeeded(
                 result,
+                snapshot.PassStartCash,
+                GameRulesetLimits.MinimumPassStartCash,
+                GameRulesetLimits.MaximumPassStartCash,
+                RulesetValidationErrorCode.PassStartCashOutOfRange,
+                "Pass-Start cash");
+
+            AddRangeErrorIfNeeded(
+                result,
                 snapshot.TurnDurationSeconds,
                 GameRulesetLimits.MinimumTurnDurationSeconds,
                 GameRulesetLimits.MaximumTurnDurationSeconds,

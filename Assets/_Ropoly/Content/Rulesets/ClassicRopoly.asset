@@ -16,6 +16,7 @@ MonoBehaviour:
   _displayName: Classic Ropoly
   _playerCount: 4
   _startingCash: 1500
+  _passStartCash: 200
   _turnDurationSeconds: 60
   _disconnectGraceSeconds: 120
   _mortgageEnabled: 1

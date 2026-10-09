@@ -93,6 +93,14 @@ namespace Ropoly.Tests.EditMode
                 Is.False,
                 "A player cannot roll twice before the turn advances.");
 
+            Assert.That(session.TryAdvanceTurn(), Is.False);
+            Assert.That(session.TryBeginMovement(out PlayerMovement movement), Is.True);
+            Assert.That(movement.FromIndex, Is.Zero);
+            Assert.That(movement.DestinationIndex, Is.EqualTo(8));
+            Assert.That(session.State.Players[0].BoardPosition, Is.EqualTo(8));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.Moving));
+            Assert.That(session.TryAdvanceTurn(), Is.False);
+            Assert.That(session.TryCompleteMovement(), Is.True);
             Assert.That(session.TryAdvanceTurn(), Is.True);
             Assert.That(session.State.Turn.CurrentPlayerIndex, Is.EqualTo(1));
             Assert.That(session.State.Turn.TurnNumber, Is.EqualTo(2));
@@ -103,9 +111,34 @@ namespace Ropoly.Tests.EditMode
                 session.TryRollDice(new FixedDiceRollSource(6, 6), out DiceRoll doubleRoll),
                 Is.True);
             Assert.That(doubleRoll.IsDouble, Is.True);
+            Assert.That(session.TryBeginMovement(out _), Is.True);
+            Assert.That(session.TryCompleteMovement(), Is.True);
             Assert.That(session.TryAdvanceTurn(), Is.True);
             Assert.That(session.State.Turn.CurrentPlayerIndex, Is.Zero);
             Assert.That(session.State.Turn.TurnNumber, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Movement_WrapsBoardAndAwardsConfiguredPassStartCash()
+        {
+            LocalMatchSession session = new LocalMatchSession(
+                2,
+                1500,
+                CreatureIds,
+                boardTileCount: 10,
+                passStartCash: 225);
+            session.TrySelectCreature(0, "pip");
+            session.TrySelectCreature(1, "bubu");
+            session.TryStartMatch();
+            session.TryRollDice(new FixedDiceRollSource(6, 6), out _);
+
+            Assert.That(session.TryBeginMovement(out PlayerMovement movement), Is.True);
+            Assert.That(movement.DestinationIndex, Is.EqualTo(2));
+            Assert.That(movement.CompletedLaps, Is.EqualTo(1));
+            Assert.That(movement.PassedStart, Is.True);
+            Assert.That(movement.CashAward, Is.EqualTo(225));
+            Assert.That(session.State.Players[0].BoardPosition, Is.EqualTo(2));
+            Assert.That(session.State.Players[0].Cash, Is.EqualTo(1725));
         }
 
         [Test]

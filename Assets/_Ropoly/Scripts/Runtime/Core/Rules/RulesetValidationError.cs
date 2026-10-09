@@ -8,6 +8,7 @@ namespace Ropoly.Core.Rules
         InvalidDisplayName,
         PlayerCountOutOfRange,
         StartingCashOutOfRange,
+        PassStartCashOutOfRange,
         TurnDurationOutOfRange,
         DisconnectGraceOutOfRange,
         FullSetRentMultiplierOutOfRange,
