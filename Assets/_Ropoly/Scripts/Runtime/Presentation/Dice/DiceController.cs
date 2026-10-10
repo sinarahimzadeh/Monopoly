@@ -49,6 +49,24 @@ namespace Ropoly.Presentation.Dice
         private TMP_Text _primaryButtonLabel;
 
         [SerializeField]
+        private Button _secondaryButton;
+
+        [SerializeField]
+        private TMP_Text _secondaryButtonLabel;
+
+        [SerializeField]
+        [Min(1f)]
+        private float _singleButtonWidth = 250f;
+
+        [SerializeField]
+        [Min(1f)]
+        private float _decisionButtonWidth = 120f;
+
+        [SerializeField]
+        [Min(0f)]
+        private float _decisionButtonGap = 10f;
+
+        [SerializeField]
         private TMP_Text _turnLabel;
 
         [SerializeField]
@@ -60,6 +78,7 @@ namespace Ropoly.Presentation.Dice
         private DiceRoll _lastCompletedRoll;
         private float _firstYaw;
         private float _secondYaw;
+        private PropertyPurchaseOffer _pendingOffer;
 
         public bool IsRolling => _rollRoutine != null;
         public bool IsMoving => _movementRoutine != null;
@@ -69,11 +88,13 @@ namespace Ropoly.Presentation.Dice
         public DieView FirstDie => _firstDie;
         public DieView SecondDie => _secondDie;
         public Button PrimaryButton => _primaryButton;
+        public Button SecondaryButton => _secondaryButton;
 
         private void Awake()
         {
             _diceRoot.SetActive(false);
             _primaryButton.interactable = false;
+            SetDecisionMode(false);
             _primaryButtonLabel.text = "WAITING FOR PLAYERS";
             _turnLabel.text = "LOCAL MATCH";
             _resultLabel.text = "CHOOSE CREATURES TO BEGIN";
@@ -84,6 +105,8 @@ namespace Ropoly.Presentation.Dice
             _lobby.MatchStarted += HandleMatchStarted;
             _primaryButton.onClick.RemoveAllListeners();
             _primaryButton.onClick.AddListener(HandlePrimaryAction);
+            _secondaryButton.onClick.RemoveAllListeners();
+            _secondaryButton.onClick.AddListener(HandleSecondaryAction);
 
             if (_lobby.Session != null && _lobby.Session.State.Phase == MatchPhase.InProgress)
             {
@@ -106,14 +129,42 @@ namespace Ropoly.Presentation.Dice
                 return;
             }
 
-            if (_lobby.Session.State.Turn.Phase == TurnPhase.AwaitingRoll)
+            TurnState turn = _lobby.Session.State.Turn;
+            if (turn == null)
+            {
+                return;
+            }
+
+            if (turn.Phase == TurnPhase.AwaitingRoll)
             {
                 RollDice();
             }
-            else if (_lobby.Session.State.Turn.Phase == TurnPhase.AwaitingTurnEnd)
+            else if (turn.Phase == TurnPhase.AwaitingTurnEnd)
             {
                 AdvanceTurn();
             }
+            else if (turn.Phase == TurnPhase.AwaitingPropertyDecision)
+            {
+                PurchaseCurrentProperty();
+            }
+        }
+
+        public void HandleSecondaryAction()
+        {
+            if (_lobby.Session == null || IsBusy)
+            {
+                return;
+            }
+
+            PropertyPurchaseOffer offer = _pendingOffer;
+            if (!_lobby.Session.TryDeclineCurrentProperty())
+            {
+                return;
+            }
+
+            _pendingOffer = null;
+            string propertyName = offer == null ? "PROPERTY" : offer.DisplayName.ToUpperInvariant();
+            FinishPropertyDecision($"SKIPPED {propertyName}");
         }
 
         public void RollDice()
@@ -138,6 +189,39 @@ namespace Ropoly.Presentation.Dice
             }
 
             RefreshAwaitingRoll();
+        }
+
+        private void PurchaseCurrentProperty()
+        {
+            PropertyPurchaseOffer offer = _pendingOffer;
+            if (offer == null)
+            {
+                return;
+            }
+
+            PropertyPurchaseResult result = _lobby.Session.TryPurchaseCurrentProperty();
+            if (result == PropertyPurchaseResult.InsufficientCash)
+            {
+                _resultLabel.text = "NOT ENOUGH CASH";
+                _boardPreview.SetStatusText("NOT ENOUGH CASH  •  SKIP THIS PROPERTY");
+                return;
+            }
+
+            if (result != PropertyPurchaseResult.Success)
+            {
+                _resultLabel.text = "PURCHASE ERROR";
+                return;
+            }
+
+            _pendingOffer = null;
+            var creature = _lobby.GetPlayerCreature(offer.PlayerIndex);
+            if (creature != null)
+            {
+                _boardPreview.SetTileOwnerColor(offer.TileIndex, creature.BodyColor);
+            }
+
+            _lobby.RefreshMatchHud();
+            FinishPropertyDecision($"BOUGHT {offer.DisplayName.ToUpperInvariant()}");
         }
 
         private void HandleMatchStarted(LocalMatchSession session)
@@ -298,11 +382,49 @@ namespace Ropoly.Presentation.Dice
             string startReward = movement.PassedStart
                 ? $"  •  PASSED START +${movement.CashAward}"
                 : string.Empty;
+
+            PropertyPurchaseOffer offer = _lobby.Session.CurrentPurchaseOffer;
+            if (offer != null)
+            {
+                _pendingOffer = offer;
+                SetDecisionMode(true);
+                _resultLabel.text = $"{offer.DisplayName.ToUpperInvariant()}  •  ${offer.PurchasePrice:N0}";
+                _primaryButtonLabel.text = offer.CanAfford
+                    ? $"BUY ${offer.PurchasePrice:N0}"
+                    : "CAN'T AFFORD";
+                _primaryButton.interactable = offer.CanAfford;
+                _secondaryButtonLabel.text = "SKIP";
+                _secondaryButton.interactable = true;
+                _boardPreview.SetStatusText(
+                    $"UNOWNED {offer.DisplayName.ToUpperInvariant()}  •  BUY OR SKIP{startReward}");
+                return;
+            }
+
             _resultLabel.text = $"LANDED ON {tileName.ToUpperInvariant()}";
             _primaryButtonLabel.text = "NEXT PLAYER";
             _primaryButton.interactable = true;
+            SetDecisionMode(false);
+
+            if (_lobby.Session.TryGetPropertyAt(
+                    movement.DestinationIndex,
+                    out PropertyState property) &&
+                property.IsOwned)
+            {
+                string ownerName = _lobby.Session.State.Players[property.OwnerPlayerIndex].DisplayName;
+                _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {ownerName}";
+            }
+
             _boardPreview.SetStatusText(
                 $"LANDED ON {tileName.ToUpperInvariant()}{startReward}");
+        }
+
+        private void FinishPropertyDecision(string message)
+        {
+            SetDecisionMode(false);
+            _resultLabel.text = message;
+            _primaryButtonLabel.text = "NEXT PLAYER";
+            _primaryButton.interactable = true;
+            _boardPreview.SetStatusText(message);
         }
 
         private void UpdateAnimatedDie(
@@ -340,7 +462,41 @@ namespace Ropoly.Presentation.Dice
             _resultLabel.text = "READY TO ROLL";
             _primaryButtonLabel.text = "ROLL DICE";
             _primaryButton.interactable = true;
+            _pendingOffer = null;
+            SetDecisionMode(false);
             _boardPreview.SetStatusText($"{player.DisplayName}  •  ROLL THE DICE");
+        }
+
+        private void SetDecisionMode(bool decisionMode)
+        {
+            if (_secondaryButton == null)
+            {
+                return;
+            }
+
+            RectTransform primaryRect = _primaryButton.transform as RectTransform;
+            if (primaryRect != null)
+            {
+                primaryRect.sizeDelta = new Vector2(
+                    decisionMode ? _decisionButtonWidth : _singleButtonWidth,
+                    primaryRect.sizeDelta.y);
+                primaryRect.anchoredPosition = new Vector2(
+                    decisionMode ? -((_decisionButtonWidth + _decisionButtonGap) * 0.5f) : 0f,
+                    primaryRect.anchoredPosition.y);
+            }
+
+            RectTransform secondaryRect = _secondaryButton.transform as RectTransform;
+            if (secondaryRect != null)
+            {
+                secondaryRect.sizeDelta = new Vector2(
+                    _decisionButtonWidth,
+                    secondaryRect.sizeDelta.y);
+                secondaryRect.anchoredPosition = new Vector2(
+                    (_decisionButtonWidth + _decisionButtonGap) * 0.5f,
+                    secondaryRect.anchoredPosition.y);
+            }
+
+            _secondaryButton.gameObject.SetActive(decisionMode);
         }
 
         private Vector3 GetHomePosition(bool first)

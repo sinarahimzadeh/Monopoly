@@ -25,6 +25,8 @@ namespace Ropoly.Presentation.Board
         private float _tokenSlotOffset = 0.34f;
 
         private readonly Dictionary<Color32, Material> _materials = new Dictionary<Color32, Material>();
+        private readonly Dictionary<int, BoardPreviewTileView> _tileViews =
+            new Dictionary<int, BoardPreviewTileView>();
         private Transform _generatedRoot;
         private TMP_FontAsset _font;
         private TMP_Text _statusText;
@@ -41,6 +43,17 @@ namespace Ropoly.Presentation.Board
             {
                 _statusText.text = value;
             }
+        }
+
+        public bool SetTileOwnerColor(int tileIndex, Color color)
+        {
+            if (!_tileViews.TryGetValue(tileIndex, out BoardPreviewTileView tile))
+            {
+                return false;
+            }
+
+            tile.SetOwnerMaterial(GetMaterial(color));
+            return true;
         }
 
         public bool TryGetTokenPosition(int tileIndex, int playerIndex, out Vector3 position)
@@ -229,9 +242,6 @@ namespace Ropoly.Presentation.Board
                     includeCollider: true,
                     tileGroup.transform);
 
-                BoardPreviewTileView tileView = tileObject.AddComponent<BoardPreviewTileView>();
-                tileView.Initialize(tile.Index, tile.Kind, tile.ContentId);
-
                 ResolveTilePresentation(
                     tile,
                     cities,
@@ -244,8 +254,42 @@ namespace Ropoly.Presentation.Board
                     out Color accentColor);
 
                 CreateAccent(tile.Index, center, size, inward, accentColor, tileGroup.transform);
+                GameObject ownerMarker = CreateOwnerMarker(
+                    tile.Index,
+                    center,
+                    size,
+                    inward,
+                    tileGroup.transform);
+                BoardPreviewTileView tileView = tileObject.AddComponent<BoardPreviewTileView>();
+                tileView.Initialize(
+                    tile.Index,
+                    tile.Kind,
+                    tile.ContentId,
+                    ownerMarker,
+                    ownerMarker.GetComponent<MeshRenderer>());
+                _tileViews.Add(tile.Index, tileView);
                 CreateTileText(label, detail, center, size, textUp, tileGroup.transform);
             }
+        }
+
+        private GameObject CreateOwnerMarker(
+            int tileIndex,
+            Vector3 center,
+            Vector2 tileSize,
+            Vector3 inward,
+            Transform parent)
+        {
+            bool horizontalTile = tileIndex <= 10 || (tileIndex >= 20 && tileIndex <= 30);
+            float inwardDimension = horizontalTile ? tileSize.y : tileSize.x;
+            Vector3 position = center - (inward * ((inwardDimension * 0.5f) - 0.18f));
+            position.y = 0.39f;
+            return CreateCube(
+                "Owner Marker",
+                position,
+                new Vector3(0.23f, 0.08f, 0.23f),
+                Color.white,
+                includeCollider: false,
+                parent);
         }
 
         private void CreateCenterBranding(BoardSnapshot board)
@@ -742,6 +786,7 @@ namespace Ropoly.Presentation.Board
             }
 
             _materials.Clear();
+            _tileViews.Clear();
         }
     }
 }

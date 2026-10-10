@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ropoly.Core.Board;
 
 namespace Ropoly.Core.Match
 {
@@ -15,6 +16,7 @@ namespace Ropoly.Core.Match
         private readonly int _startingCash;
         private readonly int _boardTileCount;
         private readonly int _passStartCash;
+        private readonly Dictionary<int, PropertyState> _propertiesByTileIndex;
 
         public LocalMatchSession(
             int playerCount,
@@ -22,6 +24,39 @@ namespace Ropoly.Core.Match
             IEnumerable<string> availableCreatureIds,
             int boardTileCount = 40,
             int passStartCash = 200)
+            : this(
+                playerCount,
+                startingCash,
+                availableCreatureIds,
+                boardTileCount,
+                passStartCash,
+                board: null)
+        {
+        }
+
+        public LocalMatchSession(
+            int playerCount,
+            int startingCash,
+            IEnumerable<string> availableCreatureIds,
+            BoardSnapshot board,
+            int passStartCash = 200)
+            : this(
+                playerCount,
+                startingCash,
+                availableCreatureIds,
+                GetBoardTileCount(board),
+                passStartCash,
+                board)
+        {
+        }
+
+        private LocalMatchSession(
+            int playerCount,
+            int startingCash,
+            IEnumerable<string> availableCreatureIds,
+            int boardTileCount,
+            int passStartCash,
+            BoardSnapshot board)
         {
             if (playerCount < MinimumPlayers || playerCount > MaximumPlayers)
             {
@@ -56,10 +91,42 @@ namespace Ropoly.Core.Match
             _startingCash = startingCash;
             _boardTileCount = boardTileCount;
             _passStartCash = passStartCash;
-            State = new MatchState(CreateLocalMatchId(), CreatePlayers(playerCount));
+            List<PropertyState> properties = CreatePropertyStates(board);
+            State = new MatchState(
+                CreateLocalMatchId(),
+                CreatePlayers(playerCount),
+                properties);
+            _propertiesByTileIndex = new Dictionary<int, PropertyState>(properties.Count);
+            foreach (PropertyState property in properties)
+            {
+                _propertiesByTileIndex.Add(property.TileIndex, property);
+            }
         }
 
         public MatchState State { get; }
+
+        public PropertyPurchaseOffer CurrentPurchaseOffer
+        {
+            get
+            {
+                if (State.Phase != MatchPhase.InProgress ||
+                    State.Turn == null ||
+                    State.Turn.Phase != TurnPhase.AwaitingPropertyDecision ||
+                    !_propertiesByTileIndex.TryGetValue(
+                        State.Turn.PendingPropertyTileIndex,
+                        out PropertyState property) ||
+                    property.IsOwned)
+                {
+                    return null;
+                }
+
+                int playerIndex = State.Turn.CurrentPlayerIndex;
+                return new PropertyPurchaseOffer(
+                    property,
+                    playerIndex,
+                    State.Players[playerIndex].Cash);
+            }
+        }
 
         public bool CanStart
         {
@@ -227,8 +294,62 @@ namespace Ropoly.Core.Match
                 return false;
             }
 
-            State.Turn.Phase = TurnPhase.AwaitingTurnEnd;
+            PlayerState player = State.Players[State.Turn.CurrentPlayerIndex];
+            if (_propertiesByTileIndex.TryGetValue(
+                    player.BoardPosition,
+                    out PropertyState property) &&
+                !property.IsOwned)
+            {
+                State.Turn.BeginPropertyDecision(property.TileIndex);
+            }
+            else
+            {
+                State.Turn.CompleteLanding();
+            }
+
             return true;
+        }
+
+        public PropertyPurchaseResult TryPurchaseCurrentProperty()
+        {
+            PropertyPurchaseOffer offer = CurrentPurchaseOffer;
+            if (offer == null)
+            {
+                return PropertyPurchaseResult.NotAwaitingDecision;
+            }
+
+            PropertyState property = _propertiesByTileIndex[offer.TileIndex];
+            if (property.IsOwned)
+            {
+                State.Turn.CompleteLanding();
+                return PropertyPurchaseResult.AlreadyOwned;
+            }
+
+            PlayerState player = State.MutablePlayers[offer.PlayerIndex];
+            if (!player.TrySpendCash(offer.PurchasePrice))
+            {
+                return PropertyPurchaseResult.InsufficientCash;
+            }
+
+            property.TryAssignOwner(offer.PlayerIndex);
+            State.Turn.CompleteLanding();
+            return PropertyPurchaseResult.Success;
+        }
+
+        public bool TryDeclineCurrentProperty()
+        {
+            if (CurrentPurchaseOffer == null)
+            {
+                return false;
+            }
+
+            State.Turn.CompleteLanding();
+            return true;
+        }
+
+        public bool TryGetPropertyAt(int tileIndex, out PropertyState property)
+        {
+            return _propertiesByTileIndex.TryGetValue(tileIndex, out property);
         }
 
         private List<PlayerState> CreatePlayers(int count)
@@ -251,6 +372,120 @@ namespace Ropoly.Core.Match
         private static string CreateLocalMatchId()
         {
             return $"local-{Guid.NewGuid():N}";
+        }
+
+        private static int GetBoardTileCount(BoardSnapshot board)
+        {
+            if (board == null)
+            {
+                throw new ArgumentNullException(nameof(board));
+            }
+
+            return board.Tiles.Count;
+        }
+
+        private static List<PropertyState> CreatePropertyStates(BoardSnapshot board)
+        {
+            List<PropertyState> properties = new List<PropertyState>();
+            if (board == null)
+            {
+                return properties;
+            }
+
+            foreach (BoardTileSnapshot tile in board.Tiles)
+            {
+                switch (tile.Kind)
+                {
+                    case BoardTileKind.City:
+                        CitySnapshot city = FindById(board.Cities, tile.ContentId);
+                        if (city != null)
+                        {
+                            properties.Add(new PropertyState(
+                                tile.Index,
+                                tile.Kind,
+                                city.CityId,
+                                city.DisplayName,
+                                city.PurchasePrice));
+                        }
+
+                        break;
+                    case BoardTileKind.Airport:
+                        AirportSnapshot airport = FindById(board.Airports, tile.ContentId);
+                        if (airport != null)
+                        {
+                            properties.Add(new PropertyState(
+                                tile.Index,
+                                tile.Kind,
+                                airport.AirportId,
+                                airport.DisplayName,
+                                airport.PurchasePrice));
+                        }
+
+                        break;
+                    case BoardTileKind.Utility:
+                        UtilitySnapshot utility = FindById(board.Utilities, tile.ContentId);
+                        if (utility != null)
+                        {
+                            properties.Add(new PropertyState(
+                                tile.Index,
+                                tile.Kind,
+                                utility.UtilityId,
+                                utility.DisplayName,
+                                utility.PurchasePrice));
+                        }
+
+                        break;
+                }
+            }
+
+            return properties;
+        }
+
+        private static CitySnapshot FindById(
+            IReadOnlyList<CitySnapshot> cities,
+            string contentId)
+        {
+            foreach (CitySnapshot city in cities)
+            {
+                if (city != null && string.Equals(city.CityId, contentId, StringComparison.Ordinal))
+                {
+                    return city;
+                }
+            }
+
+            return null;
+        }
+
+        private static AirportSnapshot FindById(
+            IReadOnlyList<AirportSnapshot> airports,
+            string contentId)
+        {
+            foreach (AirportSnapshot airport in airports)
+            {
+                if (airport != null &&
+                    string.Equals(airport.AirportId, contentId, StringComparison.Ordinal))
+                {
+                    return airport;
+                }
+            }
+
+            return null;
+        }
+
+        private static UtilitySnapshot FindById(
+            IReadOnlyList<UtilitySnapshot> utilities,
+            string contentId)
+        {
+            foreach (UtilitySnapshot utility in utilities)
+            {
+                if (utility != null &&
+                    string.Equals(utility.UtilityId, contentId, StringComparison.Ordinal))
+                {
+                    return utility;
+                }
+            }
+
+            return null;
         }
     }
 }

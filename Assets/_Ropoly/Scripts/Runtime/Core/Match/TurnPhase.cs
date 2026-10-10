@@ -7,5 +7,6 @@ namespace Ropoly.Core.Match
         AwaitingMovement = 2,
         Moving = 3,
         AwaitingTurnEnd = 4,
+        AwaitingPropertyDecision = 5,
     }
 }

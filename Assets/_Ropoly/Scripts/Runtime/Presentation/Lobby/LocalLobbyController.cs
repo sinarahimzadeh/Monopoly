@@ -88,11 +88,12 @@ namespace Ropoly.Presentation.Lobby
             }
 
             var rules = _ruleset.CreateSnapshot();
+            var board = _boardPreview.BoardDefinition.CreateSnapshot();
             _session = new LocalMatchSession(
                 rules.PlayerCount,
                 rules.StartingCash,
                 creatureIds,
-                _boardPreview.TileCount,
+                board,
                 rules.PassStartCash);
             BindInterface();
             _lobbyOverlay.SetActive(true);
@@ -324,6 +325,18 @@ namespace Ropoly.Presentation.Lobby
             }
 
             return _spawnedTokens[playerIndex];
+        }
+
+        public CreatureDefinition GetPlayerCreature(int playerIndex)
+        {
+            if (_session == null ||
+                playerIndex < 0 ||
+                playerIndex >= _session.State.Players.Count)
+            {
+                return null;
+            }
+
+            return FindCreature(_session.State.Players[playerIndex].CreatureId);
         }
 
         private CreatureDefinition FindCreature(string creatureId)

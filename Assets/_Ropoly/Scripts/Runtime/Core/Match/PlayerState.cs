@@ -50,5 +50,21 @@ namespace Ropoly.Core.Match
 
             Cash = checked(Cash + amount);
         }
+
+        internal bool TrySpendCash(int amount)
+        {
+            if (amount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(amount));
+            }
+
+            if (Cash < amount)
+            {
+                return false;
+            }
+
+            Cash -= amount;
+            return true;
+        }
     }
 }

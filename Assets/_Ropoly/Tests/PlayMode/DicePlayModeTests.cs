@@ -28,6 +28,8 @@ namespace Ropoly.Tests.PlayMode
             Assert.That(dice, Is.Not.Null);
             Assert.That(board, Is.Not.Null);
             Assert.That(dice.DiceRoot.activeSelf, Is.False);
+            Assert.That(dice.SecondaryButton, Is.Not.Null);
+            Assert.That(dice.SecondaryButton.gameObject.activeSelf, Is.False);
 
             lobby.SetPlayerCount(2);
             lobby.SelectPlayer(0);
@@ -65,6 +67,25 @@ namespace Ropoly.Tests.PlayMode
             Assert.That(dice.SecondDie.BodyCollider, Is.Not.Null);
             Assert.That(dice.FirstDie.GetComponentsInChildren<Collider2D>(true), Is.Empty);
             Assert.That(dice.SecondDie.GetComponentsInChildren<Rigidbody2D>(true), Is.Empty);
+            if (lobby.Session.State.Turn.Phase == TurnPhase.AwaitingPropertyDecision)
+            {
+                PropertyPurchaseOffer offer = lobby.Session.CurrentPurchaseOffer;
+                Assert.That(offer, Is.Not.Null);
+                Assert.That(offer.CanAfford, Is.True);
+                Assert.That(dice.SecondaryButton.gameObject.activeSelf, Is.True);
+                int cashBeforePurchase = lobby.Session.State.Players[0].Cash;
+
+                dice.HandlePrimaryAction();
+
+                Assert.That(lobby.Session.State.Players[0].Cash, Is.EqualTo(
+                    cashBeforePurchase - offer.PurchasePrice));
+                Assert.That(
+                    lobby.Session.TryGetPropertyAt(offer.TileIndex, out PropertyState property),
+                    Is.True);
+                Assert.That(property.OwnerPlayerIndex, Is.Zero);
+                Assert.That(dice.SecondaryButton.gameObject.activeSelf, Is.False);
+            }
+
             Assert.That(lobby.Session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingTurnEnd));
             Assert.That(
                 lobby.Session.State.Players[0].BoardPosition,

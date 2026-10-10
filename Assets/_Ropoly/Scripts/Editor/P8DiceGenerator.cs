@@ -442,6 +442,28 @@ namespace Ropoly.Editor
                 Vector2.one,
                 Vector2.zero,
                 Vector2.zero);
+            Button secondaryButton = CreateButton(
+                controls.transform,
+                "PropertyDecisionSecondaryButton",
+                Vector2.zero,
+                new Vector2(120f, 54f),
+                new Color(0.17f, 0.13f, 0.28f, 1f));
+            RectTransform secondaryButtonRect = secondaryButton.GetComponent<RectTransform>();
+            secondaryButtonRect.anchorMin = new Vector2(0.5f, 0f);
+            secondaryButtonRect.anchorMax = new Vector2(0.5f, 0f);
+            secondaryButtonRect.anchoredPosition = new Vector2(65f, 30f);
+            TMP_Text secondaryButtonLabel = CreateText(
+                secondaryButton.transform,
+                "Label",
+                "SKIP",
+                15,
+                FontStyles.Bold,
+                Color.white,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero);
+            secondaryButton.gameObject.SetActive(false);
 
             SerializedObject serializedController = new SerializedObject(controller);
             serializedController.FindProperty("_lobby").objectReferenceValue = lobby;
@@ -452,6 +474,8 @@ namespace Ropoly.Editor
             serializedController.FindProperty("_secondDie").objectReferenceValue = secondDie;
             serializedController.FindProperty("_primaryButton").objectReferenceValue = rollButton;
             serializedController.FindProperty("_primaryButtonLabel").objectReferenceValue = rollButtonLabel;
+            serializedController.FindProperty("_secondaryButton").objectReferenceValue = secondaryButton;
+            serializedController.FindProperty("_secondaryButtonLabel").objectReferenceValue = secondaryButtonLabel;
             serializedController.FindProperty("_turnLabel").objectReferenceValue = turnLabel;
             serializedController.FindProperty("_resultLabel").objectReferenceValue = resultLabel;
             serializedController.ApplyModifiedPropertiesWithoutUndo();
