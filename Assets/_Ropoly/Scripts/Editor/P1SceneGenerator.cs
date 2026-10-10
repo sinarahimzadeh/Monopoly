@@ -264,6 +264,8 @@ namespace Ropoly.Editor
                 true);
             camera.orthographicSize = 9f;
 
+            GameplayLightingGenerator.Configure(scene);
+
             GameObject worldRoot = new GameObject("WorldRoot");
             GameObject boardRoot = new GameObject("BoardRoot");
             boardRoot.transform.SetParent(worldRoot.transform, false);

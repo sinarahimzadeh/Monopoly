@@ -5,6 +5,7 @@ using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Navigation;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -41,6 +42,13 @@ namespace Ropoly.Tests.PlayMode
             Assert.That(
                 Object.FindObjectsByType<UnityEngine.UI.Text>(FindObjectsSortMode.None),
                 Is.Empty);
+
+            Light keyLight = GameObject.Find("Gameplay Key Light")?.GetComponent<Light>();
+            Assert.That(keyLight, Is.Not.Null);
+            Assert.That(keyLight.type, Is.EqualTo(LightType.Directional));
+            Assert.That(keyLight.intensity, Is.GreaterThanOrEqualTo(1f));
+            Assert.That(RenderSettings.ambientMode, Is.EqualTo(AmbientMode.Trilight));
+            Assert.That(RenderSettings.sun, Is.SameAs(keyLight));
         }
     }
 }
