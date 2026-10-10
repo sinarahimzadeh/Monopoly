@@ -155,6 +155,7 @@ namespace Ropoly.Editor
             SerializedObject sceneLoaderObject = new SerializedObject(sceneLoader);
             sceneLoaderObject.FindProperty("_appRoot").objectReferenceValue = appRoot;
             sceneLoaderObject.ApplyModifiedPropertiesWithoutUndo();
+            StartupLoadingScreenGenerator.Configure(appRoot, sceneFlow);
             EditorSceneManager.SaveScene(scene, BootstrapScenePath);
         }
 

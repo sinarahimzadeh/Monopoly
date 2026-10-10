@@ -16,8 +16,17 @@ namespace Ropoly.Tests.PlayMode
         [UnityTest]
         public IEnumerator Bootstrap_PersistsOneAppRoot_ThroughGuardedSceneFlow()
         {
-            SceneManager.LoadScene(AppSceneNames.Bootstrap, LoadSceneMode.Single);
+            yield return LoadScene(AppSceneNames.Bootstrap);
+            SceneLoadingView loadingView = Object.FindFirstObjectByType<SceneLoadingView>();
+            Assert.That(loadingView, Is.Not.Null, "Bootstrap is missing its persistent loading view.");
+            Assert.That(loadingView.IsVisible, Is.True);
+            Assert.That(loadingView.LoadingCamera, Is.Not.Null);
+            Assert.That(loadingView.LoadingCamera.isActiveAndEnabled, Is.True);
+            Assert.That(loadingView.GetComponentsInChildren<Collider2D>(true), Is.Empty);
+            Assert.That(loadingView.GetComponentsInChildren<Rigidbody2D>(true), Is.Empty);
+
             yield return WaitForScene(AppSceneNames.MainMenu);
+            Assert.That(loadingView.IsVisible, Is.False);
             Assert.That(
                 Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None),
                 Is.Not.Empty,
@@ -38,11 +47,13 @@ namespace Ropoly.Tests.PlayMode
             Button playButton = playNavigation.GetComponent<Button>();
             Assert.That(playButton, Is.Not.Null, "MainMenu navigation is not connected to a UI Button.");
             playButton.onClick.Invoke();
+            Assert.That(loadingView.IsVisible, Is.True);
             playButton.onClick.Invoke();
             Assert.That(appRoot.SceneFlow.IsLoading, Is.True, "Scene loading was not guarded immediately.");
             yield return WaitForScene(AppSceneNames.Game);
 
             AssertSinglePersistentAppRoot(appRootInstanceId);
+            Assert.That(loadingView.IsVisible, Is.False);
 
             SceneNavigationButton backNavigation = Object.FindFirstObjectByType<SceneNavigationButton>();
             Assert.That(backNavigation, Is.Not.Null, "Game is missing its Back navigation component.");
@@ -50,9 +61,11 @@ namespace Ropoly.Tests.PlayMode
             Button backButton = backNavigation.GetComponent<Button>();
             Assert.That(backButton, Is.Not.Null, "Game navigation is not connected to a UI Button.");
             backButton.onClick.Invoke();
+            Assert.That(loadingView.IsVisible, Is.True);
             yield return WaitForScene(AppSceneNames.MainMenu);
 
             AssertSinglePersistentAppRoot(appRootInstanceId);
+            Assert.That(loadingView.IsVisible, Is.False);
 
             GameObject duplicateRoot = new GameObject("DuplicateAppRoot");
             duplicateRoot.AddComponent<SceneFlowService>();
@@ -90,6 +103,16 @@ namespace Ropoly.Tests.PlayMode
                 SceneManager.GetActiveScene().name,
                 Is.EqualTo(expectedScene),
                 $"Timed out while loading scene '{expectedScene}'.");
+        }
+
+        private static IEnumerator LoadScene(string sceneName)
+        {
+            AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+            Assert.That(operation, Is.Not.Null);
+            while (!operation.isDone)
+            {
+                yield return null;
+            }
         }
     }
 }
