@@ -8,5 +8,6 @@ namespace Ropoly.Core.Match
         Moving = 3,
         AwaitingTurnEnd = 4,
         AwaitingPropertyDecision = 5,
+        DebtResolution = 6,
     }
 }

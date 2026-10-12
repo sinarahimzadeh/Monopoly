@@ -383,6 +383,13 @@ namespace Ropoly.Presentation.Dice
                 ? $"  •  PASSED START +${movement.CashAward}"
                 : string.Empty;
 
+            RentPayment rentPayment = _lobby.Session.State.Turn.RentPayment;
+            if (rentPayment != null)
+            {
+                PresentRentPayment(rentPayment, startReward);
+                return;
+            }
+
             PropertyPurchaseOffer offer = _lobby.Session.CurrentPurchaseOffer;
             if (offer != null)
             {
@@ -416,6 +423,31 @@ namespace Ropoly.Presentation.Dice
 
             _boardPreview.SetStatusText(
                 $"LANDED ON {tileName.ToUpperInvariant()}{startReward}");
+        }
+
+        private void PresentRentPayment(RentPayment payment, string startReward)
+        {
+            PlayerState payer = _lobby.Session.State.Players[payment.PayerPlayerIndex];
+            PlayerState owner = _lobby.Session.State.Players[payment.OwnerPlayerIndex];
+            SetDecisionMode(false);
+
+            if (!payment.IsPaid)
+            {
+                _resultLabel.text = $"OWES {owner.DisplayName}  •  ${payment.Amount:N0}";
+                _primaryButtonLabel.text = "RESOLVE DEBT";
+                _primaryButton.interactable = false;
+                _boardPreview.SetStatusText(
+                    $"{payer.DisplayName} NEEDS ${payment.Amount:N0} FOR " +
+                    $"{payment.PropertyDisplayName.ToUpperInvariant()}{startReward}");
+                return;
+            }
+
+            _resultLabel.text = $"PAID ${payment.Amount:N0} RENT";
+            _primaryButtonLabel.text = "NEXT PLAYER";
+            _primaryButton.interactable = true;
+            _boardPreview.SetStatusText(
+                $"{payer.DisplayName} PAID {owner.DisplayName} ${payment.Amount:N0}" +
+                $" FOR {payment.PropertyDisplayName.ToUpperInvariant()}{startReward}");
         }
 
         private void FinishPropertyDecision(string message)

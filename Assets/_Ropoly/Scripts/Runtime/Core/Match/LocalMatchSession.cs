@@ -297,10 +297,20 @@ namespace Ropoly.Core.Match
             PlayerState player = State.Players[State.Turn.CurrentPlayerIndex];
             if (_propertiesByTileIndex.TryGetValue(
                     player.BoardPosition,
-                    out PropertyState property) &&
-                !property.IsOwned)
+                    out PropertyState property))
             {
-                State.Turn.BeginPropertyDecision(property.TileIndex);
+                if (!property.IsOwned)
+                {
+                    State.Turn.BeginPropertyDecision(property.TileIndex);
+                }
+                else if (property.OwnerPlayerIndex == State.Turn.CurrentPlayerIndex)
+                {
+                    State.Turn.CompleteLanding();
+                }
+                else
+                {
+                    ResolveRent(property);
+                }
             }
             else
             {
@@ -347,9 +357,84 @@ namespace Ropoly.Core.Match
             return true;
         }
 
+        public RentPaymentResult TryPayCurrentDebt()
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.DebtResolution ||
+                State.Turn.RentPayment == null ||
+                State.Turn.RentPayment.IsPaid)
+            {
+                return RentPaymentResult.NotAwaitingPayment;
+            }
+
+            RentPayment payment = State.Turn.RentPayment;
+            if (!TryTransferCash(
+                    payment.PayerPlayerIndex,
+                    payment.OwnerPlayerIndex,
+                    payment.Amount))
+            {
+                return RentPaymentResult.InsufficientCash;
+            }
+
+            payment.MarkPaid();
+            State.Turn.CompleteDebtResolution();
+            return RentPaymentResult.Success;
+        }
+
         public bool TryGetPropertyAt(int tileIndex, out PropertyState property)
         {
             return _propertiesByTileIndex.TryGetValue(tileIndex, out property);
+        }
+
+        private void ResolveRent(PropertyState property)
+        {
+            int payerPlayerIndex = State.Turn.CurrentPlayerIndex;
+            int ownerPlayerIndex = property.OwnerPlayerIndex;
+            int sameKindOwnedCount = CountOwnedProperties(ownerPlayerIndex, property.Kind);
+            int rentAmount = property.CalculateRent(
+                sameKindOwnedCount,
+                State.Turn.LastRoll.Total);
+            RentPayment payment = new RentPayment(
+                property.TileIndex,
+                property.PropertyId,
+                property.DisplayName,
+                payerPlayerIndex,
+                ownerPlayerIndex,
+                rentAmount);
+
+            if (TryTransferCash(payerPlayerIndex, ownerPlayerIndex, rentAmount))
+            {
+                payment.MarkPaid();
+            }
+
+            State.Turn.RecordRentPayment(payment);
+        }
+
+        private int CountOwnedProperties(int ownerPlayerIndex, BoardTileKind kind)
+        {
+            int count = 0;
+            foreach (PropertyState property in State.Properties)
+            {
+                if (property.OwnerPlayerIndex == ownerPlayerIndex && property.Kind == kind)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private bool TryTransferCash(int payerPlayerIndex, int receiverPlayerIndex, int amount)
+        {
+            PlayerState payer = State.MutablePlayers[payerPlayerIndex];
+            if (!payer.TrySpendCash(amount))
+            {
+                return false;
+            }
+
+            State.MutablePlayers[receiverPlayerIndex].AddCash(amount);
+            return true;
         }
 
         private List<PlayerState> CreatePlayers(int count)
@@ -405,7 +490,9 @@ namespace Ropoly.Core.Match
                                 tile.Kind,
                                 city.CityId,
                                 city.DisplayName,
-                                city.PurchasePrice));
+                                city.PurchasePrice,
+                                city.MortgageValue,
+                                city.RentByUpgradeLevel));
                         }
 
                         break;
@@ -418,7 +505,9 @@ namespace Ropoly.Core.Match
                                 tile.Kind,
                                 airport.AirportId,
                                 airport.DisplayName,
-                                airport.PurchasePrice));
+                                airport.PurchasePrice,
+                                airport.MortgageValue,
+                                airport.RentByOwnedCount));
                         }
 
                         break;
@@ -431,7 +520,9 @@ namespace Ropoly.Core.Match
                                 tile.Kind,
                                 utility.UtilityId,
                                 utility.DisplayName,
-                                utility.PurchasePrice));
+                                utility.PurchasePrice,
+                                utility.MortgageValue,
+                                utility.RentMultiplierByOwnedCount));
                         }
 
                         break;

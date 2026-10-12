@@ -232,6 +232,87 @@ namespace Ropoly.Tests.EditMode
             Assert.That(property.OwnerPlayerIndex, Is.Zero);
         }
 
+        [Test]
+        public void OwnedCity_TransfersBaseRentExactlyOnce()
+        {
+            LocalMatchSession session = CreateStartedTwoPlayerSession(
+                CreateSinglePropertyBoard(BoardTileKind.City, 400, new[] { 20 }),
+                1500);
+            PurchaseTileTwoForPlayerOne(session);
+            MovePlayerTwoToTileTwo(session);
+
+            RentPayment payment = session.State.Turn.RentPayment;
+            Assert.That(payment, Is.Not.Null);
+            Assert.That(payment.Status, Is.EqualTo(RentPaymentStatus.Paid));
+            Assert.That(payment.Amount, Is.EqualTo(20));
+            Assert.That(payment.PayerPlayerIndex, Is.EqualTo(1));
+            Assert.That(payment.OwnerPlayerIndex, Is.Zero);
+            Assert.That(session.State.Players[0].Cash, Is.EqualTo(1120));
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(1480));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingTurnEnd));
+
+            Assert.That(session.TryCompleteMovement(), Is.False);
+            Assert.That(session.State.Players[0].Cash, Is.EqualTo(1120));
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(1480));
+        }
+
+        [Test]
+        public void OwnedAirport_UsesTheConfiguredOwnedCountRent()
+        {
+            LocalMatchSession session = CreateStartedTwoPlayerSession(
+                CreateSinglePropertyBoard(
+                    BoardTileKind.Airport,
+                    200,
+                    new[] { 25, 50, 100, 200 }),
+                1500);
+            PurchaseTileTwoForPlayerOne(session);
+            MovePlayerTwoToTileTwo(session);
+
+            Assert.That(session.State.Turn.RentPayment.Amount, Is.EqualTo(25));
+            Assert.That(session.State.Players[0].Cash, Is.EqualTo(1325));
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(1475));
+        }
+
+        [Test]
+        public void OwnedUtility_MultipliesRentByTheLandingDiceTotal()
+        {
+            LocalMatchSession session = CreateStartedTwoPlayerSession(
+                CreateSinglePropertyBoard(BoardTileKind.Utility, 150, new[] { 4, 10 }),
+                1500);
+            PurchaseTileTwoForPlayerOne(session);
+            MovePlayerTwoToTileTwo(session);
+
+            Assert.That(session.State.Turn.RentPayment.Amount, Is.EqualTo(8));
+            Assert.That(session.State.Players[0].Cash, Is.EqualTo(1358));
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(1492));
+        }
+
+        [Test]
+        public void UnaffordableRent_BlocksTheTurnInDebtResolution()
+        {
+            LocalMatchSession session = CreateStartedTwoPlayerSession(
+                CreateSinglePropertyBoard(BoardTileKind.City, 25, new[] { 75 }),
+                50);
+            PurchaseTileTwoForPlayerOne(session);
+            MovePlayerTwoToTileTwo(session);
+
+            RentPayment payment = session.State.Turn.RentPayment;
+            Assert.That(payment, Is.Not.Null);
+            Assert.That(payment.Status, Is.EqualTo(RentPaymentStatus.AwaitingFunds));
+            Assert.That(payment.Amount, Is.EqualTo(75));
+            Assert.That(session.State.Players[0].Cash, Is.EqualTo(25));
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(50));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.DebtResolution));
+            Assert.That(session.TryAdvanceTurn(), Is.False);
+            Assert.That(
+                session.TryRollDice(new FixedDiceRollSource(1, 1), out _),
+                Is.False);
+            Assert.That(
+                session.TryPayCurrentDebt(),
+                Is.EqualTo(RentPaymentResult.InsufficientCash));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.DebtResolution));
+        }
+
         private static LocalMatchSession CreateStartedTwoPlayerSession()
         {
             LocalMatchSession session = new LocalMatchSession(2, 1500, CreatureIds);
@@ -292,6 +373,106 @@ namespace Ropoly.Tests.EditMode
                     new BoardTileSnapshot(2, BoardTileKind.City, "test-city"),
                     new BoardTileSnapshot(3, BoardTileKind.Utility, "test-utility"),
                 });
+        }
+
+        private static BoardSnapshot CreateSinglePropertyBoard(
+            BoardTileKind kind,
+            int purchasePrice,
+            int[] rentValues)
+        {
+            string contentId;
+            switch (kind)
+            {
+                case BoardTileKind.City:
+                    contentId = "test-city";
+                    break;
+                case BoardTileKind.Airport:
+                    contentId = "test-airport";
+                    break;
+                case BoardTileKind.Utility:
+                    contentId = "test-utility";
+                    break;
+                default:
+                    throw new System.ArgumentOutOfRangeException(nameof(kind));
+            }
+
+            return new BoardSnapshot(
+                schemaVersion: 1,
+                boardId: "rent-test",
+                displayName: "Rent Test",
+                countries: new CountrySnapshot[0],
+                cities: new[]
+                {
+                    new CitySnapshot(
+                        "test-city",
+                        "Test City",
+                        purchasePrice,
+                        purchasePrice / 2,
+                        100,
+                        kind == BoardTileKind.City ? rentValues : new[] { 1 }),
+                },
+                airports: new[]
+                {
+                    new AirportSnapshot(
+                        "test-airport",
+                        "Test Airport",
+                        purchasePrice,
+                        purchasePrice / 2,
+                        kind == BoardTileKind.Airport ? rentValues : new[] { 1 }),
+                },
+                utilities: new[]
+                {
+                    new UtilitySnapshot(
+                        "test-utility",
+                        "Test Utility",
+                        purchasePrice,
+                        purchasePrice / 2,
+                        kind == BoardTileKind.Utility ? rentValues : new[] { 1 }),
+                },
+                specialSpaces: new[]
+                {
+                    new SpecialSpaceSnapshot(
+                        "start",
+                        "Start",
+                        SpecialSpaceKind.Start,
+                        string.Empty,
+                        0),
+                    new SpecialSpaceSnapshot(
+                        "rest",
+                        "Rest",
+                        SpecialSpaceKind.Vacation,
+                        string.Empty,
+                        0),
+                },
+                tiles: new[]
+                {
+                    new BoardTileSnapshot(0, BoardTileKind.Special, "start"),
+                    new BoardTileSnapshot(1, BoardTileKind.Special, "rest"),
+                    new BoardTileSnapshot(2, kind, contentId),
+                    new BoardTileSnapshot(3, BoardTileKind.Special, "rest"),
+                });
+        }
+
+        private static void PurchaseTileTwoForPlayerOne(LocalMatchSession session)
+        {
+            Assert.That(
+                session.TryRollDice(new FixedDiceRollSource(1, 1), out _),
+                Is.True);
+            Assert.That(session.TryBeginMovement(out _), Is.True);
+            Assert.That(session.TryCompleteMovement(), Is.True);
+            Assert.That(
+                session.TryPurchaseCurrentProperty(),
+                Is.EqualTo(PropertyPurchaseResult.Success));
+        }
+
+        private static void MovePlayerTwoToTileTwo(LocalMatchSession session)
+        {
+            Assert.That(session.TryAdvanceTurn(), Is.True);
+            Assert.That(
+                session.TryRollDice(new FixedDiceRollSource(1, 1), out _),
+                Is.True);
+            Assert.That(session.TryBeginMovement(out _), Is.True);
+            Assert.That(session.TryCompleteMovement(), Is.True);
         }
 
         private sealed class FixedDiceRollSource : IDiceRollSource

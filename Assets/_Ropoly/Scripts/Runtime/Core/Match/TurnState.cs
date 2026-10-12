@@ -18,18 +18,40 @@ namespace Ropoly.Core.Match
         public TurnPhase Phase { get; internal set; }
         public DiceRoll LastRoll { get; internal set; }
         public int PendingPropertyTileIndex { get; private set; }
+        public RentPayment RentPayment { get; private set; }
         public bool HasPendingPropertyDecision =>
             PendingPropertyTileIndex != PropertyState.UnownedPlayerIndex;
 
         internal void BeginPropertyDecision(int tileIndex)
         {
             PendingPropertyTileIndex = tileIndex;
+            RentPayment = null;
             Phase = TurnPhase.AwaitingPropertyDecision;
         }
 
         internal void CompleteLanding()
         {
             PendingPropertyTileIndex = PropertyState.UnownedPlayerIndex;
+            RentPayment = null;
+            Phase = TurnPhase.AwaitingTurnEnd;
+        }
+
+        internal void RecordRentPayment(RentPayment payment)
+        {
+            RentPayment = payment ?? throw new ArgumentNullException(nameof(payment));
+            PendingPropertyTileIndex = PropertyState.UnownedPlayerIndex;
+            Phase = payment.IsPaid
+                ? TurnPhase.AwaitingTurnEnd
+                : TurnPhase.DebtResolution;
+        }
+
+        internal void CompleteDebtResolution()
+        {
+            if (RentPayment == null || !RentPayment.IsPaid)
+            {
+                throw new InvalidOperationException("Debt cannot finish before the rent is paid.");
+            }
+
             Phase = TurnPhase.AwaitingTurnEnd;
         }
 
@@ -39,6 +61,7 @@ namespace Ropoly.Core.Match
             TurnNumber++;
             LastRoll = null;
             PendingPropertyTileIndex = PropertyState.UnownedPlayerIndex;
+            RentPayment = null;
             Phase = TurnPhase.AwaitingRoll;
         }
     }
