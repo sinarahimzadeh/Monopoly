@@ -3,23 +3,41 @@ using UnityEngine;
 
 namespace Ropoly.Presentation.Players
 {
+    /// <summary>
+    /// A flat, camera-facing version of the creature portrait used in the lobby.
+    /// The token still lives and moves in the 3D board world and keeps a 3D collider.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class CreatureTokenView : MonoBehaviour
     {
-        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-        private static readonly int ColorId = Shader.PropertyToID("_Color");
+        [Header("2D portrait visual")]
+        [SerializeField]
+        private Transform _visualRoot;
 
         [SerializeField]
-        private Renderer _bodyRenderer;
+        private SpriteRenderer _bodySprite;
 
         [SerializeField]
-        private Renderer[] _eyeRenderers;
+        private SpriteRenderer[] _eyeSprites;
 
         [SerializeField]
-        private Renderer[] _pupilRenderers;
+        private SpriteRenderer[] _pupilSprites;
 
         [SerializeField]
         private SphereCollider _bodyCollider;
+
+        [Header("Idle motion")]
+        [SerializeField]
+        [Range(0f, 0.12f)]
+        private float _bobHeight = 0.02f;
+
+        [SerializeField]
+        [Range(0.1f, 6f)]
+        private float _bobSpeed = 2.1f;
+
+        [SerializeField]
+        [Range(0f, 0.12f)]
+        private float _squashAmount = 0.015f;
 
         [SerializeField]
         private string _creatureId;
@@ -27,9 +45,46 @@ namespace Ropoly.Presentation.Players
         [SerializeField]
         private int _playerIndex = -1;
 
+        private Camera _boardCamera;
+        private Vector3 _visualRestPosition;
+        private float _animationPhase;
+
         public string CreatureId => _creatureId;
         public int PlayerIndex => _playerIndex;
         public SphereCollider BodyCollider => _bodyCollider;
+        public Transform VisualRoot => _visualRoot;
+        public SpriteRenderer BodySprite => _bodySprite;
+
+        private void Awake()
+        {
+            CacheRestPose();
+            _boardCamera = Camera.main;
+        }
+
+        private void LateUpdate()
+        {
+            if (_visualRoot == null)
+            {
+                return;
+            }
+
+            if (_boardCamera == null || !_boardCamera.isActiveAndEnabled)
+            {
+                _boardCamera = Camera.main;
+            }
+
+            if (_boardCamera != null)
+            {
+                // Sprite artwork lies in local XY. Matching the camera rotation keeps
+                // the portrait circular instead of foreshortening it on the 3D board.
+                _visualRoot.rotation = _boardCamera.transform.rotation;
+            }
+
+            float wave = Mathf.Sin((Time.time * _bobSpeed) + _animationPhase);
+            _visualRoot.localPosition = _visualRestPosition + (Vector3.up * (wave * _bobHeight));
+            float squash = wave * _squashAmount;
+            _visualRoot.localScale = new Vector3(1f + squash, 1f - squash, 1f);
+        }
 
         public void Configure(CreatureDefinition definition, int playerIndex)
         {
@@ -40,36 +95,45 @@ namespace Ropoly.Presentation.Players
 
             _creatureId = definition.CreatureId;
             _playerIndex = playerIndex;
-            ApplyColor(_bodyRenderer, definition.BodyColor);
-            ApplyColor(_eyeRenderers, definition.EyeColor);
-            ApplyColor(_pupilRenderers, definition.PupilColor);
+            _animationPhase = playerIndex * 1.73f;
+
+            SetColor(_bodySprite, definition.BodyColor);
+            SetColor(_eyeSprites, definition.EyeColor);
+            SetColor(_pupilSprites, definition.PupilColor);
+
+            CacheRestPose();
             gameObject.name = $"Player {playerIndex + 1} - {definition.DisplayName}";
         }
 
-        private static void ApplyColor(Renderer renderer, Color color)
+        private void CacheRestPose()
         {
-            if (renderer == null)
+            if (_visualRoot == null)
             {
                 return;
             }
 
-            MaterialPropertyBlock properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
-            properties.SetColor(BaseColorId, color);
-            properties.SetColor(ColorId, color);
-            renderer.SetPropertyBlock(properties);
+            _visualRestPosition = _visualRoot.localPosition;
+            _visualRoot.localScale = Vector3.one;
         }
 
-        private static void ApplyColor(Renderer[] renderers, Color color)
+        private static void SetColor(SpriteRenderer renderer, Color color)
+        {
+            if (renderer != null)
+            {
+                renderer.color = color;
+            }
+        }
+
+        private static void SetColor(SpriteRenderer[] renderers, Color color)
         {
             if (renderers == null)
             {
                 return;
             }
 
-            foreach (Renderer renderer in renderers)
+            foreach (SpriteRenderer renderer in renderers)
             {
-                ApplyColor(renderer, color);
+                SetColor(renderer, color);
             }
         }
     }

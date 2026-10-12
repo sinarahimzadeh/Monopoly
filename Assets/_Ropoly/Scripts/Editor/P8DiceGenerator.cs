@@ -72,6 +72,7 @@ namespace Ropoly.Editor
                 bodyMaterial,
                 pipMaterial);
             AddDiceToGameScene(settings, diePrefab, shadowMaterial);
+            PlaceholderPieceStyleGenerator.ApplyToExistingAssets();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

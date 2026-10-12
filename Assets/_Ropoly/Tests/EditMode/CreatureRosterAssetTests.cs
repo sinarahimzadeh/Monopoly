@@ -39,6 +39,10 @@ namespace Ropoly.Tests.EditMode
             CreatureTokenView view = prefab.GetComponent<CreatureTokenView>();
             Assert.That(view, Is.Not.Null);
             Assert.That(view.BodyCollider, Is.Not.Null);
+            Assert.That(view.VisualRoot, Is.Not.Null);
+            Assert.That(view.BodySprite, Is.Not.Null);
+            Assert.That(prefab.GetComponentsInChildren<SpriteRenderer>(true), Has.Length.EqualTo(7));
+            Assert.That(prefab.GetComponentsInChildren<MeshRenderer>(true), Is.Empty);
             Assert.That(prefab.GetComponentsInChildren<Collider2D>(true), Is.Empty);
             Assert.That(prefab.GetComponentsInChildren<Rigidbody2D>(true), Is.Empty);
         }

@@ -34,6 +34,10 @@ namespace Ropoly.Tests.EditMode
             Assert.That(view.Rigidbody, Is.Not.Null);
             Assert.That(view.Rigidbody.isKinematic, Is.True);
             Assert.That(view.BodyCollider, Is.Not.Null);
+            Assert.That(view.BodyRenderer, Is.Not.Null);
+            Assert.That(
+                view.BodyRenderer.sharedMaterial.shader.name,
+                Is.EqualTo("Ropoly/Soft Toon Surface"));
             Assert.That(prefab.GetComponentsInChildren<Collider2D>(true), Is.Empty);
             Assert.That(prefab.GetComponentsInChildren<Rigidbody2D>(true), Is.Empty);
         }

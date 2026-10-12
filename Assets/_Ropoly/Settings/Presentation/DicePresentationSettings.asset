@@ -12,9 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0708eaeed5686841a5ef28aafcbd4d7, type: 3}
   m_Name: DicePresentationSettings
   m_EditorClassIdentifier: Ropoly.Presentation::Ropoly.Presentation.Dice.DicePresentationSettings
-  _dieSize: 1.05
-  _bodyColor: {r: 0.96, g: 0.95, b: 1, a: 1}
-  _pipColor: {r: 0.055, g: 0.035, b: 0.09, a: 1}
+  _dieSize: 1.28
+  _bodyColor: {r: 0.98, g: 0.965, b: 1, a: 1}
+  _pipColor: {r: 0.055, g: 0.025, b: 0.11, a: 1}
+  _bodyShadeColor: {r: 0.74, g: 0.68, b: 0.9, a: 1}
+  _rimColor: {r: 0.43, g: 1, b: 0.88, a: 1}
+  _pipGlowColor: {r: 0.52, g: 1, b: 0.91, a: 1}
+  _rimStrength: 0.62
+  _pipGlowStrength: 0.9
   _boardCenter: {x: 0, y: 0.84, z: 0.45}
   _dieSeparation: 1.55
   _rollDuration: 1.2

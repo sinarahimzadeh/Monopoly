@@ -7,6 +7,13 @@ namespace Ropoly.Presentation.Dice
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private static readonly int ShadeColorId = Shader.PropertyToID("_ShadeColor");
+        private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
+        private static readonly int RimStrengthId = Shader.PropertyToID("_RimStrength");
+        private static readonly int RimPowerId = Shader.PropertyToID("_RimPower");
+        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+        private static readonly int EmissionStrengthId = Shader.PropertyToID("_EmissionStrength");
 
         [SerializeField]
         private MeshRenderer _bodyRenderer;
@@ -25,6 +32,7 @@ namespace Ropoly.Presentation.Dice
 
         public Rigidbody Rigidbody => _rigidbody;
         public BoxCollider BodyCollider => _bodyCollider;
+        public MeshRenderer BodyRenderer => _bodyRenderer;
         public int PipCount => _pipRenderers == null ? 0 : _pipRenderers.Length;
         public int DisplayedValue => _displayedValue;
 
@@ -36,10 +44,28 @@ namespace Ropoly.Presentation.Dice
             }
 
             transform.localScale = Vector3.one * settings.DieSize;
-            ApplyColor(_bodyRenderer, settings.BodyColor);
+            ApplyStyle(
+                _bodyRenderer,
+                settings.BodyColor,
+                settings.BodyShadeColor,
+                settings.RimColor,
+                settings.RimStrength,
+                rimPower: 2.6f,
+                smoothness: 0.62f,
+                emissionColor: Color.black,
+                emissionStrength: 0f);
             foreach (MeshRenderer pip in _pipRenderers)
             {
-                ApplyColor(pip, settings.PipColor);
+                ApplyStyle(
+                    pip,
+                    settings.PipColor,
+                    settings.PipColor * 0.55f,
+                    settings.PipGlowColor,
+                    rimStrength: 0.72f,
+                    rimPower: 2f,
+                    smoothness: 0.42f,
+                    emissionColor: settings.PipGlowColor,
+                    emissionStrength: settings.PipGlowStrength);
             }
 
             _rigidbody.isKinematic = true;
@@ -98,12 +124,28 @@ namespace Ropoly.Presentation.Dice
             };
         }
 
-        private static void ApplyColor(Renderer renderer, Color color)
+        private static void ApplyStyle(
+            Renderer renderer,
+            Color baseColor,
+            Color shadeColor,
+            Color rimColor,
+            float rimStrength,
+            float rimPower,
+            float smoothness,
+            Color emissionColor,
+            float emissionStrength)
         {
             MaterialPropertyBlock properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
-            properties.SetColor(BaseColorId, color);
-            properties.SetColor(ColorId, color);
+            properties.SetColor(BaseColorId, baseColor);
+            properties.SetColor(ColorId, baseColor);
+            properties.SetColor(ShadeColorId, shadeColor);
+            properties.SetColor(RimColorId, rimColor);
+            properties.SetFloat(RimStrengthId, rimStrength);
+            properties.SetFloat(RimPowerId, rimPower);
+            properties.SetFloat(SmoothnessId, smoothness);
+            properties.SetColor(EmissionColorId, emissionColor);
+            properties.SetFloat(EmissionStrengthId, emissionStrength);
             renderer.SetPropertyBlock(properties);
         }
     }

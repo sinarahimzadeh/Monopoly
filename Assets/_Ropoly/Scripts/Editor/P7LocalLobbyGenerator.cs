@@ -84,6 +84,7 @@ namespace Ropoly.Editor
             List<CreatureDefinition> creatures = CreateCreatureDefinitions(tokenPrefab);
             CreatureRosterDefinition roster = CreateRoster(creatures);
             CreateGameLobby(roster);
+            PlaceholderPieceStyleGenerator.ApplyToExistingAssets();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
@@ -92,7 +93,8 @@ namespace Ropoly.Editor
                 EditorSceneManager.OpenScene(P6BoardPreviewGenerator.GameScenePath, OpenSceneMode.Single);
             }
 
-            Debug.Log("Generated P-7 local match setup, creature selection, and 3D player spawning.");
+            Debug.Log(
+                "Generated P-7 local match setup with camera-facing 2D portraits in the 3D board world.");
         }
 
         private static void EnsureFolders()

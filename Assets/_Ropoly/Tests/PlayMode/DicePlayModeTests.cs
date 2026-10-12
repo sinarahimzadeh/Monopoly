@@ -65,6 +65,9 @@ namespace Ropoly.Tests.PlayMode
                 Is.True);
             Assert.That(dice.FirstDie.Rigidbody, Is.Not.Null);
             Assert.That(dice.SecondDie.BodyCollider, Is.Not.Null);
+            Assert.That(
+                dice.FirstDie.BodyRenderer.sharedMaterial.shader.name,
+                Is.EqualTo("Ropoly/Soft Toon Surface"));
             Assert.That(dice.FirstDie.GetComponentsInChildren<Collider2D>(true), Is.Empty);
             Assert.That(dice.SecondDie.GetComponentsInChildren<Rigidbody2D>(true), Is.Empty);
             if (lobby.Session.State.Turn.Phase == TurnPhase.AwaitingPropertyDecision)
@@ -92,6 +95,8 @@ namespace Ropoly.Tests.PlayMode
                 Is.EqualTo(dice.LastCompletedRoll.Total));
             CreatureTokenView movedToken = lobby.GetToken(0);
             Assert.That(movedToken, Is.Not.Null);
+            Assert.That(movedToken.VisualRoot, Is.Not.Null);
+            Assert.That(movedToken.BodySprite, Is.Not.Null);
             Assert.That(movedToken.GetComponentsInChildren<Collider2D>(true), Is.Empty);
             Assert.That(
                 board.TryGetTokenPosition(

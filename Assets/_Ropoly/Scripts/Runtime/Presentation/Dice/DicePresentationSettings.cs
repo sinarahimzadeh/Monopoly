@@ -18,6 +18,23 @@ namespace Ropoly.Presentation.Dice
         [SerializeField]
         private Color _pipColor = new Color(0.055f, 0.035f, 0.09f, 1f);
 
+        [SerializeField]
+        private Color _bodyShadeColor = new Color(0.48f, 0.42f, 0.68f, 1f);
+
+        [SerializeField]
+        private Color _rimColor = new Color(0.43f, 1f, 0.88f, 1f);
+
+        [SerializeField]
+        private Color _pipGlowColor = new Color(0.94f, 0.28f, 0.72f, 1f);
+
+        [SerializeField]
+        [Range(0f, 2f)]
+        private float _rimStrength = 0.48f;
+
+        [SerializeField]
+        [Range(0f, 3f)]
+        private float _pipGlowStrength = 0.14f;
+
         [Header("Board placement")]
         [SerializeField]
         private Vector3 _boardCenter = new Vector3(0f, 0.84f, 0.45f);
@@ -50,6 +67,11 @@ namespace Ropoly.Presentation.Dice
         public float DieSize => _dieSize;
         public Color BodyColor => _bodyColor;
         public Color PipColor => _pipColor;
+        public Color BodyShadeColor => _bodyShadeColor;
+        public Color RimColor => _rimColor;
+        public Color PipGlowColor => _pipGlowColor;
+        public float RimStrength => _rimStrength;
+        public float PipGlowStrength => _pipGlowStrength;
         public Vector3 BoardCenter => _boardCenter;
         public float DieSeparation => _dieSeparation;
         public float RollDuration => _rollDuration;
@@ -70,6 +92,8 @@ namespace Ropoly.Presentation.Dice
                 _minimumSpinTurns,
                 12);
             _sidewaysMotion = Mathf.Clamp(_sidewaysMotion, 0f, 0.8f);
+            _rimStrength = Mathf.Clamp(_rimStrength, 0f, 2f);
+            _pipGlowStrength = Mathf.Clamp(_pipGlowStrength, 0f, 3f);
         }
     }
 }
