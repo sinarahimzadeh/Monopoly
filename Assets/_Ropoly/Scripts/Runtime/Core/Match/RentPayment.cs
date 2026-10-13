@@ -39,10 +39,16 @@ namespace Ropoly.Core.Match
         public int Amount { get; }
         public RentPaymentStatus Status { get; private set; }
         public bool IsPaid => Status == RentPaymentStatus.Paid;
+        public bool IsResolved => Status != RentPaymentStatus.AwaitingFunds;
 
         internal void MarkPaid()
         {
             Status = RentPaymentStatus.Paid;
+        }
+
+        internal void CancelByBankruptcy()
+        {
+            Status = RentPaymentStatus.CancelledByBankruptcy;
         }
     }
 }

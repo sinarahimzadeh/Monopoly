@@ -4,5 +4,6 @@ namespace Ropoly.Core.Match
     {
         AwaitingFunds = 0,
         Paid = 1,
+        CancelledByBankruptcy = 2,
     }
 }

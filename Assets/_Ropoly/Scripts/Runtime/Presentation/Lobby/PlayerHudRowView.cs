@@ -29,8 +29,20 @@ namespace Ropoly.Presentation.Lobby
                 eye.color = creature.PupilColor;
             }
 
-            _playerName.text = player.DisplayName;
-            _cashLabel.text = $"${player.Cash:N0}";
+            _playerName.text = player.IsEliminated
+                ? $"{player.DisplayName}  •  BANKRUPT"
+                : player.DisplayName;
+            _cashLabel.text = player.IsEliminated
+                ? "OUT"
+                : $"${player.Cash:N0}";
+
+            Color bodyColor = creature.BodyColor;
+            if (player.IsEliminated)
+            {
+                bodyColor.a = 0.35f;
+            }
+
+            _creatureBody.color = bodyColor;
         }
     }
 }

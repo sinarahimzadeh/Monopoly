@@ -31,6 +31,8 @@ namespace Ropoly.Core.Match
 
         public bool IsReady => !string.IsNullOrWhiteSpace(CreatureId);
 
+        public bool IsEliminated => ConnectionStatus == PlayerConnectionStatus.Eliminated;
+
         internal void SelectCreature(string creatureId)
         {
             CreatureId = creatureId;
@@ -65,6 +67,12 @@ namespace Ropoly.Core.Match
 
             Cash -= amount;
             return true;
+        }
+
+        internal void Eliminate()
+        {
+            Cash = 0;
+            ConnectionStatus = PlayerConnectionStatus.Eliminated;
         }
     }
 }

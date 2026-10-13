@@ -1,12 +1,17 @@
 using NUnit.Framework;
 using Ropoly.Presentation.Dice;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Ropoly.Tests.EditMode
 {
     public sealed class DiceAssetTests
     {
+        private const string GameScenePath =
+            "Assets/_Ropoly/Scenes/Gameplay/Game.unity";
+
         [Test]
         public void RoundedDieMesh_IsDetailedThreeDimensionalGeometry()
         {
@@ -51,6 +56,17 @@ namespace Ropoly.Tests.EditMode
                 Vector3 topDirection = rotation * DieView.GetLocalFaceDirection(value);
                 Assert.That(Vector3.Dot(topDirection.normalized, Vector3.up), Is.GreaterThan(0.999f));
             }
+        }
+
+        [Test]
+        public void GameScene_HasInactiveDebtResolutionViewConnectedToDiceController()
+        {
+            EditorSceneManager.OpenScene(GameScenePath, OpenSceneMode.Single);
+
+            DiceController controller = Object.FindFirstObjectByType<DiceController>();
+            Assert.That(controller, Is.Not.Null);
+            Assert.That(controller.DebtResolutionView, Is.Not.Null);
+            Assert.That(controller.DebtResolutionView.IsVisible, Is.False);
         }
     }
 }

@@ -16,6 +16,7 @@ namespace Ropoly.Core.Match
         private readonly int _startingCash;
         private readonly int _boardTileCount;
         private readonly int _passStartCash;
+        private readonly bool _mortgageEnabled;
         private readonly Dictionary<int, PropertyState> _propertiesByTileIndex;
 
         public LocalMatchSession(
@@ -23,13 +24,15 @@ namespace Ropoly.Core.Match
             int startingCash,
             IEnumerable<string> availableCreatureIds,
             int boardTileCount = 40,
-            int passStartCash = 200)
+            int passStartCash = 200,
+            bool mortgageEnabled = true)
             : this(
                 playerCount,
                 startingCash,
                 availableCreatureIds,
                 boardTileCount,
                 passStartCash,
+                mortgageEnabled,
                 board: null)
         {
         }
@@ -39,13 +42,15 @@ namespace Ropoly.Core.Match
             int startingCash,
             IEnumerable<string> availableCreatureIds,
             BoardSnapshot board,
-            int passStartCash = 200)
+            int passStartCash = 200,
+            bool mortgageEnabled = true)
             : this(
                 playerCount,
                 startingCash,
                 availableCreatureIds,
                 GetBoardTileCount(board),
                 passStartCash,
+                mortgageEnabled,
                 board)
         {
         }
@@ -56,6 +61,7 @@ namespace Ropoly.Core.Match
             IEnumerable<string> availableCreatureIds,
             int boardTileCount,
             int passStartCash,
+            bool mortgageEnabled,
             BoardSnapshot board)
         {
             if (playerCount < MinimumPlayers || playerCount > MaximumPlayers)
@@ -91,6 +97,7 @@ namespace Ropoly.Core.Match
             _startingCash = startingCash;
             _boardTileCount = boardTileCount;
             _passStartCash = passStartCash;
+            _mortgageEnabled = mortgageEnabled;
             List<PropertyState> properties = CreatePropertyStates(board);
             State = new MatchState(
                 CreateLocalMatchId(),
@@ -104,6 +111,8 @@ namespace Ropoly.Core.Match
         }
 
         public MatchState State { get; }
+
+        public bool MortgageEnabled => _mortgageEnabled;
 
         public PropertyPurchaseOffer CurrentPurchaseOffer
         {
@@ -248,7 +257,13 @@ namespace Ropoly.Core.Match
                 return false;
             }
 
-            State.Turn.Advance(State.Players.Count);
+            int nextPlayerIndex = FindNextActivePlayer(State.Turn.CurrentPlayerIndex);
+            if (nextPlayerIndex < 0)
+            {
+                return false;
+            }
+
+            State.Turn.AdvanceTo(nextPlayerIndex);
             return true;
         }
 
@@ -382,9 +397,180 @@ namespace Ropoly.Core.Match
             return RentPaymentResult.Success;
         }
 
+        public IReadOnlyList<PropertyState> GetPropertiesOwnedBy(int playerIndex)
+        {
+            List<PropertyState> owned = new List<PropertyState>();
+            if (playerIndex < 0 || playerIndex >= State.Players.Count)
+            {
+                return owned;
+            }
+
+            foreach (PropertyState property in State.Properties)
+            {
+                if (property.OwnerPlayerIndex == playerIndex)
+                {
+                    owned.Add(property);
+                }
+            }
+
+            return owned;
+        }
+
+        public AssetLiquidationResult TryMortgageProperty(int tileIndex)
+        {
+            if (!TryGetDebtProperty(tileIndex, out PropertyState property, out int playerIndex))
+            {
+                return GetDebtPropertyFailure(tileIndex, property);
+            }
+
+            if (!_mortgageEnabled)
+            {
+                return AssetLiquidationResult.MortgageDisabled;
+            }
+
+            if (property.IsMortgaged)
+            {
+                return AssetLiquidationResult.AlreadyMortgaged;
+            }
+
+            if (!property.TryMortgage(playerIndex))
+            {
+                return AssetLiquidationResult.NoLiquidationValue;
+            }
+
+            State.MutablePlayers[playerIndex].AddCash(property.MortgageValue);
+            return AssetLiquidationResult.Success;
+        }
+
+        public AssetLiquidationResult TrySellPropertyToBank(int tileIndex)
+        {
+            if (!TryGetDebtProperty(tileIndex, out PropertyState property, out int playerIndex))
+            {
+                return GetDebtPropertyFailure(tileIndex, property);
+            }
+
+            if (!property.TrySellToBank(playerIndex, out int proceeds))
+            {
+                return AssetLiquidationResult.NoLiquidationValue;
+            }
+
+            State.MutablePlayers[playerIndex].AddCash(proceeds);
+            return AssetLiquidationResult.Success;
+        }
+
+        public bool TryDeclareCurrentPlayerBankruptcy()
+        {
+            if (!IsResolvingDebt())
+            {
+                return false;
+            }
+
+            int eliminatedPlayerIndex = State.Turn.CurrentPlayerIndex;
+            State.Turn.RentPayment.CancelByBankruptcy();
+            foreach (PropertyState property in State.Properties)
+            {
+                if (property.OwnerPlayerIndex == eliminatedPlayerIndex)
+                {
+                    property.ReleaseToBank();
+                }
+            }
+
+            State.MutablePlayers[eliminatedPlayerIndex].Eliminate();
+            int winnerPlayerIndex = GetSoleActivePlayerIndex();
+            if (winnerPlayerIndex >= 0)
+            {
+                State.WinnerPlayerIndex = winnerPlayerIndex;
+                State.Phase = MatchPhase.Finished;
+                return true;
+            }
+
+            int nextPlayerIndex = FindNextActivePlayer(eliminatedPlayerIndex);
+            if (nextPlayerIndex < 0)
+            {
+                return false;
+            }
+
+            State.Turn.AdvanceTo(nextPlayerIndex);
+            return true;
+        }
+
         public bool TryGetPropertyAt(int tileIndex, out PropertyState property)
         {
             return _propertiesByTileIndex.TryGetValue(tileIndex, out property);
+        }
+
+        private bool TryGetDebtProperty(
+            int tileIndex,
+            out PropertyState property,
+            out int playerIndex)
+        {
+            property = null;
+            playerIndex = PropertyState.UnownedPlayerIndex;
+            if (!IsResolvingDebt())
+            {
+                return false;
+            }
+
+            playerIndex = State.Turn.CurrentPlayerIndex;
+            return _propertiesByTileIndex.TryGetValue(tileIndex, out property) &&
+                   property.OwnerPlayerIndex == playerIndex;
+        }
+
+        private AssetLiquidationResult GetDebtPropertyFailure(
+            int tileIndex,
+            PropertyState property)
+        {
+            if (!IsResolvingDebt())
+            {
+                return AssetLiquidationResult.NotResolvingDebt;
+            }
+
+            return property == null && !_propertiesByTileIndex.ContainsKey(tileIndex)
+                ? AssetLiquidationResult.PropertyNotFound
+                : AssetLiquidationResult.NotOwnedByCurrentPlayer;
+        }
+
+        private bool IsResolvingDebt()
+        {
+            return State.Phase == MatchPhase.InProgress &&
+                   State.Turn != null &&
+                   State.Turn.Phase == TurnPhase.DebtResolution &&
+                   State.Turn.RentPayment != null &&
+                   !State.Turn.RentPayment.IsResolved;
+        }
+
+        private int FindNextActivePlayer(int currentPlayerIndex)
+        {
+            for (int offset = 1; offset <= State.Players.Count; offset++)
+            {
+                int candidate = (currentPlayerIndex + offset) % State.Players.Count;
+                if (!State.Players[candidate].IsEliminated)
+                {
+                    return candidate;
+                }
+            }
+
+            return PropertyState.UnownedPlayerIndex;
+        }
+
+        private int GetSoleActivePlayerIndex()
+        {
+            int activePlayerIndex = PropertyState.UnownedPlayerIndex;
+            int activeCount = 0;
+            for (int index = 0; index < State.Players.Count; index++)
+            {
+                if (State.Players[index].IsEliminated)
+                {
+                    continue;
+                }
+
+                activePlayerIndex = index;
+                activeCount++;
+            }
+
+            return activeCount == 1
+                ? activePlayerIndex
+                : PropertyState.UnownedPlayerIndex;
         }
 
         private void ResolveRent(PropertyState property)

@@ -30,7 +30,7 @@ namespace Ropoly.Tests.EditMode
         }
 
         [Test]
-        public void CreaturePrefab_UsesOnlyThreeDimensionalPresentationAndPhysics()
+        public void CreaturePrefab_UsesFlatSpritesAndOnlyThreeDimensionalPhysics()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Ropoly/Prefabs/Players/CreatureToken.prefab");
@@ -45,6 +45,23 @@ namespace Ropoly.Tests.EditMode
             Assert.That(prefab.GetComponentsInChildren<MeshRenderer>(true), Is.Empty);
             Assert.That(prefab.GetComponentsInChildren<Collider2D>(true), Is.Empty);
             Assert.That(prefab.GetComponentsInChildren<Rigidbody2D>(true), Is.Empty);
+        }
+
+        [TestCase(-1f, 0f, -1f, 0f)]
+        [TestCase(1f, 0f, 1f, 0f)]
+        [TestCase(0f, 1f, 0f, 1f)]
+        [TestCase(0f, -1f, 0f, -1f)]
+        public void CreatureGaze_ChoosesCardinalTravelDirection(
+            float worldX,
+            float worldZ,
+            float expectedX,
+            float expectedY)
+        {
+            Vector2 direction = CreatureTokenView.GetCardinalLookDirection(
+                new Vector3(worldX, 0f, worldZ),
+                null);
+
+            Assert.That(direction, Is.EqualTo(new Vector2(expectedX, expectedY)));
         }
     }
 }

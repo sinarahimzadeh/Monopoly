@@ -56,6 +56,17 @@ namespace Ropoly.Presentation.Board
             return true;
         }
 
+        public bool ClearTileOwner(int tileIndex)
+        {
+            if (!_tileViews.TryGetValue(tileIndex, out BoardPreviewTileView tile))
+            {
+                return false;
+            }
+
+            tile.ClearOwner();
+            return true;
+        }
+
         public bool TryGetTokenPosition(int tileIndex, int playerIndex, out Vector3 position)
         {
             position = default;

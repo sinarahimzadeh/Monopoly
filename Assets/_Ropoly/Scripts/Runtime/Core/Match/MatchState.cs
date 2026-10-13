@@ -21,6 +21,7 @@ namespace Ropoly.Core.Match
             _players = players;
             _properties = properties;
             Phase = MatchPhase.Lobby;
+            WinnerPlayerIndex = PropertyState.UnownedPlayerIndex;
         }
 
         public string MatchId { get; }
@@ -28,6 +29,8 @@ namespace Ropoly.Core.Match
         public MatchPhase Phase { get; internal set; }
 
         public TurnState Turn { get; internal set; }
+
+        public int WinnerPlayerIndex { get; internal set; }
 
         public IReadOnlyList<PlayerState> Players => _players;
 

@@ -58,6 +58,17 @@ namespace Ropoly.Core.Match
         internal void Advance(int playerCount)
         {
             CurrentPlayerIndex = (CurrentPlayerIndex + 1) % playerCount;
+            ResetForNextTurn();
+        }
+
+        internal void AdvanceTo(int playerIndex)
+        {
+            CurrentPlayerIndex = playerIndex;
+            ResetForNextTurn();
+        }
+
+        private void ResetForNextTurn()
+        {
             TurnNumber++;
             LastRoll = null;
             PendingPropertyTileIndex = PropertyState.UnownedPlayerIndex;

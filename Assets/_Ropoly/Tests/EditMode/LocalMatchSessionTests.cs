@@ -313,6 +313,86 @@ namespace Ropoly.Tests.EditMode
             Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.DebtResolution));
         }
 
+        [Test]
+        public void DebtResolution_MortgageRaisesCashAndAllowsRentPayment()
+        {
+            LocalMatchSession session = CreateDebtResolutionSession(playerCount: 2);
+
+            Assert.That(
+                session.TryMortgageProperty(2),
+                Is.EqualTo(AssetLiquidationResult.Success));
+            Assert.That(session.TryGetPropertyAt(2, out PropertyState property), Is.True);
+            Assert.That(property.IsMortgaged, Is.True);
+            Assert.That(property.OwnerPlayerIndex, Is.EqualTo(1));
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(100));
+            Assert.That(
+                session.TryPayCurrentDebt(),
+                Is.EqualTo(RentPaymentResult.Success));
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(10));
+            Assert.That(session.State.Players[0].Cash, Is.EqualTo(215));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingTurnEnd));
+        }
+
+        [Test]
+        public void DebtResolution_SaleReturnsPropertyToBankAndAllowsPayment()
+        {
+            LocalMatchSession session = CreateDebtResolutionSession(playerCount: 2);
+
+            Assert.That(
+                session.TrySellPropertyToBank(2),
+                Is.EqualTo(AssetLiquidationResult.Success));
+            Assert.That(session.TryGetPropertyAt(2, out PropertyState property), Is.True);
+            Assert.That(property.IsOwned, Is.False);
+            Assert.That(property.IsMortgaged, Is.False);
+            Assert.That(session.State.Players[1].Cash, Is.EqualTo(100));
+            Assert.That(
+                session.TryPayCurrentDebt(),
+                Is.EqualTo(RentPaymentResult.Success));
+        }
+
+        [Test]
+        public void Bankruptcy_EliminatesPlayerReturnsAssetsAndFinishesTwoPlayerMatch()
+        {
+            LocalMatchSession session = CreateDebtResolutionSession(playerCount: 2);
+
+            Assert.That(session.TryDeclareCurrentPlayerBankruptcy(), Is.True);
+            Assert.That(session.State.Players[1].IsEliminated, Is.True);
+            Assert.That(session.State.Players[1].Cash, Is.Zero);
+            Assert.That(session.TryGetPropertyAt(2, out PropertyState property), Is.True);
+            Assert.That(property.IsOwned, Is.False);
+            Assert.That(
+                session.State.Turn.RentPayment.Status,
+                Is.EqualTo(RentPaymentStatus.CancelledByBankruptcy));
+            Assert.That(session.State.Phase, Is.EqualTo(MatchPhase.Finished));
+            Assert.That(session.State.WinnerPlayerIndex, Is.Zero);
+        }
+
+        [Test]
+        public void Bankruptcy_SkipsEliminatedPlayerWhenMatchContinues()
+        {
+            LocalMatchSession session = CreateDebtResolutionSession(playerCount: 3);
+
+            Assert.That(session.TryDeclareCurrentPlayerBankruptcy(), Is.True);
+            Assert.That(session.State.Phase, Is.EqualTo(MatchPhase.InProgress));
+            Assert.That(session.State.Turn.CurrentPlayerIndex, Is.EqualTo(2));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingRoll));
+        }
+
+        [Test]
+        public void MortgageRule_CanDisableMortgagingWithoutDisablingBankSale()
+        {
+            LocalMatchSession session = CreateDebtResolutionSession(
+                playerCount: 2,
+                mortgageEnabled: false);
+
+            Assert.That(
+                session.TryMortgageProperty(2),
+                Is.EqualTo(AssetLiquidationResult.MortgageDisabled));
+            Assert.That(
+                session.TrySellPropertyToBank(2),
+                Is.EqualTo(AssetLiquidationResult.Success));
+        }
+
         private static LocalMatchSession CreateStartedTwoPlayerSession()
         {
             LocalMatchSession session = new LocalMatchSession(2, 1500, CreatureIds);
@@ -336,6 +416,110 @@ namespace Ropoly.Tests.EditMode
             session.TrySelectCreature(1, "bubu");
             Assert.That(session.TryStartMatch(), Is.True);
             return session;
+        }
+
+        private static LocalMatchSession CreateDebtResolutionSession(
+            int playerCount,
+            bool mortgageEnabled = true)
+        {
+            LocalMatchSession session = new LocalMatchSession(
+                playerCount,
+                150,
+                CreatureIds,
+                CreateDebtResolutionBoard(),
+                passStartCash: 0,
+                mortgageEnabled: mortgageEnabled);
+            session.TrySelectCreature(0, "pip");
+            session.TrySelectCreature(1, "bubu");
+            if (playerCount == 3)
+            {
+                session.TrySelectCreature(2, "sunny");
+            }
+
+            Assert.That(session.TryStartMatch(), Is.True);
+
+            // Player 1 buys the rent property on tile 4.
+            session.TryRollDice(new FixedDiceRollSource(2, 2), out _);
+            session.TryBeginMovement(out _);
+            session.TryCompleteMovement();
+            Assert.That(
+                session.TryPurchaseCurrentProperty(),
+                Is.EqualTo(PropertyPurchaseResult.Success));
+            session.TryAdvanceTurn();
+
+            // Player 2 buys the rescue asset on tile 2.
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
+            session.TryBeginMovement(out _);
+            session.TryCompleteMovement();
+            Assert.That(
+                session.TryPurchaseCurrentProperty(),
+                Is.EqualTo(PropertyPurchaseResult.Success));
+            session.TryAdvanceTurn();
+
+            if (playerCount == 3)
+            {
+                // Player 3 takes an ordinary turn so play returns to Player 1.
+                session.TryRollDice(new FixedDiceRollSource(1, 2), out _);
+                session.TryBeginMovement(out _);
+                session.TryCompleteMovement();
+                session.TryAdvanceTurn();
+            }
+
+            // Player 1 takes an ordinary turn, then Player 2 lands on tile 4.
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
+            session.TryBeginMovement(out _);
+            session.TryCompleteMovement();
+            session.TryAdvanceTurn();
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
+            session.TryBeginMovement(out _);
+            session.TryCompleteMovement();
+
+            Assert.That(session.State.Turn.CurrentPlayerIndex, Is.EqualTo(1));
+            Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.DebtResolution));
+            Assert.That(session.State.Turn.RentPayment.Amount, Is.EqualTo(90));
+            return session;
+        }
+
+        private static BoardSnapshot CreateDebtResolutionBoard()
+        {
+            return new BoardSnapshot(
+                schemaVersion: 1,
+                boardId: "debt-resolution-test",
+                displayName: "Debt Resolution Test",
+                countries: new CountrySnapshot[0],
+                cities: new[]
+                {
+                    new CitySnapshot("rescue", "Rescue Asset", 100, 50, 100, new[] { 10 }),
+                    new CitySnapshot("rent", "Rent Property", 25, 12, 100, new[] { 90 }),
+                },
+                airports: new AirportSnapshot[0],
+                utilities: new UtilitySnapshot[0],
+                specialSpaces: new[]
+                {
+                    new SpecialSpaceSnapshot(
+                        "start",
+                        "Start",
+                        SpecialSpaceKind.Start,
+                        string.Empty,
+                        0),
+                    new SpecialSpaceSnapshot(
+                        "rest",
+                        "Rest",
+                        SpecialSpaceKind.Vacation,
+                        string.Empty,
+                        0),
+                },
+                tiles: new[]
+                {
+                    new BoardTileSnapshot(0, BoardTileKind.Special, "start"),
+                    new BoardTileSnapshot(1, BoardTileKind.Special, "rest"),
+                    new BoardTileSnapshot(2, BoardTileKind.City, "rescue"),
+                    new BoardTileSnapshot(3, BoardTileKind.Special, "rest"),
+                    new BoardTileSnapshot(4, BoardTileKind.City, "rent"),
+                    new BoardTileSnapshot(5, BoardTileKind.Special, "rest"),
+                    new BoardTileSnapshot(6, BoardTileKind.Special, "rest"),
+                    new BoardTileSnapshot(7, BoardTileKind.Special, "rest"),
+                });
         }
 
         private static BoardSnapshot CreatePurchaseBoard()

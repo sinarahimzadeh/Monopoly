@@ -50,5 +50,13 @@ namespace Ropoly.Presentation.Board
             _ownerMarkerRenderer.sharedMaterial = material;
             _ownerMarker.SetActive(true);
         }
+
+        public void ClearOwner()
+        {
+            if (_ownerMarker != null)
+            {
+                _ownerMarker.SetActive(false);
+            }
+        }
     }
 }

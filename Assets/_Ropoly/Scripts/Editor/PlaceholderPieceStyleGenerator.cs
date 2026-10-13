@@ -245,7 +245,7 @@ namespace Ropoly.Editor
                     new Vector3(0.145f, 0.06f, 0f),
                     new Vector2(0.09f, 0.11f),
                     2);
-                CreateSpriteRenderer(
+                SpriteRenderer leftHighlight = CreateSpriteRenderer(
                     visuals,
                     "Left Eye Glint",
                     roundSprite,
@@ -253,7 +253,7 @@ namespace Ropoly.Editor
                     new Vector3(-0.165f, 0.095f, 0f),
                     new Vector2(0.028f, 0.032f),
                     3);
-                CreateSpriteRenderer(
+                SpriteRenderer rightHighlight = CreateSpriteRenderer(
                     visuals,
                     "Right Eye Glint",
                     roundSprite,
@@ -275,10 +275,15 @@ namespace Ropoly.Editor
                 SetObjectArray(
                     serialized.FindProperty("_pupilSprites"),
                     new[] { leftPupil, rightPupil });
+                SetObjectArray(
+                    serialized.FindProperty("_pupilHighlights"),
+                    new[] { leftHighlight, rightHighlight });
                 serialized.FindProperty("_bodyCollider").objectReferenceValue = collider;
-                serialized.FindProperty("_bobHeight").floatValue = 0.02f;
-                serialized.FindProperty("_bobSpeed").floatValue = 2.1f;
-                serialized.FindProperty("_squashAmount").floatValue = 0.015f;
+                serialized.FindProperty("_breathAmount").floatValue = 0.065f;
+                serialized.FindProperty("_breathSpeed").floatValue = 2f;
+                serialized.FindProperty("_breathLift").floatValue = 0.03f;
+                serialized.FindProperty("_lookDistance").floatValue = 0.04f;
+                serialized.FindProperty("_lookResponsiveness").floatValue = 16f;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
 
                 PrefabUtility.SaveAsPrefabAsset(root, P7LocalLobbyGenerator.TokenPrefabPath);

@@ -94,7 +94,8 @@ namespace Ropoly.Presentation.Lobby
                 rules.StartingCash,
                 creatureIds,
                 board,
-                rules.PassStartCash);
+                rules.PassStartCash,
+                rules.MortgageEnabled);
             BindInterface();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);
@@ -325,6 +326,15 @@ namespace Ropoly.Presentation.Lobby
             }
 
             return _spawnedTokens[playerIndex];
+        }
+
+        public void HidePlayerToken(int playerIndex)
+        {
+            CreatureTokenView token = GetToken(playerIndex);
+            if (token != null)
+            {
+                token.gameObject.SetActive(false);
+            }
         }
 
         public CreatureDefinition GetPlayerCreature(int playerIndex)

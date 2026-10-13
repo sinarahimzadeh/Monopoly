@@ -44,6 +44,7 @@ namespace Ropoly.Core.Match
         public int UpgradeLevel { get; private set; }
         public bool IsMortgaged { get; private set; }
         public bool IsOwned => OwnerPlayerIndex != UnownedPlayerIndex;
+        public int BankSaleValue => IsMortgaged ? 0 : MortgageValue;
 
         public int CalculateRent(int sameKindOwnedCount, int diceTotal)
         {
@@ -80,6 +81,37 @@ namespace Ropoly.Core.Match
 
             OwnerPlayerIndex = playerIndex;
             return true;
+        }
+
+        internal bool TryMortgage(int playerIndex)
+        {
+            if (OwnerPlayerIndex != playerIndex || IsMortgaged || MortgageValue <= 0)
+            {
+                return false;
+            }
+
+            IsMortgaged = true;
+            return true;
+        }
+
+        internal bool TrySellToBank(int playerIndex, out int proceeds)
+        {
+            proceeds = 0;
+            if (OwnerPlayerIndex != playerIndex || BankSaleValue <= 0)
+            {
+                return false;
+            }
+
+            proceeds = BankSaleValue;
+            ReleaseToBank();
+            return true;
+        }
+
+        internal void ReleaseToBank()
+        {
+            OwnerPlayerIndex = UnownedPlayerIndex;
+            UpgradeLevel = 0;
+            IsMortgaged = false;
         }
 
         private int GetOwnedCountIndex(int ownedCount)

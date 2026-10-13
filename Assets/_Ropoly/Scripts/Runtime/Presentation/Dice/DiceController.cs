@@ -72,6 +72,9 @@ namespace Ropoly.Presentation.Dice
         [SerializeField]
         private TMP_Text _resultLabel;
 
+        [SerializeField]
+        private DebtResolutionView _debtResolutionView;
+
         private readonly SystemDiceRollSource _rollSource = new SystemDiceRollSource();
         private Coroutine _rollRoutine;
         private Coroutine _movementRoutine;
@@ -89,6 +92,7 @@ namespace Ropoly.Presentation.Dice
         public DieView SecondDie => _secondDie;
         public Button PrimaryButton => _primaryButton;
         public Button SecondaryButton => _secondaryButton;
+        public DebtResolutionView DebtResolutionView => _debtResolutionView;
 
         private void Awake()
         {
@@ -226,6 +230,7 @@ namespace Ropoly.Presentation.Dice
 
         private void HandleMatchStarted(LocalMatchSession session)
         {
+            _debtResolutionView?.Hide();
             _diceRoot.SetActive(true);
             _firstDie.ApplySettings(_settings);
             _secondDie.ApplySettings(_settings);
@@ -349,6 +354,8 @@ namespace Ropoly.Presentation.Dice
                     yield break;
                 }
 
+                token.LookTowards(toPosition - fromPosition);
+
                 float elapsed = 0f;
                 while (elapsed < _moveStepDuration)
                 {
@@ -439,9 +446,15 @@ namespace Ropoly.Presentation.Dice
                 _boardPreview.SetStatusText(
                     $"{payer.DisplayName} NEEDS ${payment.Amount:N0} FOR " +
                     $"{payment.PropertyDisplayName.ToUpperInvariant()}{startReward}");
+                _debtResolutionView?.Show(
+                    _lobby.Session,
+                    MortgageProperty,
+                    SellProperty,
+                    DeclareBankruptcy);
                 return;
             }
 
+            _debtResolutionView?.Hide();
             _resultLabel.text = $"PAID ${payment.Amount:N0} RENT";
             _primaryButtonLabel.text = "NEXT PLAYER";
             _primaryButton.interactable = true;
@@ -452,6 +465,7 @@ namespace Ropoly.Presentation.Dice
 
         private void FinishPropertyDecision(string message)
         {
+            _debtResolutionView?.Hide();
             SetDecisionMode(false);
             _resultLabel.text = message;
             _primaryButtonLabel.text = "NEXT PLAYER";
@@ -488,6 +502,7 @@ namespace Ropoly.Presentation.Dice
 
         private void RefreshAwaitingRoll()
         {
+            _debtResolutionView?.Hide();
             TurnState turn = _lobby.Session.State.Turn;
             PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
             _turnLabel.text = $"TURN {turn.TurnNumber}  •  {player.DisplayName}";
@@ -497,6 +512,96 @@ namespace Ropoly.Presentation.Dice
             _pendingOffer = null;
             SetDecisionMode(false);
             _boardPreview.SetStatusText($"{player.DisplayName}  •  ROLL THE DICE");
+        }
+
+        private void MortgageProperty(int tileIndex)
+        {
+            AssetLiquidationResult result = _lobby.Session.TryMortgageProperty(tileIndex);
+            if (result != AssetLiquidationResult.Success)
+            {
+                _boardPreview.SetStatusText($"MORTGAGE FAILED  •  {result}");
+                _debtResolutionView?.Refresh();
+                return;
+            }
+
+            _lobby.RefreshMatchHud();
+            TryFinishDebtAfterAssetAction("PROPERTY MORTGAGED");
+        }
+
+        private void SellProperty(int tileIndex)
+        {
+            AssetLiquidationResult result = _lobby.Session.TrySellPropertyToBank(tileIndex);
+            if (result != AssetLiquidationResult.Success)
+            {
+                _boardPreview.SetStatusText($"SALE FAILED  •  {result}");
+                _debtResolutionView?.Refresh();
+                return;
+            }
+
+            _boardPreview.ClearTileOwner(tileIndex);
+            _lobby.RefreshMatchHud();
+            TryFinishDebtAfterAssetAction("PROPERTY SOLD TO BANK");
+        }
+
+        private void TryFinishDebtAfterAssetAction(string actionMessage)
+        {
+            RentPaymentResult paymentResult = _lobby.Session.TryPayCurrentDebt();
+            if (paymentResult == RentPaymentResult.Success)
+            {
+                _lobby.RefreshMatchHud();
+                PresentRentPayment(_lobby.Session.State.Turn.RentPayment, string.Empty);
+                return;
+            }
+
+            _resultLabel.text = actionMessage;
+            _boardPreview.SetStatusText($"{actionMessage}  •  MORE CASH IS STILL NEEDED");
+            _debtResolutionView?.Refresh();
+        }
+
+        private void DeclareBankruptcy()
+        {
+            TurnState turn = _lobby.Session.State.Turn;
+            if (turn == null || turn.RentPayment == null)
+            {
+                return;
+            }
+
+            int playerIndex = turn.RentPayment.PayerPlayerIndex;
+            var ownedProperties = _lobby.Session.GetPropertiesOwnedBy(playerIndex);
+            int[] releasedTileIndices = new int[ownedProperties.Count];
+            for (int index = 0; index < ownedProperties.Count; index++)
+            {
+                releasedTileIndices[index] = ownedProperties[index].TileIndex;
+            }
+
+            if (!_lobby.Session.TryDeclareCurrentPlayerBankruptcy())
+            {
+                return;
+            }
+
+            foreach (int tileIndex in releasedTileIndices)
+            {
+                _boardPreview.ClearTileOwner(tileIndex);
+            }
+
+            _lobby.HidePlayerToken(playerIndex);
+            _lobby.RefreshMatchHud();
+            _debtResolutionView?.Hide();
+            SetDecisionMode(false);
+
+            if (_lobby.Session.State.Phase == MatchPhase.Finished)
+            {
+                int winnerIndex = _lobby.Session.State.WinnerPlayerIndex;
+                PlayerState winner = _lobby.Session.State.Players[winnerIndex];
+                _turnLabel.text = "MATCH COMPLETE";
+                _resultLabel.text = $"{winner.DisplayName} WINS";
+                _primaryButtonLabel.text = "GAME OVER";
+                _primaryButton.interactable = false;
+                _boardPreview.SetStatusText($"{winner.DisplayName} WINS THE MATCH");
+                return;
+            }
+
+            RefreshAwaitingRoll();
         }
 
         private void SetDecisionMode(bool decisionMode)
