@@ -67,6 +67,17 @@ namespace Ropoly.Presentation.Board
             return true;
         }
 
+        public bool SetTileUpgradeLevel(int tileIndex, int level)
+        {
+            if (!_tileViews.TryGetValue(tileIndex, out BoardPreviewTileView tile))
+            {
+                return false;
+            }
+
+            tile.SetUpgradeLevel(level);
+            return true;
+        }
+
         public bool TryGetTokenPosition(int tileIndex, int playerIndex, out Vector3 position)
         {
             position = default;
@@ -272,12 +283,29 @@ namespace Ropoly.Presentation.Board
                     inward,
                     tileGroup.transform);
                 BoardPreviewTileView tileView = tileObject.AddComponent<BoardPreviewTileView>();
+                TMP_Text upgradeText = null;
+                if (tile.Kind == BoardTileKind.City)
+                {
+                    Quaternion textRotation = Quaternion.LookRotation(Vector3.down, textUp);
+                    upgradeText = CreateWorldText(
+                        "Upgrade Text",
+                        string.Empty,
+                        ownerMarker.transform.position + (Vector3.up * 0.08f),
+                        textRotation,
+                        0.45f,
+                        FontStyles.Bold,
+                        Color.white,
+                        new Vector2(1f, 0.5f),
+                        tileGroup.transform);
+                }
+
                 tileView.Initialize(
                     tile.Index,
                     tile.Kind,
                     tile.ContentId,
                     ownerMarker,
-                    ownerMarker.GetComponent<MeshRenderer>());
+                    ownerMarker.GetComponent<MeshRenderer>(),
+                    upgradeText);
                 _tileViews.Add(tile.Index, tileView);
                 CreateTileText(label, detail, center, size, textUp, tileGroup.transform);
             }

@@ -21,7 +21,9 @@ namespace Ropoly.Core.Match
             string displayName,
             int purchasePrice,
             int mortgageValue,
-            IReadOnlyList<int> rentValues)
+            IReadOnlyList<int> rentValues,
+            int upgradeCost = 0,
+            string countryId = null)
         {
             TileIndex = tileIndex;
             Kind = kind;
@@ -30,6 +32,8 @@ namespace Ropoly.Core.Match
             PurchasePrice = purchasePrice;
             MortgageValue = mortgageValue;
             _rentValues = Copy(rentValues);
+            UpgradeCost = upgradeCost;
+            CountryId = countryId;
             OwnerPlayerIndex = UnownedPlayerIndex;
         }
 
@@ -39,6 +43,9 @@ namespace Ropoly.Core.Match
         public string DisplayName { get; }
         public int PurchasePrice { get; }
         public int MortgageValue { get; }
+        public int UpgradeCost { get; }
+        public string CountryId { get; }
+        public int DowngradeRefund => UpgradeCost / 2;
         public IReadOnlyList<int> RentValues => _rentValues;
         public int OwnerPlayerIndex { get; private set; }
         public int UpgradeLevel { get; private set; }
@@ -48,6 +55,15 @@ namespace Ropoly.Core.Match
 
         public int CalculateRent(int sameKindOwnedCount, int diceTotal)
         {
+            return CalculateRent(sameKindOwnedCount, diceTotal, isFullCountrySetUnmortgaged: false, fullSetMultiplier: 1);
+        }
+
+        public int CalculateRent(
+            int sameKindOwnedCount,
+            int diceTotal,
+            bool isFullCountrySetUnmortgaged,
+            int fullSetMultiplier)
+        {
             if (!IsOwned || IsMortgaged || _rentValues.Length == 0)
             {
                 return 0;
@@ -56,7 +72,13 @@ namespace Ropoly.Core.Match
             switch (Kind)
             {
                 case BoardTileKind.City:
-                    return _rentValues[Math.Min(UpgradeLevel, _rentValues.Length - 1)];
+                    int baseRent = _rentValues[Math.Min(UpgradeLevel, _rentValues.Length - 1)];
+                    if (UpgradeLevel == 0 && isFullCountrySetUnmortgaged && fullSetMultiplier > 1)
+                    {
+                        return checked(baseRent * fullSetMultiplier);
+                    }
+
+                    return baseRent;
                 case BoardTileKind.Airport:
                     return _rentValues[GetOwnedCountIndex(sameKindOwnedCount)];
                 case BoardTileKind.Utility:
@@ -112,6 +134,28 @@ namespace Ropoly.Core.Match
             OwnerPlayerIndex = UnownedPlayerIndex;
             UpgradeLevel = 0;
             IsMortgaged = false;
+        }
+
+        internal bool TryUpgrade()
+        {
+            if (Kind != BoardTileKind.City || UpgradeLevel >= BoardContentLimits.CityRentLevelCount - 1)
+            {
+                return false;
+            }
+
+            UpgradeLevel++;
+            return true;
+        }
+
+        internal bool TryDowngrade()
+        {
+            if (Kind != BoardTileKind.City || UpgradeLevel <= 0)
+            {
+                return false;
+            }
+
+            UpgradeLevel--;
+            return true;
         }
 
         private int GetOwnedCountIndex(int ownedCount)

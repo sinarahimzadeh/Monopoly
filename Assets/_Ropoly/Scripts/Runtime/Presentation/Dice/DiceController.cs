@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Ropoly.Core.Board;
 using Ropoly.Core.Match;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Lobby;
@@ -84,6 +85,7 @@ namespace Ropoly.Presentation.Dice
         private float _firstYaw;
         private float _secondYaw;
         private PropertyPurchaseOffer _pendingOffer;
+        private int _pendingUpgradeTileIndex = -1;
 
         public bool IsRolling => _rollRoutine != null;
         public bool IsMoving => _movementRoutine != null;
@@ -196,7 +198,14 @@ namespace Ropoly.Presentation.Dice
             }
             else if (turn.Phase == TurnPhase.AwaitingTurnEnd)
             {
-                AdvanceTurn();
+                if (_pendingUpgradeTileIndex >= 0)
+                {
+                    UpgradePendingProperty();
+                }
+                else
+                {
+                    AdvanceTurn();
+                }
             }
             else if (turn.Phase == TurnPhase.AwaitingPropertyDecision)
             {
@@ -208,6 +217,13 @@ namespace Ropoly.Presentation.Dice
         {
             if (_lobby.Session == null || IsBusy)
             {
+                return;
+            }
+
+            if (_pendingUpgradeTileIndex >= 0)
+            {
+                _pendingUpgradeTileIndex = -1;
+                AdvanceTurn();
                 return;
             }
 
@@ -483,10 +499,68 @@ namespace Ropoly.Presentation.Dice
             {
                 string ownerName = _lobby.Session.State.Players[property.OwnerPlayerIndex].DisplayName;
                 _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {ownerName}";
+
+                if (property.OwnerPlayerIndex == movement.PlayerIndex &&
+                    property.Kind == BoardTileKind.City &&
+                    _lobby.Session.CanUpgradeProperty(movement.DestinationIndex, out _))
+                {
+                    _pendingUpgradeTileIndex = movement.DestinationIndex;
+                    string buildingInfo = property.UpgradeLevel > 0
+                        ? $"LEVEL {property.UpgradeLevel}"
+                        : "UNIMPROVED";
+                    _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {buildingInfo}";
+                    _primaryButtonLabel.text = $"UPGRADE ${property.UpgradeCost:N0}";
+                    _primaryButton.interactable = true;
+                    _secondaryButtonLabel.text = "NEXT PLAYER";
+                    _secondaryButton.interactable = true;
+                    SetDecisionMode(true);
+                    _boardPreview.SetStatusText(
+                        $"{ownerName}  •  UPGRADE {tileName.ToUpperInvariant()} FOR ${property.UpgradeCost:N0} OR FINISH TURN{startReward}");
+                    return;
+                }
             }
 
             _boardPreview.SetStatusText(
                 $"LANDED ON {tileName.ToUpperInvariant()}{startReward}");
+        }
+
+        private void UpgradePendingProperty()
+        {
+            if (_pendingUpgradeTileIndex < 0)
+            {
+                return;
+            }
+
+            int tileIndex = _pendingUpgradeTileIndex;
+            PropertyUpgradeResult result = _lobby.Session.TryUpgradeProperty(tileIndex);
+            if (result != PropertyUpgradeResult.Success)
+            {
+                _resultLabel.text = $"UPGRADE FAILED ({result})";
+                _boardPreview.SetStatusText($"CANNOT UPGRADE  •  {result}");
+                return;
+            }
+
+            if (_lobby.Session.TryGetPropertyAt(tileIndex, out PropertyState property))
+            {
+                _boardPreview.SetTileUpgradeLevel(tileIndex, property.UpgradeLevel);
+                _lobby.RefreshMatchHud();
+                string tileName = _boardPreview.GetTileDisplayName(tileIndex);
+                string buildingName = property.UpgradeLevel >= 5 ? "HOTEL" : $"HOUSE {property.UpgradeLevel}";
+                _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {buildingName}";
+
+                if (_lobby.Session.CanUpgradeProperty(tileIndex, out _))
+                {
+                    _primaryButtonLabel.text = $"UPGRADE ${property.UpgradeCost:N0}";
+                    _boardPreview.SetStatusText($"BUILT {buildingName} ON {tileName.ToUpperInvariant()}  •  UPGRADE AGAIN OR FINISH TURN");
+                    return;
+                }
+            }
+
+            _pendingUpgradeTileIndex = -1;
+            SetDecisionMode(false);
+            _primaryButtonLabel.text = "NEXT PLAYER";
+            _primaryButton.interactable = true;
+            _boardPreview.SetStatusText("UPGRADE COMPLETE  •  END TURN");
         }
 
         private void PresentRentPayment(RentPayment payment, string startReward)
@@ -567,6 +641,7 @@ namespace Ropoly.Presentation.Dice
             _primaryButtonLabel.text = "ROLL DICE";
             _primaryButton.interactable = true;
             _pendingOffer = null;
+            _pendingUpgradeTileIndex = -1;
             SetDecisionMode(false);
             _boardPreview.SetStatusText($"{player.DisplayName}  •  ROLL THE DICE");
         }
@@ -587,6 +662,22 @@ namespace Ropoly.Presentation.Dice
 
         private void SellProperty(int tileIndex)
         {
+            if (_lobby.Session.TryGetPropertyAt(tileIndex, out PropertyState property) && property.UpgradeLevel > 0)
+            {
+                PropertyDowngradeResult downgradeResult = _lobby.Session.TryDowngradeProperty(tileIndex, out int refund);
+                if (downgradeResult != PropertyDowngradeResult.Success)
+                {
+                    _boardPreview.SetStatusText($"DOWNGRADE FAILED  •  {downgradeResult}");
+                    _debtResolutionView?.Refresh();
+                    return;
+                }
+
+                _boardPreview.SetTileUpgradeLevel(tileIndex, property.UpgradeLevel);
+                _lobby.RefreshMatchHud();
+                TryFinishDebtAfterAssetAction($"BUILDING SOLD (+${refund:N0})");
+                return;
+            }
+
             AssetLiquidationResult result = _lobby.Session.TrySellPropertyToBank(tileIndex);
             if (result != AssetLiquidationResult.Success)
             {

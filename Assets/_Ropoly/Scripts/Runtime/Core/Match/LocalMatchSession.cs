@@ -21,7 +21,10 @@ namespace Ropoly.Core.Match
         private readonly int _turnDurationSeconds;
         private readonly int _disconnectGraceSeconds;
         private readonly IClock _clock;
+        private readonly int _fullSetRentMultiplier;
         private readonly Dictionary<int, PropertyState> _propertiesByTileIndex;
+        private readonly Dictionary<string, List<PropertyState>> _propertiesByCountryId;
+        private readonly Dictionary<string, CountrySnapshot> _countriesById;
 
         public LocalMatchSession(
             int playerCount,
@@ -32,7 +35,8 @@ namespace Ropoly.Core.Match
             bool mortgageEnabled = true,
             int turnDurationSeconds = 60,
             int disconnectGraceSeconds = 60,
-            IClock clock = null)
+            IClock clock = null,
+            int fullSetRentMultiplier = 2)
             : this(
                 playerCount,
                 startingCash,
@@ -43,7 +47,8 @@ namespace Ropoly.Core.Match
                 board: null,
                 turnDurationSeconds,
                 disconnectGraceSeconds,
-                clock)
+                clock,
+                fullSetRentMultiplier)
         {
         }
 
@@ -56,7 +61,8 @@ namespace Ropoly.Core.Match
             bool mortgageEnabled = true,
             int turnDurationSeconds = 60,
             int disconnectGraceSeconds = 60,
-            IClock clock = null)
+            IClock clock = null,
+            int fullSetRentMultiplier = 2)
             : this(
                 playerCount,
                 startingCash,
@@ -67,7 +73,8 @@ namespace Ropoly.Core.Match
                 board,
                 turnDurationSeconds,
                 disconnectGraceSeconds,
-                clock)
+                clock,
+                fullSetRentMultiplier)
         {
         }
 
@@ -81,7 +88,8 @@ namespace Ropoly.Core.Match
             BoardSnapshot board,
             int turnDurationSeconds,
             int disconnectGraceSeconds,
-            IClock clock)
+            IClock clock,
+            int fullSetRentMultiplier)
         {
             if (playerCount < MinimumPlayers || playerCount > MaximumPlayers)
             {
@@ -113,6 +121,11 @@ namespace Ropoly.Core.Match
                 throw new ArgumentOutOfRangeException(nameof(disconnectGraceSeconds));
             }
 
+            if (fullSetRentMultiplier < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(fullSetRentMultiplier));
+            }
+
             _availableCreatureIds = new HashSet<string>(
                 availableCreatureIds ?? throw new ArgumentNullException(nameof(availableCreatureIds)),
                 StringComparer.Ordinal);
@@ -130,6 +143,21 @@ namespace Ropoly.Core.Match
             _turnDurationSeconds = turnDurationSeconds;
             _disconnectGraceSeconds = disconnectGraceSeconds;
             _clock = clock ?? SystemClock.Instance;
+            _fullSetRentMultiplier = fullSetRentMultiplier;
+            _propertiesByCountryId = new Dictionary<string, List<PropertyState>>(StringComparer.Ordinal);
+            _countriesById = new Dictionary<string, CountrySnapshot>(StringComparer.Ordinal);
+            if (board?.Countries != null)
+            {
+                foreach (CountrySnapshot country in board.Countries)
+                {
+                    if (country != null && !string.IsNullOrEmpty(country.CountryId))
+                    {
+                        _countriesById[country.CountryId] = country;
+                        _propertiesByCountryId[country.CountryId] = new List<PropertyState>();
+                    }
+                }
+            }
+
             List<PropertyState> properties = CreatePropertyStates(board);
             State = new MatchState(
                 CreateLocalMatchId(),
@@ -139,6 +167,16 @@ namespace Ropoly.Core.Match
             foreach (PropertyState property in properties)
             {
                 _propertiesByTileIndex.Add(property.TileIndex, property);
+                if (!string.IsNullOrEmpty(property.CountryId))
+                {
+                    if (!_propertiesByCountryId.TryGetValue(property.CountryId, out List<PropertyState> list))
+                    {
+                        list = new List<PropertyState>();
+                        _propertiesByCountryId[property.CountryId] = list;
+                    }
+
+                    list.Add(property);
+                }
             }
         }
 
@@ -151,6 +189,7 @@ namespace Ropoly.Core.Match
         public int TurnDurationSeconds => _turnDurationSeconds;
 
         public int DisconnectGraceSeconds => _disconnectGraceSeconds;
+        public int FullSetRentMultiplier => _fullSetRentMultiplier;
 
         public TimeSpan? CurrentTurnRemainingTime => State.Turn?.GetRemainingTime(_clock.UtcNow);
 
@@ -501,6 +540,13 @@ namespace Ropoly.Core.Match
                 return AssetLiquidationResult.AlreadyMortgaged;
             }
 
+            if (property.Kind == BoardTileKind.City &&
+                !string.IsNullOrEmpty(property.CountryId) &&
+                HasUpgradesInCountrySet(property.CountryId))
+            {
+                return AssetLiquidationResult.HasUpgradedPropertiesInSet;
+            }
+
             if (!property.TryMortgage(playerIndex))
             {
                 return AssetLiquidationResult.NoLiquidationValue;
@@ -516,6 +562,13 @@ namespace Ropoly.Core.Match
             if (!TryGetDebtProperty(tileIndex, out PropertyState property, out int playerIndex))
             {
                 return GetDebtPropertyFailure(tileIndex, property);
+            }
+
+            if (property.Kind == BoardTileKind.City &&
+                !string.IsNullOrEmpty(property.CountryId) &&
+                HasUpgradesInCountrySet(property.CountryId))
+            {
+                return AssetLiquidationResult.HasUpgradedPropertiesInSet;
             }
 
             if (!property.TrySellToBank(playerIndex, out int proceeds))
@@ -680,6 +733,260 @@ namespace Ropoly.Core.Match
             return _propertiesByTileIndex.TryGetValue(tileIndex, out property);
         }
 
+        public bool IsCountrySetFullyOwned(string countryId, int playerIndex)
+        {
+            if (string.IsNullOrEmpty(countryId) ||
+                playerIndex < 0 ||
+                playerIndex >= State.Players.Count)
+            {
+                return false;
+            }
+
+            if (!_propertiesByCountryId.TryGetValue(countryId, out List<PropertyState> properties) ||
+                properties.Count == 0)
+            {
+                return false;
+            }
+
+            if (_countriesById.TryGetValue(countryId, out CountrySnapshot country))
+            {
+                if (properties.Count < country.CityIds.Count)
+                {
+                    return false;
+                }
+            }
+
+            foreach (PropertyState property in properties)
+            {
+                if (property.OwnerPlayerIndex != playerIndex)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public bool HasMortgagedPropertyInCountrySet(string countryId)
+        {
+            if (string.IsNullOrEmpty(countryId) ||
+                !_propertiesByCountryId.TryGetValue(countryId, out List<PropertyState> properties))
+            {
+                return false;
+            }
+
+            foreach (PropertyState property in properties)
+            {
+                if (property.IsMortgaged)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool HasUpgradesInCountrySet(string countryId)
+        {
+            if (string.IsNullOrEmpty(countryId) ||
+                !_propertiesByCountryId.TryGetValue(countryId, out List<PropertyState> properties))
+            {
+                return false;
+            }
+
+            foreach (PropertyState property in properties)
+            {
+                if (property.UpgradeLevel > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public IReadOnlyList<PropertyState> GetPropertiesInCountry(string countryId)
+        {
+            if (!string.IsNullOrEmpty(countryId) &&
+                _propertiesByCountryId.TryGetValue(countryId, out List<PropertyState> properties))
+            {
+                return properties;
+            }
+
+            return Array.Empty<PropertyState>();
+        }
+
+        public bool CanUpgradeProperty(int tileIndex, out PropertyUpgradeResult result)
+        {
+            result = PropertyUpgradeResult.NotAllowedInCurrentPhase;
+            if (State.Phase != MatchPhase.InProgress || State.Turn == null)
+            {
+                return false;
+            }
+
+            if (State.Turn.Phase == TurnPhase.DebtResolution ||
+                State.Turn.Phase == TurnPhase.Moving)
+            {
+                return false;
+            }
+
+            int currentPlayerIndex = State.Turn.CurrentPlayerIndex;
+            if (!_propertiesByTileIndex.TryGetValue(tileIndex, out PropertyState property))
+            {
+                result = PropertyUpgradeResult.PropertyNotFound;
+                return false;
+            }
+
+            if (property.Kind != BoardTileKind.City || string.IsNullOrEmpty(property.CountryId))
+            {
+                result = PropertyUpgradeResult.NotACity;
+                return false;
+            }
+
+            if (property.OwnerPlayerIndex != currentPlayerIndex)
+            {
+                result = PropertyUpgradeResult.NotOwnedByPlayer;
+                return false;
+            }
+
+            if (property.IsMortgaged)
+            {
+                result = PropertyUpgradeResult.IsMortgaged;
+                return false;
+            }
+
+            if (!IsCountrySetFullyOwned(property.CountryId, currentPlayerIndex))
+            {
+                result = PropertyUpgradeResult.CountrySetIncomplete;
+                return false;
+            }
+
+            if (HasMortgagedPropertyInCountrySet(property.CountryId))
+            {
+                result = PropertyUpgradeResult.HasMortgagedPropertyInSet;
+                return false;
+            }
+
+            if (property.UpgradeLevel >= BoardContentLimits.CityRentLevelCount - 1)
+            {
+                result = PropertyUpgradeResult.MaximumLevelReached;
+                return false;
+            }
+
+            List<PropertyState> sisters = _propertiesByCountryId[property.CountryId];
+            foreach (PropertyState sister in sisters)
+            {
+                if (sister.TileIndex != property.TileIndex && sister.UpgradeLevel < property.UpgradeLevel)
+                {
+                    result = PropertyUpgradeResult.EvenBuildRuleViolation;
+                    return false;
+                }
+            }
+
+            if (State.Players[currentPlayerIndex].Cash < property.UpgradeCost)
+            {
+                result = PropertyUpgradeResult.InsufficientCash;
+                return false;
+            }
+
+            result = PropertyUpgradeResult.Success;
+            return true;
+        }
+
+        public PropertyUpgradeResult TryUpgradeProperty(int tileIndex)
+        {
+            if (!CanUpgradeProperty(tileIndex, out PropertyUpgradeResult result))
+            {
+                return result;
+            }
+
+            PropertyState property = _propertiesByTileIndex[tileIndex];
+            PlayerState player = State.MutablePlayers[State.Turn.CurrentPlayerIndex];
+            if (!player.TrySpendCash(property.UpgradeCost))
+            {
+                return PropertyUpgradeResult.InsufficientCash;
+            }
+
+            property.TryUpgrade();
+            ResetTurnDeadline();
+            return PropertyUpgradeResult.Success;
+        }
+
+        public bool CanDowngradeProperty(int tileIndex, out PropertyDowngradeResult result)
+        {
+            result = PropertyDowngradeResult.NotAllowedInCurrentPhase;
+            if (State.Phase != MatchPhase.InProgress || State.Turn == null)
+            {
+                return false;
+            }
+
+            if (State.Turn.Phase == TurnPhase.Moving)
+            {
+                return false;
+            }
+
+            int currentPlayerIndex = State.Turn.CurrentPlayerIndex;
+            if (!_propertiesByTileIndex.TryGetValue(tileIndex, out PropertyState property))
+            {
+                result = PropertyDowngradeResult.PropertyNotFound;
+                return false;
+            }
+
+            if (property.Kind != BoardTileKind.City || string.IsNullOrEmpty(property.CountryId))
+            {
+                result = PropertyDowngradeResult.NotACity;
+                return false;
+            }
+
+            if (property.OwnerPlayerIndex != currentPlayerIndex)
+            {
+                result = PropertyDowngradeResult.NotOwnedByPlayer;
+                return false;
+            }
+
+            if (property.UpgradeLevel <= 0)
+            {
+                result = PropertyDowngradeResult.NoUpgradesToSell;
+                return false;
+            }
+
+            if (_propertiesByCountryId.TryGetValue(property.CountryId, out List<PropertyState> sisters))
+            {
+                foreach (PropertyState sister in sisters)
+                {
+                    if (sister.TileIndex != property.TileIndex && sister.UpgradeLevel > property.UpgradeLevel)
+                    {
+                        result = PropertyDowngradeResult.EvenDowngradeRuleViolation;
+                        return false;
+                    }
+                }
+            }
+
+            result = PropertyDowngradeResult.Success;
+            return true;
+        }
+
+        public PropertyDowngradeResult TryDowngradeProperty(int tileIndex, out int refund)
+        {
+            refund = 0;
+            if (!CanDowngradeProperty(tileIndex, out PropertyDowngradeResult result))
+            {
+                return result;
+            }
+
+            PropertyState property = _propertiesByTileIndex[tileIndex];
+            refund = property.UpgradeCost / 2;
+            property.TryDowngrade();
+            State.MutablePlayers[State.Turn.CurrentPlayerIndex].AddCash(refund);
+            ResetTurnDeadline();
+            return PropertyDowngradeResult.Success;
+        }
+
+        public PropertyDowngradeResult TryDowngradeProperty(int tileIndex)
+        {
+            return TryDowngradeProperty(tileIndex, out _);
+        }
+
         private bool TryGetDebtProperty(
             int tileIndex,
             out PropertyState property,
@@ -759,9 +1066,17 @@ namespace Ropoly.Core.Match
             int payerPlayerIndex = State.Turn.CurrentPlayerIndex;
             int ownerPlayerIndex = property.OwnerPlayerIndex;
             int sameKindOwnedCount = CountOwnedProperties(ownerPlayerIndex, property.Kind);
+            bool isFullCountrySetUnmortgaged =
+                property.Kind == BoardTileKind.City &&
+                !string.IsNullOrEmpty(property.CountryId) &&
+                IsCountrySetFullyOwned(property.CountryId, ownerPlayerIndex) &&
+                !HasMortgagedPropertyInCountrySet(property.CountryId);
+
             int rentAmount = property.CalculateRent(
                 sameKindOwnedCount,
-                State.Turn.LastRoll.Total);
+                State.Turn.LastRoll.Total,
+                isFullCountrySetUnmortgaged,
+                _fullSetRentMultiplier);
             RentPayment payment = new RentPayment(
                 property.TileIndex,
                 property.PropertyId,
@@ -844,6 +1159,24 @@ namespace Ropoly.Core.Match
                 return properties;
             }
 
+            Dictionary<string, string> countryIdByCityId = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (board.Countries != null)
+            {
+                foreach (CountrySnapshot country in board.Countries)
+                {
+                    if (country?.CityIds != null)
+                    {
+                        foreach (string cityId in country.CityIds)
+                        {
+                            if (!string.IsNullOrEmpty(cityId))
+                            {
+                                countryIdByCityId[cityId] = country.CountryId;
+                            }
+                        }
+                    }
+                }
+            }
+
             foreach (BoardTileSnapshot tile in board.Tiles)
             {
                 switch (tile.Kind)
@@ -852,6 +1185,7 @@ namespace Ropoly.Core.Match
                         CitySnapshot city = FindById(board.Cities, tile.ContentId);
                         if (city != null)
                         {
+                            countryIdByCityId.TryGetValue(city.CityId, out string countryId);
                             properties.Add(new PropertyState(
                                 tile.Index,
                                 tile.Kind,
@@ -859,7 +1193,9 @@ namespace Ropoly.Core.Match
                                 city.DisplayName,
                                 city.PurchasePrice,
                                 city.MortgageValue,
-                                city.RentByUpgradeLevel));
+                                city.RentByUpgradeLevel,
+                                city.UpgradeCost,
+                                countryId));
                         }
 
                         break;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ropoly.Core.Board;
 using Ropoly.Core.Match;
 using TMPro;
 using UnityEngine;
@@ -147,21 +148,57 @@ namespace Ropoly.Presentation.Dice
             }
 
             PropertyState property = _assets[_selectedIndex];
-            string status = property.IsMortgaged ? "MORTGAGED" : "ACTIVE";
+            bool hasBuildingsInSet =
+                property.Kind == BoardTileKind.City &&
+                !string.IsNullOrEmpty(property.CountryId) &&
+                _session.HasUpgradesInCountrySet(property.CountryId);
+
+            string status;
+            if (property.UpgradeLevel > 0)
+            {
+                status = $"LEVEL {property.UpgradeLevel} BUILDINGS";
+            }
+            else
+            {
+                status = property.IsMortgaged ? "MORTGAGED" : "ACTIVE";
+            }
+
             _propertyLabel.text =
                 $"{_selectedIndex + 1} / {_assets.Count}  •  {property.DisplayName.ToUpperInvariant()}\n" +
                 $"{status}  •  BANK VALUE ${property.MortgageValue:N0}";
-            _mortgageButtonLabel.text = property.IsMortgaged
-                ? "MORTGAGED"
-                : $"MORTGAGE +${property.MortgageValue:N0}";
-            _sellButtonLabel.text = property.BankSaleValue > 0
-                ? $"SELL +${property.BankSaleValue:N0}"
-                : "NO SALE VALUE";
-            _mortgageButton.interactable =
-                _session.MortgageEnabled &&
-                !property.IsMortgaged &&
-                property.MortgageValue > 0;
-            _sellButton.interactable = property.BankSaleValue > 0;
+
+            if (property.UpgradeLevel > 0)
+            {
+                _mortgageButtonLabel.text = "SELL ALL BUILDINGS FIRST";
+                _mortgageButton.interactable = false;
+
+                bool canDowngrade = _session.CanDowngradeProperty(property.TileIndex, out _);
+                _sellButtonLabel.text = canDowngrade
+                    ? $"SELL BUILDING +${property.DowngradeRefund:N0}"
+                    : "SELL EVENLY FIRST";
+                _sellButton.interactable = canDowngrade;
+            }
+            else if (hasBuildingsInSet)
+            {
+                _mortgageButtonLabel.text = "SELL BUILDINGS IN SET FIRST";
+                _mortgageButton.interactable = false;
+                _sellButtonLabel.text = "SELL BUILDINGS IN SET FIRST";
+                _sellButton.interactable = false;
+            }
+            else
+            {
+                _mortgageButtonLabel.text = property.IsMortgaged
+                    ? "MORTGAGED"
+                    : $"MORTGAGE +${property.MortgageValue:N0}";
+                _sellButtonLabel.text = property.BankSaleValue > 0
+                    ? $"SELL +${property.BankSaleValue:N0}"
+                    : "NO SALE VALUE";
+                _mortgageButton.interactable =
+                    _session.MortgageEnabled &&
+                    !property.IsMortgaged &&
+                    property.MortgageValue > 0;
+                _sellButton.interactable = property.BankSaleValue > 0;
+            }
         }
 
         private void SelectPrevious()

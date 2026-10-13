@@ -9,5 +9,6 @@ namespace Ropoly.Core.Match
         NotOwnedByCurrentPlayer = 4,
         AlreadyMortgaged = 5,
         NoLiquidationValue = 6,
+        HasUpgradedPropertiesInSet = 7,
     }
 }

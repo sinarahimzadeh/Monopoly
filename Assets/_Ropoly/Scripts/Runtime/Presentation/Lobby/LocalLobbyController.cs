@@ -97,7 +97,9 @@ namespace Ropoly.Presentation.Lobby
                 rules.PassStartCash,
                 rules.MortgageEnabled,
                 rules.TurnDurationSeconds,
-                rules.DisconnectGraceSeconds);
+                rules.DisconnectGraceSeconds,
+                clock: null,
+                rules.FullSetRentMultiplier);
             BindInterface();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);
