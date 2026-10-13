@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Ropoly.Core.Match;
 using Ropoly.Presentation.Board;
@@ -6,6 +7,7 @@ using Ropoly.Presentation.Players;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace Ropoly.Presentation.Dice
 {
@@ -118,11 +120,60 @@ namespace Ropoly.Presentation.Dice
             }
         }
 
+        private void Update()
+        {
+            if (_lobby == null || _lobby.Session == null || _lobby.Session.State.Phase != MatchPhase.InProgress)
+            {
+                return;
+            }
+
+            _lobby.Session.Tick();
+
+            if (_lobby.Session.State.Phase == MatchPhase.Finished || IsBusy)
+            {
+                return;
+            }
+
+            UpdateTurnTimerDisplay();
+        }
+
+        private void UpdateTurnTimerDisplay()
+        {
+            TimeSpan? remaining = _lobby.Session.CurrentTurnRemainingTime;
+            if (!remaining.HasValue)
+            {
+                return;
+            }
+
+            int remainingSeconds = Mathf.CeilToInt((float)remaining.Value.TotalSeconds);
+            TurnState turn = _lobby.Session.State.Turn;
+            if (turn == null)
+            {
+                return;
+            }
+
+            PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
+            if (turn.Phase == TurnPhase.DebtResolution)
+            {
+                _debtResolutionView?.UpdateCountdown(remainingSeconds);
+            }
+            else if (turn.Phase == TurnPhase.AwaitingRoll ||
+                     turn.Phase == TurnPhase.AwaitingPropertyDecision ||
+                     turn.Phase == TurnPhase.AwaitingTurnEnd)
+            {
+                _turnLabel.text = $"TURN {turn.TurnNumber}  •  {player.DisplayName}  ({remainingSeconds}s)";
+            }
+        }
+
         private void OnDestroy()
         {
             if (_lobby != null)
             {
                 _lobby.MatchStarted -= HandleMatchStarted;
+                if (_lobby.Session != null)
+                {
+                    _lobby.Session.PlayerEliminated -= HandlePlayerEliminated;
+                }
             }
         }
 
@@ -230,6 +281,12 @@ namespace Ropoly.Presentation.Dice
 
         private void HandleMatchStarted(LocalMatchSession session)
         {
+            if (session != null)
+            {
+                session.PlayerEliminated -= HandlePlayerEliminated;
+                session.PlayerEliminated += HandlePlayerEliminated;
+            }
+
             _debtResolutionView?.Hide();
             _diceRoot.SetActive(true);
             _firstDie.ApplySettings(_settings);
@@ -560,28 +617,17 @@ namespace Ropoly.Presentation.Dice
 
         private void DeclareBankruptcy()
         {
-            TurnState turn = _lobby.Session.State.Turn;
-            if (turn == null || turn.RentPayment == null)
-            {
-                return;
-            }
+            _lobby.Session?.TryDeclareCurrentPlayerBankruptcy();
+        }
 
-            int playerIndex = turn.RentPayment.PayerPlayerIndex;
-            var ownedProperties = _lobby.Session.GetPropertiesOwnedBy(playerIndex);
-            int[] releasedTileIndices = new int[ownedProperties.Count];
-            for (int index = 0; index < ownedProperties.Count; index++)
+        private void HandlePlayerEliminated(int playerIndex, EliminationReason reason)
+        {
+            for (int tileIndex = 0; tileIndex < _boardPreview.TileCount; tileIndex++)
             {
-                releasedTileIndices[index] = ownedProperties[index].TileIndex;
-            }
-
-            if (!_lobby.Session.TryDeclareCurrentPlayerBankruptcy())
-            {
-                return;
-            }
-
-            foreach (int tileIndex in releasedTileIndices)
-            {
-                _boardPreview.ClearTileOwner(tileIndex);
+                if (_lobby.Session.TryGetPropertyAt(tileIndex, out PropertyState prop) && !prop.IsOwned)
+                {
+                    _boardPreview.ClearTileOwner(tileIndex);
+                }
             }
 
             _lobby.HidePlayerToken(playerIndex);
@@ -601,7 +647,21 @@ namespace Ropoly.Presentation.Dice
                 return;
             }
 
-            RefreshAwaitingRoll();
+            string reasonText = reason switch
+            {
+                EliminationReason.DebtTimeout => "DEBT TIMEOUT",
+                EliminationReason.InactivityTimeout => "INACTIVITY",
+                EliminationReason.DisconnectTimeout => "DISCONNECTED",
+                _ => "BANKRUPTCY"
+            };
+
+            PlayerState player = _lobby.Session.State.Players[playerIndex];
+            _boardPreview.SetStatusText($"{player.DisplayName} ELIMINATED  •  {reasonText}");
+
+            if (!IsBusy)
+            {
+                RefreshAwaitingRoll();
+            }
         }
 
         private void SetDecisionMode(bool decisionMode)

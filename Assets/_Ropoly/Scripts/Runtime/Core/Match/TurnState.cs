@@ -19,8 +19,20 @@ namespace Ropoly.Core.Match
         public DiceRoll LastRoll { get; internal set; }
         public int PendingPropertyTileIndex { get; private set; }
         public RentPayment RentPayment { get; private set; }
+        public DateTimeOffset? Deadline { get; internal set; }
         public bool HasPendingPropertyDecision =>
             PendingPropertyTileIndex != PropertyState.UnownedPlayerIndex;
+
+        public TimeSpan? GetRemainingTime(DateTimeOffset now)
+        {
+            if (!Deadline.HasValue)
+            {
+                return null;
+            }
+
+            TimeSpan remaining = Deadline.Value - now;
+            return remaining < TimeSpan.Zero ? TimeSpan.Zero : remaining;
+        }
 
         internal void BeginPropertyDecision(int tileIndex)
         {
@@ -73,6 +85,7 @@ namespace Ropoly.Core.Match
             LastRoll = null;
             PendingPropertyTileIndex = PropertyState.UnownedPlayerIndex;
             RentPayment = null;
+            Deadline = null;
             Phase = TurnPhase.AwaitingRoll;
         }
     }

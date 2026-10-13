@@ -95,7 +95,9 @@ namespace Ropoly.Presentation.Lobby
                 creatureIds,
                 board,
                 rules.PassStartCash,
-                rules.MortgageEnabled);
+                rules.MortgageEnabled,
+                rules.TurnDurationSeconds,
+                rules.DisconnectGraceSeconds);
             BindInterface();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);

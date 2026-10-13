@@ -33,6 +33,12 @@ namespace Ropoly.Core.Match
 
         public bool IsEliminated => ConnectionStatus == PlayerConnectionStatus.Eliminated;
 
+        public bool IsConnected => ConnectionStatus == PlayerConnectionStatus.Connected;
+
+        public bool IsDisconnected => ConnectionStatus == PlayerConnectionStatus.Disconnected;
+
+        public DateTimeOffset? DisconnectDeadline { get; private set; }
+
         internal void SelectCreature(string creatureId)
         {
             CreatureId = creatureId;
@@ -69,10 +75,35 @@ namespace Ropoly.Core.Match
             return true;
         }
 
+        internal bool TryDisconnect(DateTimeOffset deadline)
+        {
+            if (IsEliminated)
+            {
+                return false;
+            }
+
+            ConnectionStatus = PlayerConnectionStatus.Disconnected;
+            DisconnectDeadline = deadline;
+            return true;
+        }
+
+        internal bool TryReconnect()
+        {
+            if (IsEliminated || ConnectionStatus == PlayerConnectionStatus.Connected)
+            {
+                return false;
+            }
+
+            ConnectionStatus = PlayerConnectionStatus.Connected;
+            DisconnectDeadline = null;
+            return true;
+        }
+
         internal void Eliminate()
         {
             Cash = 0;
             ConnectionStatus = PlayerConnectionStatus.Eliminated;
+            DisconnectDeadline = null;
         }
     }
 }

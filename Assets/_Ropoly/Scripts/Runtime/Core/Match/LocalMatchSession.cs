@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ropoly.Core.Board;
+using Ropoly.Core.Time;
 
 namespace Ropoly.Core.Match
 {
@@ -17,6 +18,9 @@ namespace Ropoly.Core.Match
         private readonly int _boardTileCount;
         private readonly int _passStartCash;
         private readonly bool _mortgageEnabled;
+        private readonly int _turnDurationSeconds;
+        private readonly int _disconnectGraceSeconds;
+        private readonly IClock _clock;
         private readonly Dictionary<int, PropertyState> _propertiesByTileIndex;
 
         public LocalMatchSession(
@@ -25,7 +29,10 @@ namespace Ropoly.Core.Match
             IEnumerable<string> availableCreatureIds,
             int boardTileCount = 40,
             int passStartCash = 200,
-            bool mortgageEnabled = true)
+            bool mortgageEnabled = true,
+            int turnDurationSeconds = 60,
+            int disconnectGraceSeconds = 60,
+            IClock clock = null)
             : this(
                 playerCount,
                 startingCash,
@@ -33,7 +40,10 @@ namespace Ropoly.Core.Match
                 boardTileCount,
                 passStartCash,
                 mortgageEnabled,
-                board: null)
+                board: null,
+                turnDurationSeconds,
+                disconnectGraceSeconds,
+                clock)
         {
         }
 
@@ -43,7 +53,10 @@ namespace Ropoly.Core.Match
             IEnumerable<string> availableCreatureIds,
             BoardSnapshot board,
             int passStartCash = 200,
-            bool mortgageEnabled = true)
+            bool mortgageEnabled = true,
+            int turnDurationSeconds = 60,
+            int disconnectGraceSeconds = 60,
+            IClock clock = null)
             : this(
                 playerCount,
                 startingCash,
@@ -51,7 +64,10 @@ namespace Ropoly.Core.Match
                 GetBoardTileCount(board),
                 passStartCash,
                 mortgageEnabled,
-                board)
+                board,
+                turnDurationSeconds,
+                disconnectGraceSeconds,
+                clock)
         {
         }
 
@@ -62,7 +78,10 @@ namespace Ropoly.Core.Match
             int boardTileCount,
             int passStartCash,
             bool mortgageEnabled,
-            BoardSnapshot board)
+            BoardSnapshot board,
+            int turnDurationSeconds,
+            int disconnectGraceSeconds,
+            IClock clock)
         {
             if (playerCount < MinimumPlayers || playerCount > MaximumPlayers)
             {
@@ -84,6 +103,16 @@ namespace Ropoly.Core.Match
                 throw new ArgumentOutOfRangeException(nameof(passStartCash));
             }
 
+            if (turnDurationSeconds < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(turnDurationSeconds));
+            }
+
+            if (disconnectGraceSeconds < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(disconnectGraceSeconds));
+            }
+
             _availableCreatureIds = new HashSet<string>(
                 availableCreatureIds ?? throw new ArgumentNullException(nameof(availableCreatureIds)),
                 StringComparer.Ordinal);
@@ -98,6 +127,9 @@ namespace Ropoly.Core.Match
             _boardTileCount = boardTileCount;
             _passStartCash = passStartCash;
             _mortgageEnabled = mortgageEnabled;
+            _turnDurationSeconds = turnDurationSeconds;
+            _disconnectGraceSeconds = disconnectGraceSeconds;
+            _clock = clock ?? SystemClock.Instance;
             List<PropertyState> properties = CreatePropertyStates(board);
             State = new MatchState(
                 CreateLocalMatchId(),
@@ -113,6 +145,33 @@ namespace Ropoly.Core.Match
         public MatchState State { get; }
 
         public bool MortgageEnabled => _mortgageEnabled;
+
+        public IClock Clock => _clock;
+
+        public int TurnDurationSeconds => _turnDurationSeconds;
+
+        public int DisconnectGraceSeconds => _disconnectGraceSeconds;
+
+        public TimeSpan? CurrentTurnRemainingTime => State.Turn?.GetRemainingTime(_clock.UtcNow);
+
+        public TimeSpan? GetPlayerDisconnectRemainingTime(int playerIndex)
+        {
+            if (playerIndex < 0 || playerIndex >= State.Players.Count)
+            {
+                return null;
+            }
+
+            PlayerState player = State.Players[playerIndex];
+            if (!player.IsDisconnected || !player.DisconnectDeadline.HasValue)
+            {
+                return null;
+            }
+
+            TimeSpan remaining = player.DisconnectDeadline.Value - _clock.UtcNow;
+            return remaining < TimeSpan.Zero ? TimeSpan.Zero : remaining;
+        }
+
+        public event Action<int, EliminationReason> PlayerEliminated;
 
         public PropertyPurchaseOffer CurrentPurchaseOffer
         {
@@ -220,6 +279,7 @@ namespace Ropoly.Core.Match
 
             State.Phase = MatchPhase.InProgress;
             State.Turn = new TurnState(currentPlayerIndex: 0);
+            ResetTurnDeadline();
             return true;
         }
 
@@ -245,6 +305,7 @@ namespace Ropoly.Core.Match
             roll = new DiceRoll(firstValue, secondValue);
             State.Turn.LastRoll = roll;
             State.Turn.Phase = TurnPhase.AwaitingMovement;
+            ResetTurnDeadline();
             return true;
         }
 
@@ -264,6 +325,7 @@ namespace Ropoly.Core.Match
             }
 
             State.Turn.AdvanceTo(nextPlayerIndex);
+            ResetTurnDeadline();
             return true;
         }
 
@@ -297,6 +359,7 @@ namespace Ropoly.Core.Match
                 completedLaps,
                 cashAward);
             State.Turn.Phase = TurnPhase.Moving;
+            ResetTurnDeadline();
             return true;
         }
 
@@ -332,6 +395,7 @@ namespace Ropoly.Core.Match
                 State.Turn.CompleteLanding();
             }
 
+            ResetTurnDeadline();
             return true;
         }
 
@@ -347,6 +411,7 @@ namespace Ropoly.Core.Match
             if (property.IsOwned)
             {
                 State.Turn.CompleteLanding();
+                ResetTurnDeadline();
                 return PropertyPurchaseResult.AlreadyOwned;
             }
 
@@ -358,6 +423,7 @@ namespace Ropoly.Core.Match
 
             property.TryAssignOwner(offer.PlayerIndex);
             State.Turn.CompleteLanding();
+            ResetTurnDeadline();
             return PropertyPurchaseResult.Success;
         }
 
@@ -369,6 +435,7 @@ namespace Ropoly.Core.Match
             }
 
             State.Turn.CompleteLanding();
+            ResetTurnDeadline();
             return true;
         }
 
@@ -394,6 +461,7 @@ namespace Ropoly.Core.Match
 
             payment.MarkPaid();
             State.Turn.CompleteDebtResolution();
+            ResetTurnDeadline();
             return RentPaymentResult.Success;
         }
 
@@ -439,6 +507,7 @@ namespace Ropoly.Core.Match
             }
 
             State.MutablePlayers[playerIndex].AddCash(property.MortgageValue);
+            ResetTurnDeadline();
             return AssetLiquidationResult.Success;
         }
 
@@ -455,6 +524,7 @@ namespace Ropoly.Core.Match
             }
 
             State.MutablePlayers[playerIndex].AddCash(proceeds);
+            ResetTurnDeadline();
             return AssetLiquidationResult.Success;
         }
 
@@ -465,17 +535,115 @@ namespace Ropoly.Core.Match
                 return false;
             }
 
-            int eliminatedPlayerIndex = State.Turn.CurrentPlayerIndex;
-            State.Turn.RentPayment.CancelByBankruptcy();
+            return EliminatePlayer(State.Turn.CurrentPlayerIndex, EliminationReason.Bankruptcy);
+        }
+
+        public bool TryDisconnectPlayer(int playerIndex)
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                playerIndex < 0 ||
+                playerIndex >= State.Players.Count)
+            {
+                return false;
+            }
+
+            DateTimeOffset deadline = _clock.UtcNow + TimeSpan.FromSeconds(_disconnectGraceSeconds);
+            return State.MutablePlayers[playerIndex].TryDisconnect(deadline);
+        }
+
+        public bool TryReconnectPlayer(int playerIndex)
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                playerIndex < 0 ||
+                playerIndex >= State.Players.Count)
+            {
+                return false;
+            }
+
+            return State.MutablePlayers[playerIndex].TryReconnect();
+        }
+
+        public void ResetCurrentPlayerActivity()
+        {
+            if (State.Phase == MatchPhase.InProgress && State.Turn != null)
+            {
+                ResetTurnDeadline();
+            }
+        }
+
+        public bool Tick()
+        {
+            if (State.Phase != MatchPhase.InProgress)
+            {
+                return false;
+            }
+
+            DateTimeOffset now = _clock.UtcNow;
+            bool stateChanged = false;
+
+            for (int index = 0; index < State.Players.Count; index++)
+            {
+                PlayerState player = State.Players[index];
+                if (player.IsDisconnected &&
+                    player.DisconnectDeadline.HasValue &&
+                    player.DisconnectDeadline.Value <= now)
+                {
+                    EliminatePlayer(index, EliminationReason.DisconnectTimeout);
+                    stateChanged = true;
+
+                    if (State.Phase == MatchPhase.Finished)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (State.Phase == MatchPhase.InProgress &&
+                State.Turn != null &&
+                State.Turn.Deadline.HasValue &&
+                State.Turn.Deadline.Value <= now)
+            {
+                int currentPlayerIndex = State.Turn.CurrentPlayerIndex;
+                EliminationReason reason = State.Turn.Phase == TurnPhase.DebtResolution
+                    ? EliminationReason.DebtTimeout
+                    : EliminationReason.InactivityTimeout;
+
+                EliminatePlayer(currentPlayerIndex, reason);
+                stateChanged = true;
+            }
+
+            return stateChanged;
+        }
+
+        private bool EliminatePlayer(int playerIndex, EliminationReason reason)
+        {
+            if (playerIndex < 0 || playerIndex >= State.Players.Count)
+            {
+                return false;
+            }
+
+            PlayerState player = State.MutablePlayers[playerIndex];
+            if (player.IsEliminated)
+            {
+                return false;
+            }
+
+            if (State.Turn?.RentPayment != null && State.Turn.RentPayment.PayerPlayerIndex == playerIndex)
+            {
+                State.Turn.RentPayment.CancelByBankruptcy();
+            }
+
             foreach (PropertyState property in State.Properties)
             {
-                if (property.OwnerPlayerIndex == eliminatedPlayerIndex)
+                if (property.OwnerPlayerIndex == playerIndex)
                 {
                     property.ReleaseToBank();
                 }
             }
 
-            State.MutablePlayers[eliminatedPlayerIndex].Eliminate();
+            player.Eliminate();
+            PlayerEliminated?.Invoke(playerIndex, reason);
+
             int winnerPlayerIndex = GetSoleActivePlayerIndex();
             if (winnerPlayerIndex >= 0)
             {
@@ -484,14 +652,27 @@ namespace Ropoly.Core.Match
                 return true;
             }
 
-            int nextPlayerIndex = FindNextActivePlayer(eliminatedPlayerIndex);
-            if (nextPlayerIndex < 0)
+            if (State.Turn != null && State.Turn.CurrentPlayerIndex == playerIndex)
             {
-                return false;
+                int nextPlayerIndex = FindNextActivePlayer(playerIndex);
+                if (nextPlayerIndex >= 0)
+                {
+                    State.Turn.AdvanceTo(nextPlayerIndex);
+                    ResetTurnDeadline();
+                }
             }
 
-            State.Turn.AdvanceTo(nextPlayerIndex);
             return true;
+        }
+
+        private void ResetTurnDeadline()
+        {
+            if (State.Turn != null)
+            {
+                State.Turn.Deadline = _turnDurationSeconds > 0
+                    ? _clock.UtcNow + TimeSpan.FromSeconds(_turnDurationSeconds)
+                    : null;
+            }
         }
 
         public bool TryGetPropertyAt(int tileIndex, out PropertyState property)
