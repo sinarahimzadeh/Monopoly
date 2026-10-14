@@ -1,4 +1,5 @@
 using System;
+using Ropoly.Core.Cards;
 
 namespace Ropoly.Core.Match
 {
@@ -20,6 +21,19 @@ namespace Ropoly.Core.Match
         public int PendingPropertyTileIndex { get; private set; }
         public RentPayment RentPayment { get; private set; }
         public DateTimeOffset? Deadline { get; internal set; }
+        public int ConsecutiveDoublesCount { get; internal set; }
+        public bool RolledDoublesToEscapeDetention { get; internal set; }
+        public bool SentToDetentionThisTurn { get; internal set; }
+        public CardSnapshot DrawnCard { get; internal set; }
+        public int PaidFeeAmount { get; internal set; }
+        public int VacationRewardAwarded { get; internal set; }
+        public bool CanRollAgain =>
+            LastRoll != null &&
+            LastRoll.IsDouble &&
+            !RolledDoublesToEscapeDetention &&
+            !SentToDetentionThisTurn &&
+            ConsecutiveDoublesCount < 3 &&
+            Phase == TurnPhase.AwaitingTurnEnd;
         public bool HasPendingPropertyDecision =>
             PendingPropertyTileIndex != PropertyState.UnownedPlayerIndex;
 
@@ -87,6 +101,12 @@ namespace Ropoly.Core.Match
             RentPayment = null;
             Deadline = null;
             Phase = TurnPhase.AwaitingRoll;
+            ConsecutiveDoublesCount = 0;
+            RolledDoublesToEscapeDetention = false;
+            SentToDetentionThisTurn = false;
+            DrawnCard = null;
+            PaidFeeAmount = 0;
+            VacationRewardAwarded = 0;
         }
     }
 }

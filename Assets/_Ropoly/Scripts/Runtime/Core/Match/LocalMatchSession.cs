@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ropoly.Core.Board;
+using Ropoly.Core.Cards;
 using Ropoly.Core.Time;
 
 namespace Ropoly.Core.Match
@@ -25,6 +26,11 @@ namespace Ropoly.Core.Match
         private readonly Dictionary<int, PropertyState> _propertiesByTileIndex;
         private readonly Dictionary<string, List<PropertyState>> _propertiesByCountryId;
         private readonly Dictionary<string, CountrySnapshot> _countriesById;
+        private readonly Dictionary<int, SpecialSpaceSnapshot> _specialSpacesByTileIndex;
+        private readonly Dictionary<string, CardDeck> _cardDecks;
+        private readonly bool _vacationRewardEnabled;
+        private readonly int _baseVacationReward;
+        private int _vacationPool;
 
         public LocalMatchSession(
             int playerCount,
@@ -36,7 +42,10 @@ namespace Ropoly.Core.Match
             int turnDurationSeconds = 60,
             int disconnectGraceSeconds = 60,
             IClock clock = null,
-            int fullSetRentMultiplier = 2)
+            int fullSetRentMultiplier = 2,
+            bool vacationRewardEnabled = false,
+            int vacationReward = 0,
+            IReadOnlyDictionary<string, CardDeck> cardDecks = null)
             : this(
                 playerCount,
                 startingCash,
@@ -48,7 +57,10 @@ namespace Ropoly.Core.Match
                 turnDurationSeconds,
                 disconnectGraceSeconds,
                 clock,
-                fullSetRentMultiplier)
+                fullSetRentMultiplier,
+                vacationRewardEnabled,
+                vacationReward,
+                cardDecks)
         {
         }
 
@@ -62,7 +74,10 @@ namespace Ropoly.Core.Match
             int turnDurationSeconds = 60,
             int disconnectGraceSeconds = 60,
             IClock clock = null,
-            int fullSetRentMultiplier = 2)
+            int fullSetRentMultiplier = 2,
+            bool vacationRewardEnabled = false,
+            int vacationReward = 0,
+            IReadOnlyDictionary<string, CardDeck> cardDecks = null)
             : this(
                 playerCount,
                 startingCash,
@@ -74,7 +89,10 @@ namespace Ropoly.Core.Match
                 turnDurationSeconds,
                 disconnectGraceSeconds,
                 clock,
-                fullSetRentMultiplier)
+                fullSetRentMultiplier,
+                vacationRewardEnabled,
+                vacationReward,
+                cardDecks)
         {
         }
 
@@ -89,7 +107,10 @@ namespace Ropoly.Core.Match
             int turnDurationSeconds,
             int disconnectGraceSeconds,
             IClock clock,
-            int fullSetRentMultiplier)
+            int fullSetRentMultiplier,
+            bool vacationRewardEnabled,
+            int vacationReward,
+            IReadOnlyDictionary<string, CardDeck> cardDecks)
         {
             if (playerCount < MinimumPlayers || playerCount > MaximumPlayers)
             {
@@ -144,6 +165,19 @@ namespace Ropoly.Core.Match
             _disconnectGraceSeconds = disconnectGraceSeconds;
             _clock = clock ?? SystemClock.Instance;
             _fullSetRentMultiplier = fullSetRentMultiplier;
+            _vacationRewardEnabled = vacationRewardEnabled;
+            _baseVacationReward = Math.Max(0, vacationReward);
+            _vacationPool = _baseVacationReward;
+
+            if (cardDecks != null)
+            {
+                _cardDecks = new Dictionary<string, CardDeck>(cardDecks, StringComparer.Ordinal);
+            }
+            else
+            {
+                _cardDecks = DefaultCardDecks.CreateDefaultDecks();
+            }
+
             _propertiesByCountryId = new Dictionary<string, List<PropertyState>>(StringComparer.Ordinal);
             _countriesById = new Dictionary<string, CountrySnapshot>(StringComparer.Ordinal);
             if (board?.Countries != null)
@@ -178,6 +212,30 @@ namespace Ropoly.Core.Match
                     list.Add(property);
                 }
             }
+
+            _specialSpacesByTileIndex = new Dictionary<int, SpecialSpaceSnapshot>();
+            if (board != null && board.SpecialSpaces != null && board.Tiles != null)
+            {
+                Dictionary<string, SpecialSpaceSnapshot> specialById =
+                    new Dictionary<string, SpecialSpaceSnapshot>(StringComparer.Ordinal);
+                foreach (SpecialSpaceSnapshot special in board.SpecialSpaces)
+                {
+                    if (special != null && !string.IsNullOrEmpty(special.SpaceId))
+                    {
+                        specialById[special.SpaceId] = special;
+                    }
+                }
+
+                foreach (BoardTileSnapshot tile in board.Tiles)
+                {
+                    if (tile.Kind == BoardTileKind.Special &&
+                        !string.IsNullOrEmpty(tile.ContentId) &&
+                        specialById.TryGetValue(tile.ContentId, out SpecialSpaceSnapshot snapshot))
+                    {
+                        _specialSpacesByTileIndex[tile.Index] = snapshot;
+                    }
+                }
+            }
         }
 
         public MatchState State { get; }
@@ -187,6 +245,12 @@ namespace Ropoly.Core.Match
         public IClock Clock => _clock;
 
         public int TurnDurationSeconds => _turnDurationSeconds;
+
+        public bool VacationRewardEnabled => _vacationRewardEnabled;
+
+        public int VacationPool => _vacationPool;
+
+        public IReadOnlyDictionary<string, CardDeck> CardDecks => _cardDecks;
 
         public int DisconnectGraceSeconds => _disconnectGraceSeconds;
         public int FullSetRentMultiplier => _fullSetRentMultiplier;
@@ -322,13 +386,102 @@ namespace Ropoly.Core.Match
             return true;
         }
 
+        public bool TryPayDetentionBail()
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.AwaitingRoll)
+            {
+                return false;
+            }
+
+            PlayerState player = State.MutablePlayers[State.Turn.CurrentPlayerIndex];
+            if (!player.IsInDetention)
+            {
+                return false;
+            }
+
+            const int bailCost = 50;
+            if (!player.TrySpendCash(bailCost))
+            {
+                return false;
+            }
+
+            if (_vacationRewardEnabled)
+            {
+                _vacationPool = checked(_vacationPool + bailCost);
+            }
+
+            player.ReleaseFromDetention();
+            ResetTurnDeadline();
+            return true;
+        }
+
+        public bool TryUseDetentionWaiver()
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.AwaitingRoll)
+            {
+                return false;
+            }
+
+            PlayerState player = State.MutablePlayers[State.Turn.CurrentPlayerIndex];
+            if (!player.IsInDetention)
+            {
+                return false;
+            }
+
+            if (!player.TryUseDetentionWaiver())
+            {
+                return false;
+            }
+
+            if (_cardDecks != null && _cardDecks.TryGetValue(DefaultCardDecks.WorldEventDeckId, out CardDeck deck))
+            {
+                CardSnapshot waiver = new CardSnapshot(
+                    "returned-waiver",
+                    DefaultCardDecks.WorldEventDeckId,
+                    "Consular Release Order",
+                    "Get Out of Detention Free.",
+                    CardEffectKind.DetentionWaiver);
+                deck.ReturnWaiverCard(waiver);
+            }
+
+            player.ReleaseFromDetention();
+            ResetTurnDeadline();
+            return true;
+        }
+
+        public void SendPlayerToDetention(int playerIndex)
+        {
+            if (playerIndex < 0 || playerIndex >= State.Players.Count)
+            {
+                return;
+            }
+
+            PlayerState player = State.MutablePlayers[playerIndex];
+            player.SendToDetention(detentionTileIndex: 10);
+            if (State.Turn != null && State.Turn.CurrentPlayerIndex == playerIndex)
+            {
+                State.Turn.ConsecutiveDoublesCount = 0;
+                State.Turn.SentToDetentionThisTurn = true;
+            }
+        }
+
         public bool TryRollDice(IDiceRollSource rollSource, out DiceRoll roll)
         {
             roll = null;
             if (rollSource == null ||
                 State.Phase != MatchPhase.InProgress ||
-                State.Turn == null ||
-                State.Turn.Phase != TurnPhase.AwaitingRoll)
+                State.Turn == null)
+            {
+                return false;
+            }
+
+            bool isAwaitingRoll = State.Turn.Phase == TurnPhase.AwaitingRoll;
+            bool isRollingAgain = State.Turn.CanRollAgain;
+            if (!isAwaitingRoll && !isRollingAgain)
             {
                 return false;
             }
@@ -343,7 +496,75 @@ namespace Ropoly.Core.Match
 
             roll = new DiceRoll(firstValue, secondValue);
             State.Turn.LastRoll = roll;
-            State.Turn.Phase = TurnPhase.AwaitingMovement;
+
+            int currentPlayerIndex = State.Turn.CurrentPlayerIndex;
+            PlayerState player = State.MutablePlayers[currentPlayerIndex];
+
+            if (player.IsInDetention)
+            {
+                if (roll.IsDouble)
+                {
+                    player.ReleaseFromDetention();
+                    State.Turn.RolledDoublesToEscapeDetention = true;
+                    State.Turn.ConsecutiveDoublesCount = 0;
+                    State.Turn.Phase = TurnPhase.AwaitingMovement;
+                }
+                else
+                {
+                    player.IncrementDetentionTurns();
+                    if (player.DetentionTurns < 3)
+                    {
+                        State.Turn.Phase = TurnPhase.AwaitingTurnEnd;
+                    }
+                    else
+                    {
+                        const int forcedBailAmount = 50;
+                        if (player.TrySpendCash(forcedBailAmount))
+                        {
+                            if (_vacationRewardEnabled)
+                            {
+                                _vacationPool = checked(_vacationPool + forcedBailAmount);
+                            }
+
+                            player.ReleaseFromDetention();
+                            State.Turn.Phase = TurnPhase.AwaitingMovement;
+                        }
+                        else
+                        {
+                            RentPayment payment = new RentPayment(
+                                tileIndex: 10,
+                                propertyId: "space-detention",
+                                propertyDisplayName: "Detention Bail",
+                                payerPlayerIndex: currentPlayerIndex,
+                                ownerPlayerIndex: PropertyState.UnownedPlayerIndex,
+                                amount: forcedBailAmount);
+                            State.Turn.RecordRentPayment(payment);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (roll.IsDouble)
+                {
+                    State.Turn.ConsecutiveDoublesCount++;
+                    if (State.Turn.ConsecutiveDoublesCount >= 3)
+                    {
+                        SendPlayerToDetention(currentPlayerIndex);
+                        State.Turn.ConsecutiveDoublesCount = 0;
+                        State.Turn.Phase = TurnPhase.AwaitingTurnEnd;
+                        ResetTurnDeadline();
+                        return true;
+                    }
+                }
+                else
+                {
+                    State.Turn.ConsecutiveDoublesCount = 0;
+                }
+
+                State.Turn.Phase = TurnPhase.AwaitingMovement;
+            }
+
             ResetTurnDeadline();
             return true;
         }
@@ -412,8 +633,10 @@ namespace Ropoly.Core.Match
             }
 
             PlayerState player = State.Players[State.Turn.CurrentPlayerIndex];
+            int currentTileIndex = player.BoardPosition;
+
             if (_propertiesByTileIndex.TryGetValue(
-                    player.BoardPosition,
+                    currentTileIndex,
                     out PropertyState property))
             {
                 if (!property.IsOwned)
@@ -428,6 +651,12 @@ namespace Ropoly.Core.Match
                 {
                     ResolveRent(property);
                 }
+            }
+            else if (_specialSpacesByTileIndex.TryGetValue(
+                    currentTileIndex,
+                    out SpecialSpaceSnapshot specialSpace))
+            {
+                ResolveSpecialSpace(specialSpace);
             }
             else
             {
@@ -499,7 +728,16 @@ namespace Ropoly.Core.Match
             }
 
             payment.MarkPaid();
-            State.Turn.CompleteDebtResolution();
+            if (string.Equals(payment.PropertyId, "space-detention", StringComparison.Ordinal))
+            {
+                State.MutablePlayers[payment.PayerPlayerIndex].ReleaseFromDetention();
+                State.Turn.Phase = TurnPhase.AwaitingMovement;
+            }
+            else
+            {
+                State.Turn.CompleteDebtResolution();
+            }
+
             ResetTurnDeadline();
             return RentPaymentResult.Success;
         }
@@ -1061,7 +1299,7 @@ namespace Ropoly.Core.Match
                 : PropertyState.UnownedPlayerIndex;
         }
 
-        private void ResolveRent(PropertyState property)
+        private void ResolveRent(PropertyState property, int rentMultiplier = 1)
         {
             int payerPlayerIndex = State.Turn.CurrentPlayerIndex;
             int ownerPlayerIndex = property.OwnerPlayerIndex;
@@ -1072,11 +1310,13 @@ namespace Ropoly.Core.Match
                 IsCountrySetFullyOwned(property.CountryId, ownerPlayerIndex) &&
                 !HasMortgagedPropertyInCountrySet(property.CountryId);
 
-            int rentAmount = property.CalculateRent(
+            int baseRent = property.CalculateRent(
                 sameKindOwnedCount,
-                State.Turn.LastRoll.Total,
+                State.Turn.LastRoll != null ? State.Turn.LastRoll.Total : 7,
                 isFullCountrySetUnmortgaged,
                 _fullSetRentMultiplier);
+
+            int rentAmount = checked(baseRent * rentMultiplier);
             RentPayment payment = new RentPayment(
                 property.TileIndex,
                 property.PropertyId,
@@ -1091,6 +1331,326 @@ namespace Ropoly.Core.Match
             }
 
             State.Turn.RecordRentPayment(payment);
+        }
+
+        private void ResolveSpecialSpace(SpecialSpaceSnapshot specialSpace)
+        {
+            int currentPlayerIndex = State.Turn.CurrentPlayerIndex;
+            PlayerState player = State.MutablePlayers[currentPlayerIndex];
+
+            switch (specialSpace.SpecialKind)
+            {
+                case SpecialSpaceKind.Start:
+                case SpecialSpaceKind.Detention:
+                    State.Turn.CompleteLanding();
+                    break;
+
+                case SpecialSpaceKind.GoToDetention:
+                    SendPlayerToDetention(currentPlayerIndex);
+                    State.Turn.CompleteLanding();
+                    break;
+
+                case SpecialSpaceKind.Vacation:
+                    if (_vacationRewardEnabled && _vacationPool > 0)
+                    {
+                        int award = _vacationPool;
+                        player.AddCash(award);
+                        State.Turn.VacationRewardAwarded = award;
+                        _vacationPool = _baseVacationReward;
+                    }
+
+                    State.Turn.CompleteLanding();
+                    break;
+
+                case SpecialSpaceKind.Fee:
+                    ResolveFee(specialSpace);
+                    break;
+
+                case SpecialSpaceKind.Event:
+                    ResolveEvent(specialSpace);
+                    break;
+
+                default:
+                    State.Turn.CompleteLanding();
+                    break;
+            }
+        }
+
+        private void ResolveFee(SpecialSpaceSnapshot specialSpace)
+        {
+            int currentPlayerIndex = State.Turn.CurrentPlayerIndex;
+            int amount = specialSpace.FeeAmount;
+
+            RentPayment payment = new RentPayment(
+                State.MutablePlayers[currentPlayerIndex].BoardPosition,
+                specialSpace.SpaceId,
+                specialSpace.DisplayName,
+                currentPlayerIndex,
+                PropertyState.UnownedPlayerIndex,
+                amount);
+
+            if (TryTransferCash(currentPlayerIndex, PropertyState.UnownedPlayerIndex, amount))
+            {
+                payment.MarkPaid();
+                State.Turn.PaidFeeAmount = amount;
+            }
+
+            State.Turn.RecordRentPayment(payment);
+        }
+
+        private void ResolveEvent(SpecialSpaceSnapshot specialSpace)
+        {
+            string deckId = specialSpace.EventDeckId;
+            if (string.IsNullOrEmpty(deckId) || !_cardDecks.TryGetValue(deckId, out CardDeck deck))
+            {
+                State.Turn.CompleteLanding();
+                return;
+            }
+
+            CardSnapshot card = deck.Draw();
+            if (card == null)
+            {
+                State.Turn.CompleteLanding();
+                return;
+            }
+
+            State.Turn.DrawnCard = card;
+            ExecuteCardEffect(card, deck);
+        }
+
+        private void ExecuteCardEffect(CardSnapshot card, CardDeck deck)
+        {
+            int currentPlayerIndex = State.Turn.CurrentPlayerIndex;
+            PlayerState player = State.MutablePlayers[currentPlayerIndex];
+
+            switch (card.EffectKind)
+            {
+                case CardEffectKind.CashBank:
+                    if (card.Amount >= 0)
+                    {
+                        player.AddCash(card.Amount);
+                        State.Turn.CompleteLanding();
+                    }
+                    else
+                    {
+                        int feeAmount = Math.Abs(card.Amount);
+                        RentPayment payment = new RentPayment(
+                            player.BoardPosition,
+                            card.CardId,
+                            card.Title,
+                            currentPlayerIndex,
+                            PropertyState.UnownedPlayerIndex,
+                            feeAmount);
+
+                        if (TryTransferCash(currentPlayerIndex, PropertyState.UnownedPlayerIndex, feeAmount))
+                        {
+                            payment.MarkPaid();
+                            State.Turn.PaidFeeAmount = feeAmount;
+                        }
+
+                        State.Turn.RecordRentPayment(payment);
+                    }
+                    break;
+
+                case CardEffectKind.CashFromEachPlayer:
+                    int amountFromEach = card.Amount;
+                    for (int i = 0; i < State.Players.Count; i++)
+                    {
+                        if (i != currentPlayerIndex && !State.Players[i].IsEliminated)
+                        {
+                            PlayerState other = State.MutablePlayers[i];
+                            int collected = Math.Min(other.Cash, amountFromEach);
+                            if (other.TrySpendCash(collected))
+                            {
+                                player.AddCash(collected);
+                            }
+                        }
+                    }
+
+                    State.Turn.CompleteLanding();
+                    break;
+
+                case CardEffectKind.CashToEachPlayer:
+                    int amountToEach = card.Amount;
+                    int activeOtherCount = 0;
+                    for (int i = 0; i < State.Players.Count; i++)
+                    {
+                        if (i != currentPlayerIndex && !State.Players[i].IsEliminated)
+                        {
+                            activeOtherCount++;
+                        }
+                    }
+
+                    int totalOwed = amountToEach * activeOtherCount;
+                    if (player.Cash >= totalOwed)
+                    {
+                        for (int i = 0; i < State.Players.Count; i++)
+                        {
+                            if (i != currentPlayerIndex && !State.Players[i].IsEliminated)
+                            {
+                                player.TrySpendCash(amountToEach);
+                                State.MutablePlayers[i].AddCash(amountToEach);
+                            }
+                        }
+
+                        State.Turn.CompleteLanding();
+                    }
+                    else
+                    {
+                        RentPayment payment = new RentPayment(
+                            player.BoardPosition,
+                            card.CardId,
+                            card.Title,
+                            currentPlayerIndex,
+                            PropertyState.UnownedPlayerIndex,
+                            totalOwed);
+
+                        State.Turn.RecordRentPayment(payment);
+                    }
+                    break;
+
+                case CardEffectKind.MoveToTile:
+                    int destination = card.TargetTileIndex;
+                    if (card.CanCollectPassStart)
+                    {
+                        if (destination < player.BoardPosition || destination == 0)
+                        {
+                            player.AddCash(_passStartCash);
+                        }
+                    }
+
+                    player.MoveTo(destination);
+                    ResolveLandingAt(destination);
+                    break;
+
+                case CardEffectKind.MoveRelative:
+                    int newPos = (player.BoardPosition + card.RelativeSteps + _boardTileCount) % _boardTileCount;
+                    player.MoveTo(newPos);
+                    ResolveLandingAt(newPos);
+                    break;
+
+                case CardEffectKind.MoveToNearest:
+                    int nearestIndex = FindNearestTileOfKind(player.BoardPosition, card.TargetTileKind);
+                    if (nearestIndex >= 0)
+                    {
+                        if (nearestIndex < player.BoardPosition)
+                        {
+                            player.AddCash(_passStartCash);
+                        }
+
+                        player.MoveTo(nearestIndex);
+                        ResolveLandingAt(nearestIndex, card.RentMultiplier);
+                    }
+                    else
+                    {
+                        State.Turn.CompleteLanding();
+                    }
+                    break;
+
+                case CardEffectKind.PropertyRepair:
+                    int totalRepairCost = CalculatePropertyRepairCost(currentPlayerIndex, card.CostPerHouse, card.CostPerHotel);
+                    if (totalRepairCost == 0)
+                    {
+                        State.Turn.CompleteLanding();
+                    }
+                    else
+                    {
+                        RentPayment payment = new RentPayment(
+                            player.BoardPosition,
+                            card.CardId,
+                            card.Title,
+                            currentPlayerIndex,
+                            PropertyState.UnownedPlayerIndex,
+                            totalRepairCost);
+
+                        if (TryTransferCash(currentPlayerIndex, PropertyState.UnownedPlayerIndex, totalRepairCost))
+                        {
+                            payment.MarkPaid();
+                            State.Turn.PaidFeeAmount = totalRepairCost;
+                        }
+
+                        State.Turn.RecordRentPayment(payment);
+                    }
+                    break;
+
+                case CardEffectKind.GoToDetention:
+                    SendPlayerToDetention(currentPlayerIndex);
+                    State.Turn.CompleteLanding();
+                    break;
+
+                case CardEffectKind.DetentionWaiver:
+                    player.AddDetentionWaiver();
+                    State.Turn.CompleteLanding();
+                    break;
+
+                default:
+                    State.Turn.CompleteLanding();
+                    break;
+            }
+        }
+
+        private void ResolveLandingAt(int tileIndex, int rentMultiplier = 1)
+        {
+            if (_propertiesByTileIndex.TryGetValue(tileIndex, out PropertyState property))
+            {
+                if (!property.IsOwned)
+                {
+                    State.Turn.BeginPropertyDecision(property.TileIndex);
+                }
+                else if (property.OwnerPlayerIndex == State.Turn.CurrentPlayerIndex)
+                {
+                    State.Turn.CompleteLanding();
+                }
+                else
+                {
+                    ResolveRent(property, rentMultiplier);
+                }
+            }
+            else if (_specialSpacesByTileIndex.TryGetValue(tileIndex, out SpecialSpaceSnapshot specialSpace))
+            {
+                ResolveSpecialSpace(specialSpace);
+            }
+            else
+            {
+                State.Turn.CompleteLanding();
+            }
+        }
+
+        private int FindNearestTileOfKind(int fromPosition, BoardTileKind kind)
+        {
+            for (int step = 1; step <= _boardTileCount; step++)
+            {
+                int candidate = (fromPosition + step) % _boardTileCount;
+                if (_propertiesByTileIndex.TryGetValue(candidate, out PropertyState property) &&
+                    property.Kind == kind)
+                {
+                    return candidate;
+                }
+            }
+
+            return -1;
+        }
+
+        private int CalculatePropertyRepairCost(int playerIndex, int costPerHouse, int costPerHotel)
+        {
+            int totalHouses = 0;
+            int totalHotels = 0;
+            foreach (PropertyState property in State.Properties)
+            {
+                if (property.OwnerPlayerIndex == playerIndex && property.Kind == BoardTileKind.City)
+                {
+                    if (property.UpgradeLevel >= 1 && property.UpgradeLevel <= 4)
+                    {
+                        totalHouses += property.UpgradeLevel;
+                    }
+                    else if (property.UpgradeLevel == 5)
+                    {
+                        totalHotels += 1;
+                    }
+                }
+            }
+
+            return (totalHouses * costPerHouse) + (totalHotels * costPerHotel);
         }
 
         private int CountOwnedProperties(int ownerPlayerIndex, BoardTileKind kind)
@@ -1115,7 +1675,15 @@ namespace Ropoly.Core.Match
                 return false;
             }
 
-            State.MutablePlayers[receiverPlayerIndex].AddCash(amount);
+            if (receiverPlayerIndex >= 0 && receiverPlayerIndex < State.Players.Count)
+            {
+                State.MutablePlayers[receiverPlayerIndex].AddCash(amount);
+            }
+            else if (_vacationRewardEnabled)
+            {
+                _vacationPool = checked(_vacationPool + amount);
+            }
+
             return true;
         }
 

@@ -99,7 +99,9 @@ namespace Ropoly.Presentation.Lobby
                 rules.TurnDurationSeconds,
                 rules.DisconnectGraceSeconds,
                 clock: null,
-                rules.FullSetRentMultiplier);
+                rules.FullSetRentMultiplier,
+                rules.VacationRewardEnabled,
+                rules.VacationReward);
             BindInterface();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);

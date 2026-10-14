@@ -91,14 +91,16 @@ namespace Ropoly.Presentation.Dice
 
             RentPayment payment = _session.State.Turn.RentPayment;
             PlayerState payer = _session.State.Players[payment.PayerPlayerIndex];
-            PlayerState owner = _session.State.Players[payment.OwnerPlayerIndex];
+            string ownerName = payment.OwnerPlayerIndex >= 0 && payment.OwnerPlayerIndex < _session.State.Players.Count
+                ? _session.State.Players[payment.OwnerPlayerIndex].DisplayName
+                : "THE BANK";
             TimeSpan? remaining = _session.CurrentTurnRemainingTime;
             string timerText = remaining.HasValue
                 ? $"\nTIME REMAINING  {Mathf.CeilToInt((float)remaining.Value.TotalSeconds)}s"
                 : string.Empty;
 
             _summaryLabel.text =
-                $"{payer.DisplayName} OWES {owner.DisplayName}  ${payment.Amount:N0}\n" +
+                $"{payer.DisplayName} OWES {ownerName}  ${payment.Amount:N0}\n" +
                 $"CASH AVAILABLE  ${payer.Cash:N0}{timerText}";
 
             IReadOnlyList<PropertyState> properties =
@@ -123,9 +125,11 @@ namespace Ropoly.Presentation.Dice
 
             RentPayment payment = _session.State.Turn.RentPayment;
             PlayerState payer = _session.State.Players[payment.PayerPlayerIndex];
-            PlayerState owner = _session.State.Players[payment.OwnerPlayerIndex];
+            string ownerName = payment.OwnerPlayerIndex >= 0 && payment.OwnerPlayerIndex < _session.State.Players.Count
+                ? _session.State.Players[payment.OwnerPlayerIndex].DisplayName
+                : "THE BANK";
             _summaryLabel.text =
-                $"{payer.DisplayName} OWES {owner.DisplayName}  ${payment.Amount:N0}\n" +
+                $"{payer.DisplayName} OWES {ownerName}  ${payment.Amount:N0}\n" +
                 $"CASH AVAILABLE  ${payer.Cash:N0}\n" +
                 $"TIME REMAINING  {remainingSeconds}s";
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using Ropoly.Core.Board;
+using Ropoly.Core.Cards;
 using Ropoly.Core.Match;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Lobby;
@@ -202,6 +203,10 @@ namespace Ropoly.Presentation.Dice
                 {
                     UpgradePendingProperty();
                 }
+                else if (turn.CanRollAgain)
+                {
+                    RollDice();
+                }
                 else
                 {
                     AdvanceTurn();
@@ -218,6 +223,32 @@ namespace Ropoly.Presentation.Dice
             if (_lobby.Session == null || IsBusy)
             {
                 return;
+            }
+
+            TurnState turn = _lobby.Session.State.Turn;
+            if (turn != null && turn.Phase == TurnPhase.AwaitingRoll)
+            {
+                PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
+                if (player.IsInDetention)
+                {
+                    if (player.HeldDetentionWaivers > 0 && _lobby.Session.TryUseDetentionWaiver())
+                    {
+                        _lobby.RefreshMatchHud();
+                        RefreshAwaitingRoll();
+                        _resultLabel.text = "USED WAIVER • READY TO ROLL";
+                        _boardPreview.SetStatusText($"{player.DisplayName} USED WAIVER  •  ROLL THE DICE");
+                        return;
+                    }
+
+                    if (player.Cash >= 50 && _lobby.Session.TryPayDetentionBail())
+                    {
+                        _lobby.RefreshMatchHud();
+                        RefreshAwaitingRoll();
+                        _resultLabel.text = "PAID $50 BAIL • READY TO ROLL";
+                        _boardPreview.SetStatusText($"{player.DisplayName} PAID $50 BAIL  •  ROLL THE DICE");
+                        return;
+                    }
+                }
             }
 
             if (_pendingUpgradeTileIndex >= 0)
@@ -375,7 +406,74 @@ namespace Ropoly.Presentation.Dice
             _resultLabel.text = roll.IsDouble
                 ? $"DOUBLE {roll.FirstDie}  •  TOTAL {roll.Total}"
                 : $"{roll.FirstDie} + {roll.SecondDie}  •  TOTAL {roll.Total}";
+
+            TurnState turn = _lobby.Session.State.Turn;
+            PlayerState currentPlayer = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
+
+            if (turn.Phase == TurnPhase.AwaitingTurnEnd && currentPlayer.IsInDetention && roll.IsDouble)
+            {
+                _resultLabel.text = "3 CONSECUTIVE DOUBLES • TO DETENTION";
+                _boardPreview.SetStatusText($"{currentPlayer.DisplayName} ROLLED 3 DOUBLES  •  SENT DIRECTLY TO DETENTION");
+                _movementRoutine = StartCoroutine(AnimateFlyToDetention(turn.CurrentPlayerIndex, currentPlayer.BoardPosition));
+                yield break;
+            }
+
+            if (turn.Phase == TurnPhase.AwaitingTurnEnd && currentPlayer.IsInDetention && !roll.IsDouble)
+            {
+                _resultLabel.text = $"NO DOUBLES ({currentPlayer.DetentionTurns}/3)";
+                _boardPreview.SetStatusText($"{currentPlayer.DisplayName} REMAINS IN DETENTION (TURN {currentPlayer.DetentionTurns}/3)");
+                _primaryButtonLabel.text = "NEXT PLAYER";
+                _primaryButton.interactable = true;
+                SetDecisionMode(false);
+                _lobby.RefreshMatchHud();
+                yield break;
+            }
+
+            if (turn.Phase == TurnPhase.DebtResolution)
+            {
+                RentPayment payment = turn.RentPayment;
+                if (payment != null)
+                {
+                    PresentRentPayment(payment, string.Empty);
+                    yield break;
+                }
+            }
+
             BeginMovement();
+        }
+
+        private IEnumerator AnimateFlyToDetention(int playerIndex, int detentionTileIndex)
+        {
+            _primaryButton.interactable = false;
+            _primaryButtonLabel.text = "TO DETENTION...";
+
+            CreatureTokenView token = _lobby.GetToken(playerIndex);
+            if (token != null &&
+                _boardPreview.TryGetTokenPosition(detentionTileIndex, playerIndex, out Vector3 targetPos))
+            {
+                Vector3 startPos = token.transform.position;
+                token.LookTowards(targetPos - startPos);
+                float elapsed = 0f;
+                const float flyDuration = 0.85f;
+                while (elapsed < flyDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsed / flyDuration);
+                    float eased = t * t * (3f - (2f * t));
+                    float arc = Mathf.Sin(t * Mathf.PI) * 1.6f;
+                    token.transform.position = Vector3.Lerp(startPos, targetPos, eased) + (Vector3.up * arc);
+                    yield return null;
+                }
+
+                token.transform.position = targetPos;
+            }
+
+            _movementRoutine = null;
+            _lobby.RefreshMatchHud();
+            _resultLabel.text = "IN DETENTION";
+            _primaryButtonLabel.text = "NEXT PLAYER";
+            _primaryButton.interactable = true;
+            SetDecisionMode(false);
         }
 
         private void BeginMovement()
@@ -458,9 +556,146 @@ namespace Ropoly.Presentation.Dice
             }
 
             _lobby.RefreshMatchHud();
-            string tileName = _boardPreview.GetTileDisplayName(movement.DestinationIndex);
-            string startReward = movement.PassedStart
-                ? $"  •  PASSED START +${movement.CashAward}"
+            PlayerState player = _lobby.Session.State.Players[movement.PlayerIndex];
+            int currentTile = player.BoardPosition;
+            int initialDestination = movement.DestinationIndex;
+            if (currentTile != initialDestination)
+            {
+                _movementRoutine = StartCoroutine(AnimateRelocation(movement, initialDestination, currentTile));
+                return;
+            }
+
+            PresentLandingOutcome(movement.PlayerIndex, currentTile, movement.PassedStart, movement.CashAward, wasRelocated: false);
+        }
+
+        private IEnumerator AnimateRelocation(
+            PlayerMovement originalMovement,
+            int initialTile,
+            int targetTile)
+        {
+            _primaryButton.interactable = false;
+            _primaryButtonLabel.text = "RELOCATING...";
+            SetDecisionMode(false);
+            _pendingOffer = null;
+            _pendingUpgradeTileIndex = -1;
+
+            PlayerState player = _lobby.Session.State.Players[originalMovement.PlayerIndex];
+            CardSnapshot card = _lobby.Session.State.Turn.DrawnCard;
+            if (card != null)
+            {
+                _resultLabel.text = card.Title.ToUpperInvariant();
+                _boardPreview.SetStatusText($"{player.DisplayName}  •  {card.Description}");
+            }
+            else if (player.IsInDetention)
+            {
+                _resultLabel.text = "GO TO DETENTION";
+                _boardPreview.SetStatusText($"{player.DisplayName}  •  GO DIRECTLY TO DETENTION");
+            }
+
+            yield return new WaitForSeconds(0.75f);
+
+            CreatureTokenView token = _lobby.GetToken(originalMovement.PlayerIndex);
+            int tileCount = _boardPreview.TileCount;
+
+            if (player.IsInDetention || (card != null && card.EffectKind == CardEffectKind.GoToDetention))
+            {
+                if (token != null &&
+                    _boardPreview.TryGetTokenPosition(initialTile, originalMovement.PlayerIndex, out Vector3 startPos) &&
+                    _boardPreview.TryGetTokenPosition(targetTile, originalMovement.PlayerIndex, out Vector3 targetPos))
+                {
+                    token.LookTowards(targetPos - startPos);
+                    float elapsed = 0f;
+                    const float flyDuration = 0.85f;
+                    while (elapsed < flyDuration)
+                    {
+                        elapsed += Time.deltaTime;
+                        float t = Mathf.Clamp01(elapsed / flyDuration);
+                        float eased = t * t * (3f - (2f * t));
+                        float arc = Mathf.Sin(t * Mathf.PI) * 1.6f;
+                        token.transform.position = Vector3.Lerp(startPos, targetPos, eased) + (Vector3.up * arc);
+                        yield return null;
+                    }
+
+                    token.transform.position = targetPos;
+                }
+            }
+            else if (card != null && card.EffectKind == CardEffectKind.MoveRelative && card.RelativeSteps < 0)
+            {
+                int stepsBack = Mathf.Abs(card.RelativeSteps);
+                for (int step = 1; step <= stepsBack; step++)
+                {
+                    int fromTile = (initialTile - step + 1 + tileCount) % tileCount;
+                    int toTile = (initialTile - step + tileCount) % tileCount;
+                    if (_boardPreview.TryGetTokenPosition(fromTile, originalMovement.PlayerIndex, out Vector3 fromPos) &&
+                        _boardPreview.TryGetTokenPosition(toTile, originalMovement.PlayerIndex, out Vector3 toPos))
+                    {
+                        if (token != null)
+                        {
+                            token.LookTowards(toPos - fromPos);
+                            float elapsed = 0f;
+                            float duration = _moveStepDuration * 0.9f;
+                            while (elapsed < duration)
+                            {
+                                elapsed += Time.deltaTime;
+                                float t = Mathf.Clamp01(elapsed / duration);
+                                float eased = t * t * (3f - (2f * t));
+                                float hop = Mathf.Sin(t * Mathf.PI) * _moveHopHeight;
+                                token.transform.position = Vector3.Lerp(fromPos, toPos, eased) + (Vector3.up * hop);
+                                yield return null;
+                            }
+
+                            token.transform.position = toPos;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                int forwardSteps = (targetTile - initialTile + tileCount) % tileCount;
+                if (forwardSteps == 0)
+                {
+                    forwardSteps = tileCount;
+                }
+
+                float stepDuration = Mathf.Clamp(1.6f / forwardSteps, 0.04f, 0.09f);
+                for (int step = 1; step <= forwardSteps; step++)
+                {
+                    int fromTile = (initialTile + step - 1) % tileCount;
+                    int toTile = (initialTile + step) % tileCount;
+                    if (_boardPreview.TryGetTokenPosition(fromTile, originalMovement.PlayerIndex, out Vector3 fromPos) &&
+                        _boardPreview.TryGetTokenPosition(toTile, originalMovement.PlayerIndex, out Vector3 toPos))
+                    {
+                        if (token != null)
+                        {
+                            token.LookTowards(toPos - fromPos);
+                            float elapsed = 0f;
+                            while (elapsed < stepDuration)
+                            {
+                                elapsed += Time.deltaTime;
+                                float t = Mathf.Clamp01(elapsed / stepDuration);
+                                float eased = t * t * (3f - (2f * t));
+                                float hop = Mathf.Sin(t * Mathf.PI) * _moveHopHeight;
+                                token.transform.position = Vector3.Lerp(fromPos, toPos, eased) + (Vector3.up * hop);
+                                yield return null;
+                            }
+
+                            token.transform.position = toPos;
+                        }
+                    }
+                }
+            }
+
+            _movementRoutine = null;
+            _lobby.RefreshMatchHud();
+            PresentLandingOutcome(originalMovement.PlayerIndex, targetTile, originalMovement.PassedStart, originalMovement.CashAward, wasRelocated: true);
+        }
+
+        private void PresentLandingOutcome(int playerIndex, int currentTile, bool passedStart, int cashAward, bool wasRelocated)
+        {
+            PlayerState player = _lobby.Session.State.Players[playerIndex];
+            string tileName = _boardPreview.GetTileDisplayName(currentTile);
+            string startReward = (passedStart && !wasRelocated)
+                ? $"  •  PASSED START +${cashAward}"
                 : string.Empty;
 
             RentPayment rentPayment = _lobby.Session.State.Turn.RentPayment;
@@ -493,18 +728,18 @@ namespace Ropoly.Presentation.Dice
             SetDecisionMode(false);
 
             if (_lobby.Session.TryGetPropertyAt(
-                    movement.DestinationIndex,
+                    currentTile,
                     out PropertyState property) &&
                 property.IsOwned)
             {
                 string ownerName = _lobby.Session.State.Players[property.OwnerPlayerIndex].DisplayName;
                 _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {ownerName}";
 
-                if (property.OwnerPlayerIndex == movement.PlayerIndex &&
+                if (property.OwnerPlayerIndex == playerIndex &&
                     property.Kind == BoardTileKind.City &&
-                    _lobby.Session.CanUpgradeProperty(movement.DestinationIndex, out _))
+                    _lobby.Session.CanUpgradeProperty(currentTile, out _))
                 {
-                    _pendingUpgradeTileIndex = movement.DestinationIndex;
+                    _pendingUpgradeTileIndex = currentTile;
                     string buildingInfo = property.UpgradeLevel > 0
                         ? $"LEVEL {property.UpgradeLevel}"
                         : "UNIMPROVED";
@@ -520,8 +755,32 @@ namespace Ropoly.Presentation.Dice
                 }
             }
 
-            _boardPreview.SetStatusText(
-                $"LANDED ON {tileName.ToUpperInvariant()}{startReward}");
+            if (player.IsInDetention)
+            {
+                _resultLabel.text = "IN DETENTION";
+                _boardPreview.SetStatusText($"{player.DisplayName} IS NOW IN DETENTION");
+            }
+            else if (_lobby.Session.State.Turn.DrawnCard != null)
+            {
+                CardSnapshot drawn = _lobby.Session.State.Turn.DrawnCard;
+                _resultLabel.text = $"{drawn.Title.ToUpperInvariant()}";
+                _boardPreview.SetStatusText($"{player.DisplayName}  •  {drawn.Description}{startReward}");
+            }
+            else if (_lobby.Session.State.Turn.VacationRewardAwarded > 0)
+            {
+                _resultLabel.text = $"VACATION REWARD +${_lobby.Session.State.Turn.VacationRewardAwarded:N0}";
+                _boardPreview.SetStatusText($"{player.DisplayName}  •  COLLECTED VACATION REWARD +${_lobby.Session.State.Turn.VacationRewardAwarded:N0}{startReward}");
+            }
+            else
+            {
+                _boardPreview.SetStatusText(
+                    $"LANDED ON {tileName.ToUpperInvariant()}{startReward}");
+            }
+
+            if (_lobby.Session.State.Turn.CanRollAgain)
+            {
+                _primaryButtonLabel.text = "ROLL AGAIN";
+            }
         }
 
         private void UpgradePendingProperty()
@@ -566,12 +825,14 @@ namespace Ropoly.Presentation.Dice
         private void PresentRentPayment(RentPayment payment, string startReward)
         {
             PlayerState payer = _lobby.Session.State.Players[payment.PayerPlayerIndex];
-            PlayerState owner = _lobby.Session.State.Players[payment.OwnerPlayerIndex];
+            string ownerName = payment.OwnerPlayerIndex >= 0 && payment.OwnerPlayerIndex < _lobby.Session.State.Players.Count
+                ? _lobby.Session.State.Players[payment.OwnerPlayerIndex].DisplayName
+                : "THE BANK";
             SetDecisionMode(false);
 
             if (!payment.IsPaid)
             {
-                _resultLabel.text = $"OWES {owner.DisplayName}  •  ${payment.Amount:N0}";
+                _resultLabel.text = $"OWES {ownerName}  •  ${payment.Amount:N0}";
                 _primaryButtonLabel.text = "RESOLVE DEBT";
                 _primaryButton.interactable = false;
                 _boardPreview.SetStatusText(
@@ -586,11 +847,13 @@ namespace Ropoly.Presentation.Dice
             }
 
             _debtResolutionView?.Hide();
-            _resultLabel.text = $"PAID ${payment.Amount:N0} RENT";
-            _primaryButtonLabel.text = "NEXT PLAYER";
+            _resultLabel.text = payment.OwnerPlayerIndex >= 0
+                ? $"PAID ${payment.Amount:N0} RENT"
+                : $"PAID ${payment.Amount:N0} FEE";
+            _primaryButtonLabel.text = _lobby.Session.State.Turn.CanRollAgain ? "ROLL AGAIN" : "NEXT PLAYER";
             _primaryButton.interactable = true;
             _boardPreview.SetStatusText(
-                $"{payer.DisplayName} PAID {owner.DisplayName} ${payment.Amount:N0}" +
+                $"{payer.DisplayName} PAID {ownerName} ${payment.Amount:N0}" +
                 $" FOR {payment.PropertyDisplayName.ToUpperInvariant()}{startReward}");
         }
 
@@ -637,13 +900,43 @@ namespace Ropoly.Presentation.Dice
             TurnState turn = _lobby.Session.State.Turn;
             PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
             _turnLabel.text = $"TURN {turn.TurnNumber}  •  {player.DisplayName}";
-            _resultLabel.text = "READY TO ROLL";
-            _primaryButtonLabel.text = "ROLL DICE";
-            _primaryButton.interactable = true;
             _pendingOffer = null;
             _pendingUpgradeTileIndex = -1;
-            SetDecisionMode(false);
-            _boardPreview.SetStatusText($"{player.DisplayName}  •  ROLL THE DICE");
+
+            if (player.IsInDetention)
+            {
+                _resultLabel.text = $"IN DETENTION ({player.DetentionTurns + 1}/3)";
+                _primaryButtonLabel.text = "ROLL DOUBLES";
+                _primaryButton.interactable = true;
+
+                if (player.HeldDetentionWaivers > 0)
+                {
+                    _secondaryButtonLabel.text = "USE WAIVER";
+                    _secondaryButton.interactable = true;
+                    SetDecisionMode(true);
+                    _boardPreview.SetStatusText($"{player.DisplayName}  •  IN DETENTION  •  ROLL DOUBLES OR USE WAIVER");
+                }
+                else if (player.Cash >= 50)
+                {
+                    _secondaryButtonLabel.text = "PAY $50 BAIL";
+                    _secondaryButton.interactable = true;
+                    SetDecisionMode(true);
+                    _boardPreview.SetStatusText($"{player.DisplayName}  •  IN DETENTION  •  ROLL DOUBLES OR PAY $50 BAIL");
+                }
+                else
+                {
+                    SetDecisionMode(false);
+                    _boardPreview.SetStatusText($"{player.DisplayName}  •  IN DETENTION  •  ROLL DOUBLES TO ESCAPE");
+                }
+            }
+            else
+            {
+                _resultLabel.text = "READY TO ROLL";
+                _primaryButtonLabel.text = "ROLL DICE";
+                _primaryButton.interactable = true;
+                SetDecisionMode(false);
+                _boardPreview.SetStatusText($"{player.DisplayName}  •  ROLL THE DICE");
+            }
         }
 
         private void MortgageProperty(int tileIndex)

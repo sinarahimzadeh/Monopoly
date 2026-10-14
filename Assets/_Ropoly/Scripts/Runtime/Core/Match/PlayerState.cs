@@ -38,6 +38,9 @@ namespace Ropoly.Core.Match
         public bool IsDisconnected => ConnectionStatus == PlayerConnectionStatus.Disconnected;
 
         public DateTimeOffset? DisconnectDeadline { get; private set; }
+        public bool IsInDetention { get; private set; }
+        public int DetentionTurns { get; private set; }
+        public int HeldDetentionWaivers { get; private set; }
 
         internal void SelectCreature(string creatureId)
         {
@@ -99,11 +102,48 @@ namespace Ropoly.Core.Match
             return true;
         }
 
+        internal void SendToDetention(int detentionTileIndex = 10)
+        {
+            IsInDetention = true;
+            DetentionTurns = 0;
+            BoardPosition = detentionTileIndex;
+        }
+
+        internal void ReleaseFromDetention()
+        {
+            IsInDetention = false;
+            DetentionTurns = 0;
+        }
+
+        internal void IncrementDetentionTurns()
+        {
+            DetentionTurns++;
+        }
+
+        internal void AddDetentionWaiver()
+        {
+            HeldDetentionWaivers++;
+        }
+
+        internal bool TryUseDetentionWaiver()
+        {
+            if (HeldDetentionWaivers <= 0)
+            {
+                return false;
+            }
+
+            HeldDetentionWaivers--;
+            return true;
+        }
+
         internal void Eliminate()
         {
             Cash = 0;
             ConnectionStatus = PlayerConnectionStatus.Eliminated;
             DisconnectDeadline = null;
+            IsInDetention = false;
+            DetentionTurns = 0;
+            HeldDetentionWaivers = 0;
         }
     }
 }
