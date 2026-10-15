@@ -1,0 +1,338 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using Ropoly.Core.Match;
+using Ropoly.Multiplayer.Protocol;
+using Ropoly.Presentation.Dice;
+using Ropoly.Presentation.Lobby;
+using UnityEngine;
+
+namespace Ropoly.Multiplayer
+{
+    /// <summary>
+    /// Connects the existing deterministic local match presentation to online authority.
+    /// The host validates every command and is the only peer allowed to produce game events.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class OnlineGameSceneController : MonoBehaviour
+    {
+        private readonly HashSet<ulong> _readyClients = new();
+        private OnlineGameService _service;
+        private LocalLobbyController _lobby;
+        private DiceController _dice;
+        private bool _matchReady;
+        private bool _initialized;
+
+        public static void Install(OnlineGameService service)
+        {
+            if (service == null || FindFirstObjectByType<OnlineGameSceneController>() != null)
+            {
+                return;
+            }
+
+            var controllerObject = new GameObject("Online Game Scene Controller");
+            var controller = controllerObject.AddComponent<OnlineGameSceneController>();
+            controller._service = service;
+            controller.StartCoroutine(controller.InitializeWhenSceneIsReady());
+        }
+
+        private IEnumerator InitializeWhenSceneIsReady()
+        {
+            yield return null;
+
+            _lobby = FindFirstObjectByType<LocalLobbyController>();
+            _dice = FindFirstObjectByType<DiceController>();
+            if (_lobby == null || _dice == null)
+            {
+                Debug.LogError("The online match could not find the Game scene controllers.", this);
+                yield break;
+            }
+
+            OnlineLobbyPlayerData[] players = (_service.LobbyState.Players ??
+                                                Array.Empty<OnlineLobbyPlayerData>())
+                .OrderBy(player => player.SeatIndex)
+                .ToArray();
+            string[] creatureIds = players.Select(player => player.CreatureId).ToArray();
+            if (players.Length < LocalMatchSession.MinimumPlayers ||
+                creatureIds.Any(string.IsNullOrWhiteSpace) ||
+                !_lobby.StartOnlineMatch(creatureIds))
+            {
+                Debug.LogError("The authoritative online lobby could not be applied to the Game scene.", this);
+                yield break;
+            }
+
+            _dice.ConfigureExternalAuthority(HandleLocalAction, _service.IsHost);
+            _service.MatchCommandReceived += HandleMatchCommand;
+            _service.MatchEventReceived += HandleMatchEvent;
+            _service.OnlineClientDisconnected += HandleClientDisconnected;
+            if (_service.IsHost)
+            {
+                _lobby.Session.PlayerEliminated += HandleAuthoritativePlayerEliminated;
+            }
+            _service.MarkMatchActive();
+            _initialized = true;
+            _service.FlushPendingMatchCommands();
+            _service.SendMatchCommand(OnlineMatchCommandKind.SceneReady);
+        }
+
+        private void LateUpdate()
+        {
+            if (!_initialized || _dice == null || _lobby?.Session?.State?.Turn == null)
+            {
+                return;
+            }
+
+            bool ownsTurn = _service.LocalSeatIndex ==
+                            _lobby.Session.State.Turn.CurrentPlayerIndex;
+            _dice.SetExternalInputAllowed(_matchReady && ownsTurn);
+        }
+
+        private void OnDestroy()
+        {
+            if (_service != null)
+            {
+                _service.MatchCommandReceived -= HandleMatchCommand;
+                _service.MatchEventReceived -= HandleMatchEvent;
+                _service.OnlineClientDisconnected -= HandleClientDisconnected;
+            }
+
+            if (_service?.IsHost == true && _lobby?.Session != null)
+            {
+                _lobby.Session.PlayerEliminated -= HandleAuthoritativePlayerEliminated;
+            }
+
+            _dice?.ClearExternalAuthority();
+        }
+
+        private void HandleLocalAction(ExternalTurnAction action, int intValue)
+        {
+            OnlineMatchCommandKind command = action switch
+            {
+                ExternalTurnAction.RollDice => OnlineMatchCommandKind.RollDice,
+                ExternalTurnAction.AdvanceTurn => OnlineMatchCommandKind.AdvanceTurn,
+                ExternalTurnAction.PurchaseProperty => OnlineMatchCommandKind.PurchaseProperty,
+                ExternalTurnAction.DeclineProperty => OnlineMatchCommandKind.DeclineProperty,
+                ExternalTurnAction.UpgradeProperty => OnlineMatchCommandKind.UpgradeProperty,
+                ExternalTurnAction.UseDetentionWaiver => OnlineMatchCommandKind.UseDetentionWaiver,
+                ExternalTurnAction.PayDetentionBail => OnlineMatchCommandKind.PayDetentionBail,
+                ExternalTurnAction.MortgageProperty => OnlineMatchCommandKind.MortgageProperty,
+                ExternalTurnAction.SellProperty => OnlineMatchCommandKind.SellProperty,
+                ExternalTurnAction.DeclareBankruptcy => OnlineMatchCommandKind.DeclareBankruptcy,
+                _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
+            };
+            _service.SendMatchCommand(command, intValue);
+        }
+
+        private void HandleMatchCommand(ulong senderClientId, OnlineMatchCommandData command)
+        {
+            if (!_service.IsHost || command == null)
+            {
+                return;
+            }
+
+            if (command.Kind == OnlineMatchCommandKind.SceneReady)
+            {
+                if (_service.TryGetSeatIndex(senderClientId, out _))
+                {
+                    _readyClients.Add(senderClientId);
+                }
+
+                int expectedCount = _service.LobbyState.Players?.Length ?? 0;
+                if (!_matchReady && expectedCount >= 2 && _readyClients.Count >= expectedCount)
+                {
+                    _matchReady = true;
+                    _service.BroadcastMatchEvent(new OnlineMatchEventData
+                    {
+                        Kind = OnlineMatchEventKind.MatchReady
+                    });
+                }
+
+                return;
+            }
+
+            if (!_matchReady ||
+                !_service.TryGetSeatIndex(senderClientId, out int senderSeat) ||
+                _lobby.Session.State.Turn == null ||
+                senderSeat != _lobby.Session.State.Turn.CurrentPlayerIndex)
+            {
+                return;
+            }
+
+            OnlineMatchEventData matchEvent = command.Kind switch
+            {
+                OnlineMatchCommandKind.RollDice => ApplyHostDiceRoll(),
+                OnlineMatchCommandKind.AdvanceTurn => ApplyHostAdvanceTurn(),
+                OnlineMatchCommandKind.PurchaseProperty => ApplyHostPropertyPurchase(),
+                OnlineMatchCommandKind.DeclineProperty => ApplyHostPropertyDecline(),
+                OnlineMatchCommandKind.UpgradeProperty => ApplyHostPropertyUpgrade(command.IntValue),
+                OnlineMatchCommandKind.UseDetentionWaiver => ApplyHostDetentionWaiver(),
+                OnlineMatchCommandKind.PayDetentionBail => ApplyHostDetentionBail(),
+                OnlineMatchCommandKind.MortgageProperty => ApplyHostMortgage(command.IntValue),
+                OnlineMatchCommandKind.SellProperty => ApplyHostSale(command.IntValue),
+                OnlineMatchCommandKind.DeclareBankruptcy => ApplyHostBankruptcy(),
+                _ => null
+            };
+
+            if (matchEvent != null)
+            {
+                _service.BroadcastMatchEvent(matchEvent);
+            }
+        }
+
+        private OnlineMatchEventData ApplyHostDiceRoll()
+        {
+            int first = UnityEngine.Random.Range(1, 7);
+            int second = UnityEngine.Random.Range(1, 7);
+            return _dice.ApplyExternalDiceRoll(first, second)
+                ? new OnlineMatchEventData
+                {
+                    Kind = OnlineMatchEventKind.DiceRolled,
+                    FirstDie = first,
+                    SecondDie = second
+                }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostAdvanceTurn()
+        {
+            return _dice.ApplyExternalAdvanceTurn()
+                ? new OnlineMatchEventData { Kind = OnlineMatchEventKind.TurnAdvanced }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostPropertyPurchase()
+        {
+            return _dice.ApplyExternalPropertyPurchase()
+                ? new OnlineMatchEventData { Kind = OnlineMatchEventKind.PropertyPurchased }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostPropertyDecline()
+        {
+            return _dice.ApplyExternalPropertyDecline()
+                ? new OnlineMatchEventData { Kind = OnlineMatchEventKind.PropertyDeclined }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostPropertyUpgrade(int tileIndex)
+        {
+            return _dice.ApplyExternalPropertyUpgrade(tileIndex)
+                ? new OnlineMatchEventData
+                {
+                    Kind = OnlineMatchEventKind.PropertyUpgraded,
+                    IntValue = tileIndex
+                }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostDetentionWaiver()
+        {
+            return _dice.ApplyExternalDetentionWaiver()
+                ? new OnlineMatchEventData { Kind = OnlineMatchEventKind.DetentionWaiverUsed }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostDetentionBail()
+        {
+            return _dice.ApplyExternalDetentionBail()
+                ? new OnlineMatchEventData { Kind = OnlineMatchEventKind.DetentionBailPaid }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostMortgage(int tileIndex)
+        {
+            return _dice.ApplyExternalMortgageProperty(tileIndex)
+                ? new OnlineMatchEventData
+                {
+                    Kind = OnlineMatchEventKind.PropertyMortgaged,
+                    IntValue = tileIndex
+                }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostSale(int tileIndex)
+        {
+            return _dice.ApplyExternalSellProperty(tileIndex)
+                ? new OnlineMatchEventData
+                {
+                    Kind = OnlineMatchEventKind.PropertySold,
+                    IntValue = tileIndex
+                }
+                : null;
+        }
+
+        private OnlineMatchEventData ApplyHostBankruptcy()
+        {
+            _dice.ApplyExternalBankruptcy();
+            return null;
+        }
+
+        private void HandleMatchEvent(OnlineMatchEventData matchEvent)
+        {
+            if (matchEvent == null || _service.IsHost)
+            {
+                return;
+            }
+
+            switch (matchEvent.Kind)
+            {
+                case OnlineMatchEventKind.MatchReady:
+                    _matchReady = true;
+                    break;
+                case OnlineMatchEventKind.DiceRolled:
+                    _dice.ApplyExternalDiceRoll(matchEvent.FirstDie, matchEvent.SecondDie);
+                    break;
+                case OnlineMatchEventKind.TurnAdvanced:
+                    _dice.ApplyExternalAdvanceTurn();
+                    break;
+                case OnlineMatchEventKind.PropertyPurchased:
+                    _dice.ApplyExternalPropertyPurchase();
+                    break;
+                case OnlineMatchEventKind.PropertyDeclined:
+                    _dice.ApplyExternalPropertyDecline();
+                    break;
+                case OnlineMatchEventKind.PropertyUpgraded:
+                    _dice.ApplyExternalPropertyUpgrade(matchEvent.IntValue);
+                    break;
+                case OnlineMatchEventKind.DetentionWaiverUsed:
+                    _dice.ApplyExternalDetentionWaiver();
+                    break;
+                case OnlineMatchEventKind.DetentionBailPaid:
+                    _dice.ApplyExternalDetentionBail();
+                    break;
+                case OnlineMatchEventKind.PropertyMortgaged:
+                    _dice.ApplyExternalMortgageProperty(matchEvent.IntValue);
+                    break;
+                case OnlineMatchEventKind.PropertySold:
+                    _dice.ApplyExternalSellProperty(matchEvent.IntValue);
+                    break;
+                case OnlineMatchEventKind.PlayerEliminated:
+                    _lobby.Session.ApplyAuthoritativeElimination(
+                        matchEvent.IntValue,
+                        (EliminationReason)matchEvent.SecondaryIntValue);
+                    break;
+            }
+        }
+
+        private void HandleClientDisconnected(ulong clientId)
+        {
+            if (_service.IsHost && _service.TryGetSeatIndex(clientId, out int seatIndex))
+            {
+                _lobby.Session.TryDisconnectPlayer(seatIndex);
+            }
+        }
+
+        private void HandleAuthoritativePlayerEliminated(
+            int playerIndex,
+            EliminationReason reason)
+        {
+            _service.BroadcastMatchEvent(new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.PlayerEliminated,
+                IntValue = playerIndex,
+                SecondaryIntValue = (int)reason
+            });
+        }
+    }
+}

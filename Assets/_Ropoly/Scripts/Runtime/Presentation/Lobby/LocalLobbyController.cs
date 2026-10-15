@@ -178,6 +178,38 @@ namespace Ropoly.Presentation.Lobby
             MatchStarted?.Invoke(_session);
         }
 
+        /// <summary>
+        /// Builds the same match used by local play from an authoritative online lobby snapshot.
+        /// The multiplayer layer supplies the ordered creature ids; all rules and visuals remain
+        /// owned by this scene controller.
+        /// </summary>
+        public bool StartOnlineMatch(IReadOnlyList<string> creatureIds)
+        {
+            if (_session == null ||
+                creatureIds == null ||
+                creatureIds.Count < LocalMatchSession.MinimumPlayers ||
+                creatureIds.Count > LocalMatchSession.MaximumPlayers ||
+                _session.State.Phase != MatchPhase.Lobby ||
+                !_session.TrySetPlayerCount(creatureIds.Count))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < creatureIds.Count; index++)
+            {
+                if (_session.TrySelectCreature(index, creatureIds[index]) !=
+                    CreatureSelectionResult.Success)
+                {
+                    Debug.LogError($"Could not apply online creature selection for player {index + 1}.", this);
+                    return false;
+                }
+            }
+
+            _activePlayerIndex = 0;
+            StartMatch();
+            return _session.State.Phase == MatchPhase.InProgress;
+        }
+
         private bool ValidateConfiguration()
         {
             bool valid =

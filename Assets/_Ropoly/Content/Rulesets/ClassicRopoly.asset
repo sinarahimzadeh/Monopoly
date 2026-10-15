@@ -18,7 +18,7 @@ MonoBehaviour:
   _startingCash: 1500
   _passStartCash: 200
   _turnDurationSeconds: 60
-  _disconnectGraceSeconds: 120
+  _disconnectGraceSeconds: 60
   _mortgageEnabled: 1
   _auctionsEnabled: 1
   _fullSetRentMultiplier: 2

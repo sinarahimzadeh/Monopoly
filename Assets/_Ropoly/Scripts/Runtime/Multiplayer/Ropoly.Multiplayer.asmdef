@@ -1,0 +1,25 @@
+{
+  "name": "Ropoly.Multiplayer",
+  "rootNamespace": "Ropoly.Multiplayer",
+  "references": [
+    "Ropoly.Core",
+    "Ropoly.Infrastructure",
+    "Ropoly.Presentation",
+    "Unity.Collections",
+    "Unity.Netcode.Runtime",
+    "Unity.Services.Authentication",
+    "Unity.Services.Core",
+    "Unity.Services.Multiplayer",
+    "Unity.TextMeshPro",
+    "Unity.ugui"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -829,6 +829,20 @@ namespace Ropoly.Core.Match
             return EliminatePlayer(State.Turn.CurrentPlayerIndex, EliminationReason.Bankruptcy);
         }
 
+        /// <summary>
+        /// Applies an elimination already validated by an authoritative multiplayer host.
+        /// Local gameplay continues to use the normal bankruptcy and timeout entry points.
+        /// </summary>
+        public bool ApplyAuthoritativeElimination(int playerIndex, EliminationReason reason)
+        {
+            if (State.Phase != MatchPhase.InProgress)
+            {
+                return false;
+            }
+
+            return EliminatePlayer(playerIndex, reason);
+        }
+
         public bool TryDisconnectPlayer(int playerIndex)
         {
             if (State.Phase != MatchPhase.InProgress ||

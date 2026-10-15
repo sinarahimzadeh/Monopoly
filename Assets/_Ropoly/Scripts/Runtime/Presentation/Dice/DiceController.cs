@@ -13,6 +13,20 @@ using Random = UnityEngine.Random;
 
 namespace Ropoly.Presentation.Dice
 {
+    public enum ExternalTurnAction
+    {
+        RollDice,
+        AdvanceTurn,
+        PurchaseProperty,
+        DeclineProperty,
+        UpgradeProperty,
+        UseDetentionWaiver,
+        PayDetentionBail,
+        MortgageProperty,
+        SellProperty,
+        DeclareBankruptcy
+    }
+
     [DisallowMultipleComponent]
     public sealed class DiceController : MonoBehaviour
     {
@@ -87,6 +101,10 @@ namespace Ropoly.Presentation.Dice
         private float _secondYaw;
         private PropertyPurchaseOffer _pendingOffer;
         private int _pendingUpgradeTileIndex = -1;
+        private Action<ExternalTurnAction, int> _externalCommandHandler;
+        private bool _externalInputAllowed = true;
+        private bool _externalAuthorityConfigured;
+        private bool _externalSimulationAuthority;
 
         public bool IsRolling => _rollRoutine != null;
         public bool IsMoving => _movementRoutine != null;
@@ -130,7 +148,10 @@ namespace Ropoly.Presentation.Dice
                 return;
             }
 
-            _lobby.Session.Tick();
+            if (!_externalAuthorityConfigured || _externalSimulationAuthority)
+            {
+                _lobby.Session.Tick();
+            }
 
             if (_lobby.Session.State.Phase == MatchPhase.Finished || IsBusy)
             {
@@ -182,7 +203,7 @@ namespace Ropoly.Presentation.Dice
 
         public void HandlePrimaryAction()
         {
-            if (_lobby.Session == null || IsBusy)
+            if (_lobby.Session == null || IsBusy || !_externalInputAllowed)
             {
                 return;
             }
@@ -195,11 +216,32 @@ namespace Ropoly.Presentation.Dice
 
             if (turn.Phase == TurnPhase.AwaitingRoll)
             {
+                if (TrySendExternalCommand(ExternalTurnAction.RollDice))
+                {
+                    return;
+                }
+
                 RollDice();
             }
             else if (turn.Phase == TurnPhase.AwaitingTurnEnd)
             {
-                if (_pendingUpgradeTileIndex >= 0)
+                if (_externalCommandHandler != null)
+                {
+                    if (_pendingUpgradeTileIndex >= 0)
+                    {
+                        TrySendExternalCommand(
+                            ExternalTurnAction.UpgradeProperty,
+                            _pendingUpgradeTileIndex);
+                    }
+                    else
+                    {
+                        TrySendExternalCommand(
+                            turn.CanRollAgain
+                                ? ExternalTurnAction.RollDice
+                                : ExternalTurnAction.AdvanceTurn);
+                    }
+                }
+                else if (_pendingUpgradeTileIndex >= 0)
                 {
                     UpgradePendingProperty();
                 }
@@ -214,18 +256,49 @@ namespace Ropoly.Presentation.Dice
             }
             else if (turn.Phase == TurnPhase.AwaitingPropertyDecision)
             {
+                if (TrySendExternalCommand(ExternalTurnAction.PurchaseProperty))
+                {
+                    return;
+                }
+
                 PurchaseCurrentProperty();
             }
         }
 
         public void HandleSecondaryAction()
         {
-            if (_lobby.Session == null || IsBusy)
+            if (_lobby.Session == null || IsBusy || !_externalInputAllowed)
             {
                 return;
             }
 
             TurnState turn = _lobby.Session.State.Turn;
+            if (_externalCommandHandler != null)
+            {
+                if (turn != null && turn.Phase == TurnPhase.AwaitingRoll)
+                {
+                    PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
+                    if (player.IsInDetention && player.HeldDetentionWaivers > 0)
+                    {
+                        TrySendExternalCommand(ExternalTurnAction.UseDetentionWaiver);
+                    }
+                    else if (player.IsInDetention && player.Cash >= 50)
+                    {
+                        TrySendExternalCommand(ExternalTurnAction.PayDetentionBail);
+                    }
+                }
+                else if (turn != null && turn.Phase == TurnPhase.AwaitingPropertyDecision)
+                {
+                    TrySendExternalCommand(ExternalTurnAction.DeclineProperty);
+                }
+                else if (turn != null && turn.Phase == TurnPhase.AwaitingTurnEnd)
+                {
+                    TrySendExternalCommand(ExternalTurnAction.AdvanceTurn);
+                }
+
+                return;
+            }
+
             if (turn != null && turn.Phase == TurnPhase.AwaitingRoll)
             {
                 PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
@@ -293,12 +366,161 @@ namespace Ropoly.Presentation.Dice
             RefreshAwaitingRoll();
         }
 
-        private void PurchaseCurrentProperty()
+        public void ConfigureExternalAuthority(
+            Action<ExternalTurnAction, int> commandHandler,
+            bool simulationAuthority)
+        {
+            _externalCommandHandler = commandHandler;
+            _externalAuthorityConfigured = commandHandler != null;
+            _externalSimulationAuthority = simulationAuthority;
+            _externalInputAllowed = false;
+            RefreshExternalButtonAvailability();
+        }
+
+        public void ClearExternalAuthority()
+        {
+            _externalCommandHandler = null;
+            _externalAuthorityConfigured = false;
+            _externalSimulationAuthority = false;
+            _externalInputAllowed = true;
+            RefreshExternalButtonAvailability();
+        }
+
+        public void SetExternalInputAllowed(bool allowed)
+        {
+            if (_externalCommandHandler == null || _externalInputAllowed == allowed)
+            {
+                return;
+            }
+
+            _externalInputAllowed = allowed;
+            RefreshExternalButtonAvailability();
+        }
+
+        public bool ApplyExternalDiceRoll(int firstDie, int secondDie)
+        {
+            if (_lobby.Session == null || IsBusy)
+            {
+                return false;
+            }
+
+            var source = new FixedDiceRollSource(firstDie, secondDie);
+            if (!_lobby.Session.TryRollDice(source, out DiceRoll roll))
+            {
+                return false;
+            }
+
+            _rollRoutine = StartCoroutine(AnimateRoll(roll));
+            return true;
+        }
+
+        public bool ApplyExternalAdvanceTurn()
+        {
+            if (IsBusy || _lobby.Session == null || !_lobby.Session.TryAdvanceTurn())
+            {
+                return false;
+            }
+
+            _pendingUpgradeTileIndex = -1;
+            RefreshAwaitingRoll();
+            return true;
+        }
+
+        public bool ApplyExternalPropertyPurchase()
+        {
+            return PurchaseCurrentProperty();
+        }
+
+        public bool ApplyExternalPropertyDecline()
+        {
+            PropertyPurchaseOffer offer = _pendingOffer;
+            if (_lobby.Session == null || !_lobby.Session.TryDeclineCurrentProperty())
+            {
+                return false;
+            }
+
+            _pendingOffer = null;
+            string propertyName = offer == null ? "PROPERTY" : offer.DisplayName.ToUpperInvariant();
+            FinishPropertyDecision($"SKIPPED {propertyName}");
+            return true;
+        }
+
+        public bool ApplyExternalPropertyUpgrade(int tileIndex)
+        {
+            PropertyUpgradeResult result = _lobby.Session.TryUpgradeProperty(tileIndex);
+            if (result != PropertyUpgradeResult.Success)
+            {
+                _resultLabel.text = $"UPGRADE FAILED ({result})";
+                _boardPreview.SetStatusText($"CANNOT UPGRADE  •  {result}");
+                return false;
+            }
+
+            if (_lobby.Session.TryGetPropertyAt(tileIndex, out PropertyState property))
+            {
+                _boardPreview.SetTileUpgradeLevel(tileIndex, property.UpgradeLevel);
+                _lobby.RefreshMatchHud();
+                string tileName = _boardPreview.GetTileDisplayName(tileIndex);
+                string buildingName = property.UpgradeLevel >= 5
+                    ? "HOTEL"
+                    : $"HOUSE {property.UpgradeLevel}";
+                _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {buildingName}";
+
+                if (_lobby.Session.CanUpgradeProperty(tileIndex, out _))
+                {
+                    _pendingUpgradeTileIndex = tileIndex;
+                    _primaryButtonLabel.text = $"UPGRADE ${property.UpgradeCost:N0}";
+                    _boardPreview.SetStatusText(
+                        $"BUILT {buildingName} ON {tileName.ToUpperInvariant()}  •  UPGRADE AGAIN OR FINISH TURN");
+                    return true;
+                }
+            }
+
+            _pendingUpgradeTileIndex = -1;
+            SetDecisionMode(false);
+            _primaryButtonLabel.text = "NEXT PLAYER";
+            _primaryButton.interactable = true;
+            _boardPreview.SetStatusText("UPGRADE COMPLETE  •  END TURN");
+            return true;
+        }
+
+        public bool ApplyExternalDetentionWaiver()
+        {
+            if (!_lobby.Session.TryUseDetentionWaiver())
+            {
+                return false;
+            }
+
+            PlayerState player = _lobby.Session.State.Players[
+                _lobby.Session.State.Turn.CurrentPlayerIndex];
+            _lobby.RefreshMatchHud();
+            RefreshAwaitingRoll();
+            _resultLabel.text = "USED WAIVER • READY TO ROLL";
+            _boardPreview.SetStatusText($"{player.DisplayName} USED WAIVER  •  ROLL THE DICE");
+            return true;
+        }
+
+        public bool ApplyExternalDetentionBail()
+        {
+            if (!_lobby.Session.TryPayDetentionBail())
+            {
+                return false;
+            }
+
+            PlayerState player = _lobby.Session.State.Players[
+                _lobby.Session.State.Turn.CurrentPlayerIndex];
+            _lobby.RefreshMatchHud();
+            RefreshAwaitingRoll();
+            _resultLabel.text = "PAID $50 BAIL • READY TO ROLL";
+            _boardPreview.SetStatusText($"{player.DisplayName} PAID $50 BAIL  •  ROLL THE DICE");
+            return true;
+        }
+
+        private bool PurchaseCurrentProperty()
         {
             PropertyPurchaseOffer offer = _pendingOffer;
             if (offer == null)
             {
-                return;
+                return false;
             }
 
             PropertyPurchaseResult result = _lobby.Session.TryPurchaseCurrentProperty();
@@ -306,13 +528,13 @@ namespace Ropoly.Presentation.Dice
             {
                 _resultLabel.text = "NOT ENOUGH CASH";
                 _boardPreview.SetStatusText("NOT ENOUGH CASH  •  SKIP THIS PROPERTY");
-                return;
+                return false;
             }
 
             if (result != PropertyPurchaseResult.Success)
             {
                 _resultLabel.text = "PURCHASE ERROR";
-                return;
+                return false;
             }
 
             _pendingOffer = null;
@@ -324,6 +546,66 @@ namespace Ropoly.Presentation.Dice
 
             _lobby.RefreshMatchHud();
             FinishPropertyDecision($"BOUGHT {offer.DisplayName.ToUpperInvariant()}");
+            return true;
+        }
+
+        private bool TrySendExternalCommand(ExternalTurnAction action, int intValue = -1)
+        {
+            if (_externalCommandHandler == null)
+            {
+                return false;
+            }
+
+            _primaryButton.interactable = false;
+            _secondaryButton.interactable = false;
+            _externalCommandHandler.Invoke(action, intValue);
+            return true;
+        }
+
+        private void RefreshExternalButtonAvailability()
+        {
+            if (_externalCommandHandler == null || _lobby?.Session?.State?.Turn == null || IsBusy)
+            {
+                return;
+            }
+
+            if (!_externalInputAllowed)
+            {
+                _primaryButton.interactable = false;
+                _secondaryButton.interactable = false;
+                return;
+            }
+
+            TurnState turn = _lobby.Session.State.Turn;
+            _primaryButton.interactable = turn.Phase switch
+            {
+                TurnPhase.AwaitingRoll => true,
+                TurnPhase.AwaitingPropertyDecision => _pendingOffer?.CanAfford == true,
+                TurnPhase.AwaitingTurnEnd => true,
+                _ => false
+            };
+            _secondaryButton.interactable = _secondaryButton.gameObject.activeSelf &&
+                                            (turn.Phase == TurnPhase.AwaitingRoll ||
+                                             turn.Phase == TurnPhase.AwaitingPropertyDecision ||
+                                             turn.Phase == TurnPhase.AwaitingTurnEnd);
+        }
+
+        private sealed class FixedDiceRollSource : IDiceRollSource
+        {
+            private readonly int _first;
+            private readonly int _second;
+            private int _readCount;
+
+            public FixedDiceRollSource(int first, int second)
+            {
+                _first = Mathf.Clamp(first, 1, 6);
+                _second = Mathf.Clamp(second, 1, 6);
+            }
+
+            public int NextDieValue()
+            {
+                return _readCount++ == 0 ? _first : _second;
+            }
         }
 
         private void HandleMatchStarted(LocalMatchSession session)
@@ -790,36 +1072,7 @@ namespace Ropoly.Presentation.Dice
                 return;
             }
 
-            int tileIndex = _pendingUpgradeTileIndex;
-            PropertyUpgradeResult result = _lobby.Session.TryUpgradeProperty(tileIndex);
-            if (result != PropertyUpgradeResult.Success)
-            {
-                _resultLabel.text = $"UPGRADE FAILED ({result})";
-                _boardPreview.SetStatusText($"CANNOT UPGRADE  •  {result}");
-                return;
-            }
-
-            if (_lobby.Session.TryGetPropertyAt(tileIndex, out PropertyState property))
-            {
-                _boardPreview.SetTileUpgradeLevel(tileIndex, property.UpgradeLevel);
-                _lobby.RefreshMatchHud();
-                string tileName = _boardPreview.GetTileDisplayName(tileIndex);
-                string buildingName = property.UpgradeLevel >= 5 ? "HOTEL" : $"HOUSE {property.UpgradeLevel}";
-                _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {buildingName}";
-
-                if (_lobby.Session.CanUpgradeProperty(tileIndex, out _))
-                {
-                    _primaryButtonLabel.text = $"UPGRADE ${property.UpgradeCost:N0}";
-                    _boardPreview.SetStatusText($"BUILT {buildingName} ON {tileName.ToUpperInvariant()}  •  UPGRADE AGAIN OR FINISH TURN");
-                    return;
-                }
-            }
-
-            _pendingUpgradeTileIndex = -1;
-            SetDecisionMode(false);
-            _primaryButtonLabel.text = "NEXT PLAYER";
-            _primaryButton.interactable = true;
-            _boardPreview.SetStatusText("UPGRADE COMPLETE  •  END TURN");
+            ApplyExternalPropertyUpgrade(_pendingUpgradeTileIndex);
         }
 
         private void PresentRentPayment(RentPayment payment, string startReward)
@@ -941,19 +1194,40 @@ namespace Ropoly.Presentation.Dice
 
         private void MortgageProperty(int tileIndex)
         {
+            if (TrySendExternalCommand(ExternalTurnAction.MortgageProperty, tileIndex))
+            {
+                return;
+            }
+
+            ApplyExternalMortgageProperty(tileIndex);
+        }
+
+        public bool ApplyExternalMortgageProperty(int tileIndex)
+        {
             AssetLiquidationResult result = _lobby.Session.TryMortgageProperty(tileIndex);
             if (result != AssetLiquidationResult.Success)
             {
                 _boardPreview.SetStatusText($"MORTGAGE FAILED  •  {result}");
                 _debtResolutionView?.Refresh();
-                return;
+                return false;
             }
 
             _lobby.RefreshMatchHud();
             TryFinishDebtAfterAssetAction("PROPERTY MORTGAGED");
+            return true;
         }
 
         private void SellProperty(int tileIndex)
+        {
+            if (TrySendExternalCommand(ExternalTurnAction.SellProperty, tileIndex))
+            {
+                return;
+            }
+
+            ApplyExternalSellProperty(tileIndex);
+        }
+
+        public bool ApplyExternalSellProperty(int tileIndex)
         {
             if (_lobby.Session.TryGetPropertyAt(tileIndex, out PropertyState property) && property.UpgradeLevel > 0)
             {
@@ -962,13 +1236,13 @@ namespace Ropoly.Presentation.Dice
                 {
                     _boardPreview.SetStatusText($"DOWNGRADE FAILED  •  {downgradeResult}");
                     _debtResolutionView?.Refresh();
-                    return;
+                    return false;
                 }
 
                 _boardPreview.SetTileUpgradeLevel(tileIndex, property.UpgradeLevel);
                 _lobby.RefreshMatchHud();
                 TryFinishDebtAfterAssetAction($"BUILDING SOLD (+${refund:N0})");
-                return;
+                return true;
             }
 
             AssetLiquidationResult result = _lobby.Session.TrySellPropertyToBank(tileIndex);
@@ -976,12 +1250,13 @@ namespace Ropoly.Presentation.Dice
             {
                 _boardPreview.SetStatusText($"SALE FAILED  •  {result}");
                 _debtResolutionView?.Refresh();
-                return;
+                return false;
             }
 
             _boardPreview.ClearTileOwner(tileIndex);
             _lobby.RefreshMatchHud();
             TryFinishDebtAfterAssetAction("PROPERTY SOLD TO BANK");
+            return true;
         }
 
         private void TryFinishDebtAfterAssetAction(string actionMessage)
@@ -1001,7 +1276,17 @@ namespace Ropoly.Presentation.Dice
 
         private void DeclareBankruptcy()
         {
-            _lobby.Session?.TryDeclareCurrentPlayerBankruptcy();
+            if (TrySendExternalCommand(ExternalTurnAction.DeclareBankruptcy))
+            {
+                return;
+            }
+
+            ApplyExternalBankruptcy();
+        }
+
+        public bool ApplyExternalBankruptcy()
+        {
+            return _lobby.Session?.TryDeclareCurrentPlayerBankruptcy() == true;
         }
 
         private void HandlePlayerEliminated(int playerIndex, EliminationReason reason)

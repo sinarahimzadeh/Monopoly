@@ -6,7 +6,8 @@
     "Ropoly.Application",
     "Ropoly.AI",
     "Ropoly.Infrastructure",
-    "Ropoly.Presentation"
+    "Ropoly.Presentation",
+    "Ropoly.Multiplayer"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
