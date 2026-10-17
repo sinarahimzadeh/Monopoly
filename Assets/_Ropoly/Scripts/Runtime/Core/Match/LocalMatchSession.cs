@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Ropoly.Core.Board;
 using Ropoly.Core.Cards;
 using Ropoly.Core.Time;
+using Ropoly.Core.Trading;
 
 namespace Ropoly.Core.Match
 {
@@ -275,6 +276,11 @@ namespace Ropoly.Core.Match
         }
 
         public event Action<int, EliminationReason> PlayerEliminated;
+        public TradeOffer ActiveTradeOffer { get; private set; }
+        public event Action<TradeOffer> TradeProposed;
+        public event Action<TradeOffer> TradeCompleted;
+        public event Action<TradeOffer> TradeRejected;
+        public event Action<TradeOffer> TradeCancelled;
 
         public PropertyPurchaseOffer CurrentPurchaseOffer
         {
@@ -761,6 +767,237 @@ namespace Ropoly.Core.Match
             return owned;
         }
 
+        public bool CanProposeTrade(TradeOffer offer, out TradeOfferResult result)
+        {
+            if (State.Phase != MatchPhase.InProgress)
+            {
+                result = TradeOfferResult.MatchFinished;
+                return false;
+            }
+
+            if (offer == null)
+            {
+                throw new ArgumentNullException(nameof(offer));
+            }
+
+            if (offer.ProposerPlayerIndex == offer.TargetPlayerIndex ||
+                offer.ProposerPlayerIndex < 0 || offer.ProposerPlayerIndex >= State.Players.Count ||
+                offer.TargetPlayerIndex < 0 || offer.TargetPlayerIndex >= State.Players.Count)
+            {
+                result = TradeOfferResult.InvalidPlayers;
+                return false;
+            }
+
+            PlayerState proposer = State.Players[offer.ProposerPlayerIndex];
+            PlayerState target = State.Players[offer.TargetPlayerIndex];
+
+            if (proposer.IsEliminated || target.IsEliminated)
+            {
+                result = TradeOfferResult.PlayerEliminated;
+                return false;
+            }
+
+            bool hasOfferedItems = offer.OfferedCash > 0 ||
+                                  (offer.OfferedPropertyTileIndices != null && offer.OfferedPropertyTileIndices.Count > 0) ||
+                                  offer.OfferedWaivers > 0;
+            bool hasRequestedItems = offer.RequestedCash > 0 ||
+                                    (offer.RequestedPropertyTileIndices != null && offer.RequestedPropertyTileIndices.Count > 0) ||
+                                    offer.RequestedWaivers > 0;
+
+            if (!hasOfferedItems && !hasRequestedItems)
+            {
+                result = TradeOfferResult.EmptyTrade;
+                return false;
+            }
+
+            if (proposer.Cash < offer.OfferedCash || target.Cash < offer.RequestedCash)
+            {
+                result = TradeOfferResult.InsufficientCash;
+                return false;
+            }
+
+            if (proposer.HeldDetentionWaivers < offer.OfferedWaivers || target.HeldDetentionWaivers < offer.RequestedWaivers)
+            {
+                result = TradeOfferResult.InsufficientWaivers;
+                return false;
+            }
+
+            if (offer.OfferedPropertyTileIndices != null)
+            {
+                foreach (int tileIndex in offer.OfferedPropertyTileIndices)
+                {
+                    if (!_propertiesByTileIndex.TryGetValue(tileIndex, out PropertyState prop) ||
+                        prop.OwnerPlayerIndex != offer.ProposerPlayerIndex)
+                    {
+                        result = TradeOfferResult.PropertyNotOwned;
+                        return false;
+                    }
+
+                    if (prop.UpgradeLevel > 0 ||
+                        (!string.IsNullOrEmpty(prop.CountryId) && HasUpgradesInCountrySet(prop.CountryId)))
+                    {
+                        result = TradeOfferResult.PropertyHasBuildings;
+                        return false;
+                    }
+                }
+            }
+
+            if (offer.RequestedPropertyTileIndices != null)
+            {
+                foreach (int tileIndex in offer.RequestedPropertyTileIndices)
+                {
+                    if (!_propertiesByTileIndex.TryGetValue(tileIndex, out PropertyState prop) ||
+                        prop.OwnerPlayerIndex != offer.TargetPlayerIndex)
+                    {
+                        result = TradeOfferResult.PropertyNotOwned;
+                        return false;
+                    }
+
+                    if (prop.UpgradeLevel > 0 ||
+                        (!string.IsNullOrEmpty(prop.CountryId) && HasUpgradesInCountrySet(prop.CountryId)))
+                    {
+                        result = TradeOfferResult.PropertyHasBuildings;
+                        return false;
+                    }
+                }
+            }
+
+            result = TradeOfferResult.Success;
+            return true;
+        }
+
+        public bool TryProposeTrade(TradeOffer offer, out TradeOfferResult result)
+        {
+            if (!CanProposeTrade(offer, out result))
+            {
+                return false;
+            }
+
+            if (ActiveTradeOffer != null && ActiveTradeOffer.Status == TradeOfferStatus.Pending)
+            {
+                result = TradeOfferResult.TradeAlreadyActive;
+                return false;
+            }
+
+            ActiveTradeOffer = offer;
+            offer.Status = TradeOfferStatus.Pending;
+            TradeProposed?.Invoke(offer);
+            result = TradeOfferResult.Success;
+            return true;
+        }
+
+        public bool TryAcceptActiveTrade(int respondingPlayerIndex, out TradeOfferResult result)
+        {
+            if (ActiveTradeOffer == null || ActiveTradeOffer.Status != TradeOfferStatus.Pending)
+            {
+                result = TradeOfferResult.NotAwaitingTrade;
+                return false;
+            }
+
+            if (respondingPlayerIndex != ActiveTradeOffer.TargetPlayerIndex)
+            {
+                result = TradeOfferResult.Unauthorized;
+                return false;
+            }
+
+            TradeOffer offer = ActiveTradeOffer;
+            if (!CanProposeTrade(offer, out result))
+            {
+                ActiveTradeOffer.Status = TradeOfferStatus.Cancelled;
+                ActiveTradeOffer = null;
+                TradeCancelled?.Invoke(offer);
+                return false;
+            }
+
+            if (offer.OfferedCash > 0)
+            {
+                TryTransferCash(offer.ProposerPlayerIndex, offer.TargetPlayerIndex, offer.OfferedCash);
+            }
+
+            if (offer.RequestedCash > 0)
+            {
+                TryTransferCash(offer.TargetPlayerIndex, offer.ProposerPlayerIndex, offer.RequestedCash);
+            }
+
+            if (offer.OfferedPropertyTileIndices != null)
+            {
+                foreach (int tileIndex in offer.OfferedPropertyTileIndices)
+                {
+                    _propertiesByTileIndex[tileIndex].TryTransferOwnership(offer.ProposerPlayerIndex, offer.TargetPlayerIndex);
+                }
+            }
+
+            if (offer.RequestedPropertyTileIndices != null)
+            {
+                foreach (int tileIndex in offer.RequestedPropertyTileIndices)
+                {
+                    _propertiesByTileIndex[tileIndex].TryTransferOwnership(offer.TargetPlayerIndex, offer.ProposerPlayerIndex);
+                }
+            }
+
+            if (offer.OfferedWaivers > 0)
+            {
+                State.MutablePlayers[offer.ProposerPlayerIndex].TryRemoveDetentionWaivers(offer.OfferedWaivers);
+                State.MutablePlayers[offer.TargetPlayerIndex].AddDetentionWaivers(offer.OfferedWaivers);
+            }
+
+            if (offer.RequestedWaivers > 0)
+            {
+                State.MutablePlayers[offer.TargetPlayerIndex].TryRemoveDetentionWaivers(offer.RequestedWaivers);
+                State.MutablePlayers[offer.ProposerPlayerIndex].AddDetentionWaivers(offer.RequestedWaivers);
+            }
+
+            offer.Status = TradeOfferStatus.Accepted;
+            ActiveTradeOffer = null;
+            TradeCompleted?.Invoke(offer);
+            result = TradeOfferResult.Success;
+            return true;
+        }
+
+        public bool TryRejectActiveTrade(int respondingPlayerIndex, out TradeOfferResult result)
+        {
+            if (ActiveTradeOffer == null || ActiveTradeOffer.Status != TradeOfferStatus.Pending)
+            {
+                result = TradeOfferResult.NotAwaitingTrade;
+                return false;
+            }
+
+            if (respondingPlayerIndex != ActiveTradeOffer.TargetPlayerIndex)
+            {
+                result = TradeOfferResult.Unauthorized;
+                return false;
+            }
+
+            TradeOffer offer = ActiveTradeOffer;
+            offer.Status = TradeOfferStatus.Rejected;
+            ActiveTradeOffer = null;
+            TradeRejected?.Invoke(offer);
+            result = TradeOfferResult.Success;
+            return true;
+        }
+
+        public bool TryCancelActiveTrade(int requestingPlayerIndex, out TradeOfferResult result)
+        {
+            if (ActiveTradeOffer == null || ActiveTradeOffer.Status != TradeOfferStatus.Pending)
+            {
+                result = TradeOfferResult.NotAwaitingTrade;
+                return false;
+            }
+
+            if (requestingPlayerIndex != ActiveTradeOffer.ProposerPlayerIndex)
+            {
+                result = TradeOfferResult.Unauthorized;
+                return false;
+            }
+
+            TradeOffer offer = ActiveTradeOffer;
+            offer.Status = TradeOfferStatus.Cancelled;
+            ActiveTradeOffer = null;
+            TradeCancelled?.Invoke(offer);
+            result = TradeOfferResult.Success;
+            return true;
+        }
+
         public AssetLiquidationResult TryMortgageProperty(int tileIndex)
         {
             if (!TryGetDebtProperty(tileIndex, out PropertyState property, out int playerIndex))
@@ -947,6 +1184,14 @@ namespace Ropoly.Core.Match
             }
 
             player.Eliminate();
+            if (ActiveTradeOffer != null && (ActiveTradeOffer.ProposerPlayerIndex == playerIndex || ActiveTradeOffer.TargetPlayerIndex == playerIndex))
+            {
+                TradeOffer cancelled = ActiveTradeOffer;
+                cancelled.Status = TradeOfferStatus.Cancelled;
+                ActiveTradeOffer = null;
+                TradeCancelled?.Invoke(cancelled);
+            }
+
             PlayerEliminated?.Invoke(playerIndex, reason);
 
             int winnerPlayerIndex = GetSoleActivePlayerIndex();

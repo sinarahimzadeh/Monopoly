@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Ropoly.Core.Match;
+using Ropoly.Core.Trading;
 using Ropoly.Multiplayer.Protocol;
 using Ropoly.Presentation.Dice;
 using Ropoly.Presentation.Lobby;
@@ -62,6 +63,7 @@ namespace Ropoly.Multiplayer
                 yield break;
             }
 
+            _dice.SetLocalSeatIndex(_service.LocalSeatIndex);
             _dice.ConfigureExternalAuthority(HandleLocalAction, _service.IsHost);
             _service.MatchCommandReceived += HandleMatchCommand;
             _service.MatchEventReceived += HandleMatchEvent;
@@ -102,10 +104,11 @@ namespace Ropoly.Multiplayer
                 _lobby.Session.PlayerEliminated -= HandleAuthoritativePlayerEliminated;
             }
 
+            _dice?.SetLocalSeatIndex(-1);
             _dice?.ClearExternalAuthority();
         }
 
-        private void HandleLocalAction(ExternalTurnAction action, int intValue)
+        private void HandleLocalAction(ExternalTurnAction action, int intValue, string stringValue)
         {
             OnlineMatchCommandKind command = action switch
             {
@@ -119,9 +122,13 @@ namespace Ropoly.Multiplayer
                 ExternalTurnAction.MortgageProperty => OnlineMatchCommandKind.MortgageProperty,
                 ExternalTurnAction.SellProperty => OnlineMatchCommandKind.SellProperty,
                 ExternalTurnAction.DeclareBankruptcy => OnlineMatchCommandKind.DeclareBankruptcy,
+                ExternalTurnAction.ProposeTrade => OnlineMatchCommandKind.ProposeTrade,
+                ExternalTurnAction.AcceptTrade => OnlineMatchCommandKind.AcceptTrade,
+                ExternalTurnAction.RejectTrade => OnlineMatchCommandKind.RejectTrade,
+                ExternalTurnAction.CancelTrade => OnlineMatchCommandKind.CancelTrade,
                 _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
             };
-            _service.SendMatchCommand(command, intValue);
+            _service.SendMatchCommand(command, intValue, stringValue);
         }
 
         private void HandleMatchCommand(ulong senderClientId, OnlineMatchCommandData command)
@@ -153,8 +160,17 @@ namespace Ropoly.Multiplayer
 
             if (!_matchReady ||
                 !_service.TryGetSeatIndex(senderClientId, out int senderSeat) ||
-                _lobby.Session.State.Turn == null ||
-                senderSeat != _lobby.Session.State.Turn.CurrentPlayerIndex)
+                _lobby.Session.State.Turn == null)
+            {
+                return;
+            }
+
+            bool isTradeCommand = command.Kind is OnlineMatchCommandKind.ProposeTrade
+                or OnlineMatchCommandKind.AcceptTrade
+                or OnlineMatchCommandKind.RejectTrade
+                or OnlineMatchCommandKind.CancelTrade;
+
+            if (!isTradeCommand && senderSeat != _lobby.Session.State.Turn.CurrentPlayerIndex)
             {
                 return;
             }
@@ -171,6 +187,10 @@ namespace Ropoly.Multiplayer
                 OnlineMatchCommandKind.MortgageProperty => ApplyHostMortgage(command.IntValue),
                 OnlineMatchCommandKind.SellProperty => ApplyHostSale(command.IntValue),
                 OnlineMatchCommandKind.DeclareBankruptcy => ApplyHostBankruptcy(),
+                OnlineMatchCommandKind.ProposeTrade => ApplyHostProposeTrade(senderSeat, command.StringValue),
+                OnlineMatchCommandKind.AcceptTrade => ApplyHostAcceptTrade(senderSeat),
+                OnlineMatchCommandKind.RejectTrade => ApplyHostRejectTrade(senderSeat),
+                OnlineMatchCommandKind.CancelTrade => ApplyHostCancelTrade(senderSeat),
                 _ => null
             };
 
@@ -268,6 +288,112 @@ namespace Ropoly.Multiplayer
             return null;
         }
 
+        private OnlineMatchEventData ApplyHostProposeTrade(int senderSeat, string payloadJson)
+        {
+            if (string.IsNullOrEmpty(payloadJson))
+            {
+                return null;
+            }
+
+            OnlineTradePayload payload;
+            try
+            {
+                payload = JsonUtility.FromJson<OnlineTradePayload>(payloadJson);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to parse trade payload: {ex.Message}");
+                return null;
+            }
+
+            if (payload == null || payload.ProposerSeat != senderSeat)
+            {
+                return null;
+            }
+
+            var offer = new TradeOffer(
+                payload.TradeId,
+                payload.ProposerSeat,
+                payload.TargetSeat,
+                payload.OfferedCash,
+                payload.OfferedPropertyTileIndices,
+                payload.OfferedWaivers,
+                payload.RequestedCash,
+                payload.RequestedPropertyTileIndices,
+                payload.RequestedWaivers);
+
+            if (!_dice.ApplyExternalProposeTrade(offer))
+            {
+                return null;
+            }
+
+            return new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.TradeProposed,
+                StringValue = payloadJson
+            };
+        }
+
+        private OnlineMatchEventData ApplyHostAcceptTrade(int senderSeat)
+        {
+            TradeOffer active = _lobby.Session.ActiveTradeOffer;
+            if (active == null || active.TargetPlayerIndex != senderSeat)
+            {
+                return null;
+            }
+
+            if (!_dice.ApplyExternalAcceptTrade(senderSeat))
+            {
+                return null;
+            }
+
+            return new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.TradeAccepted,
+                IntValue = senderSeat
+            };
+        }
+
+        private OnlineMatchEventData ApplyHostRejectTrade(int senderSeat)
+        {
+            TradeOffer active = _lobby.Session.ActiveTradeOffer;
+            if (active == null || active.TargetPlayerIndex != senderSeat)
+            {
+                return null;
+            }
+
+            if (!_dice.ApplyExternalRejectTrade(senderSeat))
+            {
+                return null;
+            }
+
+            return new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.TradeRejected,
+                IntValue = senderSeat
+            };
+        }
+
+        private OnlineMatchEventData ApplyHostCancelTrade(int senderSeat)
+        {
+            TradeOffer active = _lobby.Session.ActiveTradeOffer;
+            if (active == null || active.ProposerPlayerIndex != senderSeat)
+            {
+                return null;
+            }
+
+            if (!_dice.ApplyExternalCancelTrade(senderSeat))
+            {
+                return null;
+            }
+
+            return new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.TradeCancelled,
+                IntValue = senderSeat
+            };
+        }
+
         private void HandleMatchEvent(OnlineMatchEventData matchEvent)
         {
             if (matchEvent == null || _service.IsHost)
@@ -311,6 +437,35 @@ namespace Ropoly.Multiplayer
                     _lobby.Session.ApplyAuthoritativeElimination(
                         matchEvent.IntValue,
                         (EliminationReason)matchEvent.SecondaryIntValue);
+                    break;
+                case OnlineMatchEventKind.TradeProposed:
+                    if (!string.IsNullOrEmpty(matchEvent.StringValue))
+                    {
+                        var payload = JsonUtility.FromJson<OnlineTradePayload>(matchEvent.StringValue);
+                        if (payload != null)
+                        {
+                            var offer = new TradeOffer(
+                                payload.TradeId,
+                                payload.ProposerSeat,
+                                payload.TargetSeat,
+                                payload.OfferedCash,
+                                payload.OfferedPropertyTileIndices,
+                                payload.OfferedWaivers,
+                                payload.RequestedCash,
+                                payload.RequestedPropertyTileIndices,
+                                payload.RequestedWaivers);
+                            _dice.ApplyExternalProposeTrade(offer);
+                        }
+                    }
+                    break;
+                case OnlineMatchEventKind.TradeAccepted:
+                    _dice.ApplyExternalAcceptTrade(matchEvent.IntValue);
+                    break;
+                case OnlineMatchEventKind.TradeRejected:
+                    _dice.ApplyExternalRejectTrade(matchEvent.IntValue);
+                    break;
+                case OnlineMatchEventKind.TradeCancelled:
+                    _dice.ApplyExternalCancelTrade(matchEvent.IntValue);
                     break;
             }
         }

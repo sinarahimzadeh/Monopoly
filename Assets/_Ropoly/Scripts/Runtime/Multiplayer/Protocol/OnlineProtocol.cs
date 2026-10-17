@@ -36,7 +36,11 @@ namespace Ropoly.Multiplayer.Protocol
         PayDetentionBail,
         MortgageProperty,
         SellProperty,
-        DeclareBankruptcy
+        DeclareBankruptcy,
+        ProposeTrade,
+        AcceptTrade,
+        RejectTrade,
+        CancelTrade
     }
 
     public enum OnlineMatchEventKind
@@ -52,7 +56,11 @@ namespace Ropoly.Multiplayer.Protocol
         PropertyMortgaged,
         PropertySold,
         BankruptcyDeclared,
-        PlayerEliminated
+        PlayerEliminated,
+        TradeProposed,
+        TradeAccepted,
+        TradeRejected,
+        TradeCancelled
     }
 
     [Serializable]
@@ -87,6 +95,7 @@ namespace Ropoly.Multiplayer.Protocol
     {
         public OnlineMatchCommandKind Kind;
         public int IntValue;
+        public string StringValue;
     }
 
     [Serializable]
@@ -97,5 +106,20 @@ namespace Ropoly.Multiplayer.Protocol
         public int SecondDie;
         public int IntValue;
         public int SecondaryIntValue;
+        public string StringValue;
+    }
+
+    [Serializable]
+    public sealed class OnlineTradePayload
+    {
+        public string TradeId;
+        public int ProposerSeat;
+        public int TargetSeat;
+        public int OfferedCash;
+        public int[] OfferedPropertyTileIndices = Array.Empty<int>();
+        public int OfferedWaivers;
+        public int RequestedCash;
+        public int[] RequestedPropertyTileIndices = Array.Empty<int>();
+        public int RequestedWaivers;
     }
 }

@@ -105,6 +105,17 @@ namespace Ropoly.Core.Match
             return true;
         }
 
+        internal bool TryTransferOwnership(int fromPlayerIndex, int toPlayerIndex)
+        {
+            if (OwnerPlayerIndex != fromPlayerIndex || toPlayerIndex < 0 || UpgradeLevel > 0)
+            {
+                return false;
+            }
+
+            OwnerPlayerIndex = toPlayerIndex;
+            return true;
+        }
+
         internal bool TryMortgage(int playerIndex)
         {
             if (OwnerPlayerIndex != playerIndex || IsMortgaged || MortgageValue <= 0)

@@ -1,11 +1,15 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Ropoly.Core.Board;
 using Ropoly.Core.Cards;
 using Ropoly.Core.Match;
+using Ropoly.Core.Trading;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Lobby;
 using Ropoly.Presentation.Players;
+using Ropoly.Presentation.Trading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,7 +28,11 @@ namespace Ropoly.Presentation.Dice
         PayDetentionBail,
         MortgageProperty,
         SellProperty,
-        DeclareBankruptcy
+        DeclareBankruptcy,
+        ProposeTrade,
+        AcceptTrade,
+        RejectTrade,
+        CancelTrade
     }
 
     [DisallowMultipleComponent]
@@ -93,6 +101,9 @@ namespace Ropoly.Presentation.Dice
         [SerializeField]
         private DebtResolutionView _debtResolutionView;
 
+        [SerializeField]
+        private TradeDialogView _tradeDialogView;
+
         private readonly SystemDiceRollSource _rollSource = new SystemDiceRollSource();
         private Coroutine _rollRoutine;
         private Coroutine _movementRoutine;
@@ -101,10 +112,11 @@ namespace Ropoly.Presentation.Dice
         private float _secondYaw;
         private PropertyPurchaseOffer _pendingOffer;
         private int _pendingUpgradeTileIndex = -1;
-        private Action<ExternalTurnAction, int> _externalCommandHandler;
+        private Action<ExternalTurnAction, int, string> _externalCommandHandler;
         private bool _externalInputAllowed = true;
         private bool _externalAuthorityConfigured;
         private bool _externalSimulationAuthority;
+        private int _localSeatIndex = -1;
 
         public bool IsRolling => _rollRoutine != null;
         public bool IsMoving => _movementRoutine != null;
@@ -115,7 +127,9 @@ namespace Ropoly.Presentation.Dice
         public DieView SecondDie => _secondDie;
         public Button PrimaryButton => _primaryButton;
         public Button SecondaryButton => _secondaryButton;
+        public BoardPreviewController BoardPreview => _boardPreview;
         public DebtResolutionView DebtResolutionView => _debtResolutionView;
+        public TradeDialogView TradeDialogView => _tradeDialogView;
 
         private void Awake()
         {
@@ -134,6 +148,23 @@ namespace Ropoly.Presentation.Dice
             _primaryButton.onClick.AddListener(HandlePrimaryAction);
             _secondaryButton.onClick.RemoveAllListeners();
             _secondaryButton.onClick.AddListener(HandleSecondaryAction);
+
+            if (_tradeDialogView == null)
+            {
+                _tradeDialogView = GetComponentInChildren<TradeDialogView>(true);
+            }
+
+            if (_tradeDialogView == null)
+            {
+                _tradeDialogView = TradeDialogView.Install(
+                    _lobby,
+                    this,
+                    _boardPreview,
+                    onPropose: HandleTradeProposedByLocal,
+                    onAccept: HandleTradeAcceptedByLocal,
+                    onReject: HandleTradeRejectedByLocal,
+                    onCancel: HandleTradeCancelledByLocal);
+            }
 
             if (_lobby.Session != null && _lobby.Session.State.Phase == MatchPhase.InProgress)
             {
@@ -367,7 +398,7 @@ namespace Ropoly.Presentation.Dice
         }
 
         public void ConfigureExternalAuthority(
-            Action<ExternalTurnAction, int> commandHandler,
+            Action<ExternalTurnAction, int, string> commandHandler,
             bool simulationAuthority)
         {
             _externalCommandHandler = commandHandler;
@@ -375,6 +406,15 @@ namespace Ropoly.Presentation.Dice
             _externalSimulationAuthority = simulationAuthority;
             _externalInputAllowed = false;
             RefreshExternalButtonAvailability();
+        }
+
+        public void ConfigureExternalAuthority(
+            Action<ExternalTurnAction, int> commandHandler,
+            bool simulationAuthority)
+        {
+            ConfigureExternalAuthority(
+                commandHandler != null ? (action, intVal, _) => commandHandler(action, intVal) : null,
+                simulationAuthority);
         }
 
         public void ClearExternalAuthority()
@@ -549,7 +589,7 @@ namespace Ropoly.Presentation.Dice
             return true;
         }
 
-        private bool TrySendExternalCommand(ExternalTurnAction action, int intValue = -1)
+        private bool TrySendExternalCommand(ExternalTurnAction action, int intValue = -1, string stringValue = null)
         {
             if (_externalCommandHandler == null)
             {
@@ -558,7 +598,7 @@ namespace Ropoly.Presentation.Dice
 
             _primaryButton.interactable = false;
             _secondaryButton.interactable = false;
-            _externalCommandHandler.Invoke(action, intValue);
+            _externalCommandHandler.Invoke(action, intValue, stringValue);
             return true;
         }
 
@@ -1363,6 +1403,179 @@ namespace Ropoly.Presentation.Dice
             }
 
             _secondaryButton.gameObject.SetActive(decisionMode);
+        }
+
+        public int GetCurrentLocalPlayerSeat()
+        {
+            if (_localSeatIndex >= 0)
+            {
+                return _localSeatIndex;
+            }
+
+            if (_lobby?.Session?.State?.Turn != null)
+            {
+                return _lobby.Session.State.Turn.CurrentPlayerIndex;
+            }
+
+            return 0;
+        }
+
+        public void SetLocalSeatIndex(int seatIndex)
+        {
+            _localSeatIndex = seatIndex;
+        }
+
+        public void RefreshMatchHud()
+        {
+            _lobby?.RefreshMatchHud();
+        }
+
+        [Serializable]
+        private sealed class TradePayloadData
+        {
+            public string TradeId;
+            public int ProposerSeat;
+            public int TargetSeat;
+            public int OfferedCash;
+            public int[] OfferedPropertyTileIndices;
+            public int OfferedWaivers;
+            public int RequestedCash;
+            public int[] RequestedPropertyTileIndices;
+            public int RequestedWaivers;
+        }
+
+        private void HandleTradeProposedByLocal(TradeOffer offer)
+        {
+            if (_externalCommandHandler != null)
+            {
+                var data = new TradePayloadData
+                {
+                    TradeId = offer.TradeId,
+                    ProposerSeat = offer.ProposerPlayerIndex,
+                    TargetSeat = offer.TargetPlayerIndex,
+                    OfferedCash = offer.OfferedCash,
+                    OfferedPropertyTileIndices = offer.OfferedPropertyTileIndices != null
+                        ? offer.OfferedPropertyTileIndices.ToArray()
+                        : Array.Empty<int>(),
+                    OfferedWaivers = offer.OfferedWaivers,
+                    RequestedCash = offer.RequestedCash,
+                    RequestedPropertyTileIndices = offer.RequestedPropertyTileIndices != null
+                        ? offer.RequestedPropertyTileIndices.ToArray()
+                        : Array.Empty<int>(),
+                    RequestedWaivers = offer.RequestedWaivers
+                };
+                string json = JsonUtility.ToJson(data);
+                TrySendExternalCommand(ExternalTurnAction.ProposeTrade, -1, json);
+            }
+            else
+            {
+                ApplyExternalProposeTrade(offer);
+            }
+        }
+
+        private void HandleTradeAcceptedByLocal(int playerIndex)
+        {
+            if (_externalCommandHandler != null)
+            {
+                TrySendExternalCommand(ExternalTurnAction.AcceptTrade, playerIndex);
+            }
+            else
+            {
+                ApplyExternalAcceptTrade(playerIndex);
+            }
+        }
+
+        private void HandleTradeRejectedByLocal(int playerIndex)
+        {
+            if (_externalCommandHandler != null)
+            {
+                TrySendExternalCommand(ExternalTurnAction.RejectTrade, playerIndex);
+            }
+            else
+            {
+                ApplyExternalRejectTrade(playerIndex);
+            }
+        }
+
+        private void HandleTradeCancelledByLocal(int playerIndex)
+        {
+            if (_externalCommandHandler != null)
+            {
+                TrySendExternalCommand(ExternalTurnAction.CancelTrade, playerIndex);
+            }
+            else
+            {
+                ApplyExternalCancelTrade(playerIndex);
+            }
+        }
+
+        public bool ApplyExternalProposeTrade(TradeOffer offer)
+        {
+            if (_lobby?.Session == null || offer == null)
+            {
+                return false;
+            }
+
+            return _lobby.Session.TryProposeTrade(offer, out _);
+        }
+
+        public bool ApplyExternalAcceptTrade(int playerIndex)
+        {
+            if (_lobby?.Session == null)
+            {
+                return false;
+            }
+
+            TradeOffer active = _lobby.Session.ActiveTradeOffer;
+            bool success = _lobby.Session.TryAcceptActiveTrade(playerIndex, out _);
+            if (success && active != null)
+            {
+                RefreshBoardPropertyOwnersAfterTrade(active);
+                _lobby.RefreshMatchHud();
+            }
+
+            return success;
+        }
+
+        public bool ApplyExternalRejectTrade(int playerIndex)
+        {
+            if (_lobby?.Session == null)
+            {
+                return false;
+            }
+
+            return _lobby.Session.TryRejectActiveTrade(playerIndex, out _);
+        }
+
+        public bool ApplyExternalCancelTrade(int playerIndex)
+        {
+            if (_lobby?.Session == null)
+            {
+                return false;
+            }
+
+            return _lobby.Session.TryCancelActiveTrade(playerIndex, out _);
+        }
+
+        private void RefreshBoardPropertyOwnersAfterTrade(TradeOffer offer)
+        {
+            var targetCreature = _lobby.GetPlayerCreature(offer.TargetPlayerIndex);
+            if (targetCreature != null && offer.OfferedPropertyTileIndices != null)
+            {
+                foreach (int tile in offer.OfferedPropertyTileIndices)
+                {
+                    _boardPreview.SetTileOwnerColor(tile, targetCreature.BodyColor);
+                }
+            }
+
+            var proposerCreature = _lobby.GetPlayerCreature(offer.ProposerPlayerIndex);
+            if (proposerCreature != null && offer.RequestedPropertyTileIndices != null)
+            {
+                foreach (int tile in offer.RequestedPropertyTileIndices)
+                {
+                    _boardPreview.SetTileOwnerColor(tile, proposerCreature.BodyColor);
+                }
+            }
         }
 
         private Vector3 GetHomePosition(bool first)

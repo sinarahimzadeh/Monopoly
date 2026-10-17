@@ -125,6 +125,14 @@ namespace Ropoly.Core.Match
             HeldDetentionWaivers++;
         }
 
+        internal void AddDetentionWaivers(int count)
+        {
+            if (count > 0)
+            {
+                HeldDetentionWaivers += count;
+            }
+        }
+
         internal bool TryUseDetentionWaiver()
         {
             if (HeldDetentionWaivers <= 0)
@@ -133,6 +141,22 @@ namespace Ropoly.Core.Match
             }
 
             HeldDetentionWaivers--;
+            return true;
+        }
+
+        internal bool TryRemoveDetentionWaivers(int count)
+        {
+            if (count <= 0)
+            {
+                return true;
+            }
+
+            if (HeldDetentionWaivers < count)
+            {
+                return false;
+            }
+
+            HeldDetentionWaivers -= count;
             return true;
         }
 

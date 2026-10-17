@@ -256,12 +256,13 @@ namespace Ropoly.Multiplayer
             });
         }
 
-        public void SendMatchCommand(OnlineMatchCommandKind commandKind, int intValue = -1)
+        public void SendMatchCommand(OnlineMatchCommandKind commandKind, int intValue = -1, string stringValue = null)
         {
             var command = new OnlineMatchCommandData
             {
                 Kind = commandKind,
-                IntValue = intValue
+                IntValue = intValue,
+                StringValue = stringValue
             };
             if (IsHost)
             {
