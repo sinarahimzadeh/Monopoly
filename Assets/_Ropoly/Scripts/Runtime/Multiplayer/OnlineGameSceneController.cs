@@ -68,6 +68,7 @@ namespace Ropoly.Multiplayer
             _service.MatchCommandReceived += HandleMatchCommand;
             _service.MatchEventReceived += HandleMatchEvent;
             _service.OnlineClientDisconnected += HandleClientDisconnected;
+            _lobby.MatchStarted += HandleLobbyMatchStarted;
             if (_service.IsHost)
             {
                 _lobby.Session.PlayerEliminated += HandleAuthoritativePlayerEliminated;
@@ -99,6 +100,11 @@ namespace Ropoly.Multiplayer
                 _service.OnlineClientDisconnected -= HandleClientDisconnected;
             }
 
+            if (_lobby != null)
+            {
+                _lobby.MatchStarted -= HandleLobbyMatchStarted;
+            }
+
             if (_service?.IsHost == true && _lobby?.Session != null)
             {
                 _lobby.Session.PlayerEliminated -= HandleAuthoritativePlayerEliminated;
@@ -126,6 +132,8 @@ namespace Ropoly.Multiplayer
                 ExternalTurnAction.AcceptTrade => OnlineMatchCommandKind.AcceptTrade,
                 ExternalTurnAction.RejectTrade => OnlineMatchCommandKind.RejectTrade,
                 ExternalTurnAction.CancelTrade => OnlineMatchCommandKind.CancelTrade,
+                ExternalTurnAction.RequestRematch => OnlineMatchCommandKind.RequestRematch,
+                ExternalTurnAction.ReturnToLobby => OnlineMatchCommandKind.ReturnToLobby,
                 _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
             };
             _service.SendMatchCommand(command, intValue, stringValue);
@@ -170,7 +178,10 @@ namespace Ropoly.Multiplayer
                 or OnlineMatchCommandKind.RejectTrade
                 or OnlineMatchCommandKind.CancelTrade;
 
-            if (!isTradeCommand && senderSeat != _lobby.Session.State.Turn.CurrentPlayerIndex)
+            bool isMatchEndCommand = command.Kind is OnlineMatchCommandKind.RequestRematch
+                or OnlineMatchCommandKind.ReturnToLobby;
+
+            if (!isTradeCommand && !isMatchEndCommand && senderSeat != _lobby.Session.State.Turn.CurrentPlayerIndex)
             {
                 return;
             }
@@ -191,6 +202,8 @@ namespace Ropoly.Multiplayer
                 OnlineMatchCommandKind.AcceptTrade => ApplyHostAcceptTrade(senderSeat),
                 OnlineMatchCommandKind.RejectTrade => ApplyHostRejectTrade(senderSeat),
                 OnlineMatchCommandKind.CancelTrade => ApplyHostCancelTrade(senderSeat),
+                OnlineMatchCommandKind.RequestRematch => ApplyHostRematch(),
+                OnlineMatchCommandKind.ReturnToLobby => ApplyHostReturnToLobby(),
                 _ => null
             };
 
@@ -467,6 +480,39 @@ namespace Ropoly.Multiplayer
                 case OnlineMatchEventKind.TradeCancelled:
                     _dice.ApplyExternalCancelTrade(matchEvent.IntValue);
                     break;
+                case OnlineMatchEventKind.RematchStarted:
+                    _dice.ApplyExternalRematch();
+                    break;
+                case OnlineMatchEventKind.ReturnedToLobby:
+                    _dice.ApplyExternalReturnToLobby();
+                    break;
+            }
+        }
+
+        private OnlineMatchEventData ApplyHostRematch()
+        {
+            _dice.ApplyExternalRematch();
+            return new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.RematchStarted
+            };
+        }
+
+        private OnlineMatchEventData ApplyHostReturnToLobby()
+        {
+            _dice.ApplyExternalReturnToLobby();
+            return new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.ReturnedToLobby
+            };
+        }
+
+        private void HandleLobbyMatchStarted(LocalMatchSession session)
+        {
+            if (_service != null && _service.IsHost && session != null)
+            {
+                session.PlayerEliminated -= HandleAuthoritativePlayerEliminated;
+                session.PlayerEliminated += HandleAuthoritativePlayerEliminated;
             }
         }
 

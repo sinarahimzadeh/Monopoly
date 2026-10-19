@@ -8,7 +8,9 @@ using Ropoly.Core.Match;
 using Ropoly.Core.Trading;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Lobby;
+using Ropoly.Presentation.Navigation;
 using Ropoly.Presentation.Players;
+using Ropoly.Presentation.Results;
 using Ropoly.Presentation.Trading;
 using TMPro;
 using UnityEngine;
@@ -32,7 +34,9 @@ namespace Ropoly.Presentation.Dice
         ProposeTrade,
         AcceptTrade,
         RejectTrade,
-        CancelTrade
+        CancelTrade,
+        RequestRematch,
+        ReturnToLobby
     }
 
     [DisallowMultipleComponent]
@@ -104,6 +108,9 @@ namespace Ropoly.Presentation.Dice
         [SerializeField]
         private TradeDialogView _tradeDialogView;
 
+        [SerializeField]
+        private MatchResultsView _matchResultsView;
+
         private readonly SystemDiceRollSource _rollSource = new SystemDiceRollSource();
         private Coroutine _rollRoutine;
         private Coroutine _movementRoutine;
@@ -130,6 +137,7 @@ namespace Ropoly.Presentation.Dice
         public BoardPreviewController BoardPreview => _boardPreview;
         public DebtResolutionView DebtResolutionView => _debtResolutionView;
         public TradeDialogView TradeDialogView => _tradeDialogView;
+        public MatchResultsView MatchResultsView => _matchResultsView;
 
         private void Awake()
         {
@@ -164,6 +172,22 @@ namespace Ropoly.Presentation.Dice
                     onAccept: HandleTradeAcceptedByLocal,
                     onReject: HandleTradeRejectedByLocal,
                     onCancel: HandleTradeCancelledByLocal);
+            }
+
+            if (_matchResultsView == null)
+            {
+                _matchResultsView = GetComponentInChildren<MatchResultsView>(true);
+            }
+
+            if (_matchResultsView == null)
+            {
+                _matchResultsView = MatchResultsView.Install(
+                    _lobby,
+                    this,
+                    _boardPreview,
+                    onRematch: HandleRematchAction,
+                    onReturnToLobby: HandleReturnToLobbyAction,
+                    onReturnToMainMenu: HandleReturnToMainMenuAction);
             }
 
             if (_lobby.Session != null && _lobby.Session.State.Phase == MatchPhase.InProgress)
@@ -228,6 +252,7 @@ namespace Ropoly.Presentation.Dice
                 if (_lobby.Session != null)
                 {
                     _lobby.Session.PlayerEliminated -= HandlePlayerEliminated;
+                    _lobby.Session.MatchEnded -= HandleMatchEnded;
                 }
             }
         }
@@ -654,9 +679,12 @@ namespace Ropoly.Presentation.Dice
             {
                 session.PlayerEliminated -= HandlePlayerEliminated;
                 session.PlayerEliminated += HandlePlayerEliminated;
+                session.MatchEnded -= HandleMatchEnded;
+                session.MatchEnded += HandleMatchEnded;
             }
 
             _debtResolutionView?.Hide();
+            _matchResultsView?.Hide();
             _diceRoot.SetActive(true);
             _firstDie.ApplySettings(_settings);
             _secondDie.ApplySettings(_settings);
@@ -1346,13 +1374,7 @@ namespace Ropoly.Presentation.Dice
 
             if (_lobby.Session.State.Phase == MatchPhase.Finished)
             {
-                int winnerIndex = _lobby.Session.State.WinnerPlayerIndex;
-                PlayerState winner = _lobby.Session.State.Players[winnerIndex];
-                _turnLabel.text = "MATCH COMPLETE";
-                _resultLabel.text = $"{winner.DisplayName} WINS";
-                _primaryButtonLabel.text = "GAME OVER";
-                _primaryButton.interactable = false;
-                _boardPreview.SetStatusText($"{winner.DisplayName} WINS THE MATCH");
+                HandleMatchEnded(_lobby.Session.GetMatchResult());
                 return;
             }
 
@@ -1576,6 +1598,68 @@ namespace Ropoly.Presentation.Dice
                     _boardPreview.SetTileOwnerColor(tile, proposerCreature.BodyColor);
                 }
             }
+        }
+
+        private void HandleMatchEnded(MatchResult result)
+        {
+            if (result == null)
+            {
+                return;
+            }
+
+            _turnLabel.text = "MATCH COMPLETE";
+            _resultLabel.text = $"{result.WinnerDisplayName} WINS";
+            _primaryButtonLabel.text = "GAME OVER";
+            _primaryButton.interactable = false;
+            _secondaryButton.gameObject.SetActive(false);
+            _boardPreview.SetStatusText($"{result.WinnerDisplayName} WINS THE MATCH");
+            _tradeDialogView?.CloseAllModals();
+            _debtResolutionView?.Hide();
+            _matchResultsView?.Show(result);
+        }
+
+        private void HandleRematchAction()
+        {
+            if (_externalCommandHandler != null)
+            {
+                TrySendExternalCommand(ExternalTurnAction.RequestRematch);
+            }
+            else
+            {
+                _matchResultsView?.Hide();
+                _lobby.Rematch();
+            }
+        }
+
+        private void HandleReturnToLobbyAction()
+        {
+            if (_externalCommandHandler != null)
+            {
+                TrySendExternalCommand(ExternalTurnAction.ReturnToLobby);
+            }
+            else
+            {
+                _matchResultsView?.Hide();
+                _lobby.ReturnToLobby();
+            }
+        }
+
+        private void HandleReturnToMainMenuAction()
+        {
+            _matchResultsView?.Hide();
+            UnityEngine.SceneManagement.SceneManager.LoadScene(AppSceneNames.MainMenu);
+        }
+
+        public void ApplyExternalRematch()
+        {
+            _matchResultsView?.Hide();
+            _lobby.Rematch();
+        }
+
+        public void ApplyExternalReturnToLobby()
+        {
+            _matchResultsView?.Hide();
+            _lobby.ReturnToLobby();
         }
 
         private Vector3 GetHomePosition(bool first)

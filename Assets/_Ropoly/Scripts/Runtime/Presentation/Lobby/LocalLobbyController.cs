@@ -460,5 +460,109 @@ namespace Ropoly.Presentation.Lobby
                 }
             }
         }
+
+        public void Rematch()
+        {
+            if (_session == null)
+            {
+                return;
+            }
+
+            string[] chosenCreatures = new string[_session.State.Players.Count];
+            for (int i = 0; i < _session.State.Players.Count; i++)
+            {
+                chosenCreatures[i] = _session.State.Players[i].CreatureId;
+            }
+
+            for (int i = 0; i < _boardPreview.TileCount; i++)
+            {
+                _boardPreview.ClearTileOwner(i);
+                _boardPreview.SetTileUpgradeLevel(i, 0);
+            }
+
+            ClearSpawnedTokens();
+
+            var rules = _ruleset.CreateSnapshot();
+            var board = _boardPreview.BoardDefinition.CreateSnapshot();
+            List<string> rosterIds = new List<string>(_creatureRoster.Creatures.Count);
+            foreach (CreatureDefinition creature in _creatureRoster.Creatures)
+            {
+                rosterIds.Add(creature.CreatureId);
+            }
+
+            _session = new LocalMatchSession(
+                chosenCreatures.Length,
+                rules.StartingCash,
+                rosterIds,
+                board,
+                rules.PassStartCash,
+                rules.MortgageEnabled,
+                rules.TurnDurationSeconds,
+                rules.DisconnectGraceSeconds,
+                clock: null,
+                rules.FullSetRentMultiplier,
+                rules.VacationRewardEnabled,
+                rules.VacationReward);
+
+            for (int i = 0; i < chosenCreatures.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(chosenCreatures[i]))
+                {
+                    _session.TrySelectCreature(i, chosenCreatures[i]);
+                }
+            }
+
+            _session.TryStartMatch();
+
+            SpawnSelectedCreatures();
+            RefreshMatchHud();
+            _lobbyOverlay.SetActive(false);
+            _matchHudPanel.SetActive(true);
+            _boardPreview.SetStatusText("MATCH READY  •  ROLL THE DICE");
+            MatchStarted?.Invoke(_session);
+        }
+
+        public void ReturnToLobby()
+        {
+            if (_session == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _boardPreview.TileCount; i++)
+            {
+                _boardPreview.ClearTileOwner(i);
+                _boardPreview.SetTileUpgradeLevel(i, 0);
+            }
+
+            ClearSpawnedTokens();
+
+            var rules = _ruleset.CreateSnapshot();
+            var board = _boardPreview.BoardDefinition.CreateSnapshot();
+            List<string> rosterIds = new List<string>(_creatureRoster.Creatures.Count);
+            foreach (CreatureDefinition creature in _creatureRoster.Creatures)
+            {
+                rosterIds.Add(creature.CreatureId);
+            }
+
+            _session = new LocalMatchSession(
+                rules.PlayerCount,
+                rules.StartingCash,
+                rosterIds,
+                board,
+                rules.PassStartCash,
+                rules.MortgageEnabled,
+                rules.TurnDurationSeconds,
+                rules.DisconnectGraceSeconds,
+                clock: null,
+                rules.FullSetRentMultiplier,
+                rules.VacationRewardEnabled,
+                rules.VacationReward);
+
+            _lobbyOverlay.SetActive(true);
+            _matchHudPanel.SetActive(false);
+            _activePlayerIndex = 0;
+            RefreshInterface();
+        }
     }
 }

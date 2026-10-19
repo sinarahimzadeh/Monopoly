@@ -281,6 +281,9 @@ namespace Ropoly.Core.Match
         public event Action<TradeOffer> TradeCompleted;
         public event Action<TradeOffer> TradeRejected;
         public event Action<TradeOffer> TradeCancelled;
+        public event Action<MatchResult> MatchEnded;
+        private readonly List<PlayerEliminationRecord> _eliminations = new();
+        public IReadOnlyList<PlayerEliminationRecord> Eliminations => _eliminations;
 
         public PropertyPurchaseOffer CurrentPurchaseOffer
         {
@@ -1175,6 +1178,26 @@ namespace Ropoly.Core.Match
                 State.Turn.RentPayment.CancelByBankruptcy();
             }
 
+            int cashAtElim = player.Cash;
+            int propsAtElim = 0;
+            int netWorthAtElim = CalculatePlayerNetWorth(playerIndex);
+            foreach (PropertyState property in State.Properties)
+            {
+                if (property.OwnerPlayerIndex == playerIndex)
+                {
+                    propsAtElim++;
+                }
+            }
+
+            int turnNumber = State.Turn?.TurnNumber ?? 1;
+            _eliminations.Add(new PlayerEliminationRecord(
+                playerIndex,
+                reason,
+                turnNumber,
+                cashAtElim,
+                propsAtElim,
+                netWorthAtElim));
+
             foreach (PropertyState property in State.Properties)
             {
                 if (property.OwnerPlayerIndex == playerIndex)
@@ -1199,6 +1222,7 @@ namespace Ropoly.Core.Match
             {
                 State.WinnerPlayerIndex = winnerPlayerIndex;
                 State.Phase = MatchPhase.Finished;
+                MatchEnded?.Invoke(GetMatchResult());
                 return true;
             }
 
@@ -2107,6 +2131,161 @@ namespace Ropoly.Core.Match
             }
 
             return null;
+        }
+
+        public int CalculatePlayerNetWorth(int playerIndex)
+        {
+            if (playerIndex < 0 || playerIndex >= State.Players.Count)
+            {
+                return 0;
+            }
+
+            PlayerState player = State.Players[playerIndex];
+            int netWorth = player.Cash;
+            netWorth += player.HeldDetentionWaivers * 50;
+
+            foreach (PropertyState property in State.Properties)
+            {
+                if (property.OwnerPlayerIndex == playerIndex)
+                {
+                    netWorth += property.IsMortgaged
+                        ? property.MortgageValue
+                        : property.PurchasePrice;
+
+                    netWorth += property.UpgradeLevel * property.UpgradeCost;
+                }
+            }
+
+            return netWorth;
+        }
+
+        public MatchResult GetMatchResult()
+        {
+            int winnerIndex = State.WinnerPlayerIndex;
+            if (winnerIndex < 0)
+            {
+                winnerIndex = GetSoleActivePlayerIndex();
+            }
+
+            List<PlayerStanding> standings = new List<PlayerStanding>();
+
+            // 1. Winner is rank 1
+            if (winnerIndex >= 0 && winnerIndex < State.Players.Count)
+            {
+                PlayerState winner = State.Players[winnerIndex];
+                int winnerProps = 0;
+                foreach (PropertyState prop in State.Properties)
+                {
+                    if (prop.OwnerPlayerIndex == winnerIndex)
+                    {
+                        winnerProps++;
+                    }
+                }
+
+                standings.Add(new PlayerStanding(
+                    rank: 1,
+                    playerIndex: winnerIndex,
+                    playerId: winner.PlayerId,
+                    displayName: winner.DisplayName,
+                    creatureId: winner.CreatureId,
+                    cash: winner.Cash,
+                    netWorth: CalculatePlayerNetWorth(winnerIndex),
+                    propertiesCount: winnerProps,
+                    isWinner: true,
+                    eliminationReason: null,
+                    eliminationTurn: 0));
+            }
+
+            // 2. Add eliminated players in reverse order of elimination
+            for (int i = _eliminations.Count - 1; i >= 0; i--)
+            {
+                PlayerEliminationRecord rec = _eliminations[i];
+                if (rec.PlayerIndex == winnerIndex)
+                {
+                    continue;
+                }
+
+                PlayerState p = State.Players[rec.PlayerIndex];
+                int rank = standings.Count + 1;
+                standings.Add(new PlayerStanding(
+                    rank: rank,
+                    playerIndex: rec.PlayerIndex,
+                    playerId: p.PlayerId,
+                    displayName: p.DisplayName,
+                    creatureId: p.CreatureId,
+                    cash: rec.CashAtElimination,
+                    netWorth: rec.NetWorthAtElimination,
+                    propertiesCount: rec.PropertiesCountAtElimination,
+                    isWinner: false,
+                    eliminationReason: rec.Reason,
+                    eliminationTurn: rec.TurnNumber));
+            }
+
+            // 3. Any uneliminated non-winner players
+            HashSet<int> includedSeats = new HashSet<int>();
+            for (int i = 0; i < standings.Count; i++)
+            {
+                includedSeats.Add(standings[i].PlayerIndex);
+            }
+
+            var remainingSeats = new List<int>();
+            for (int i = 0; i < State.Players.Count; i++)
+            {
+                if (!includedSeats.Contains(i))
+                {
+                    remainingSeats.Add(i);
+                }
+            }
+
+            if (remainingSeats.Count > 0)
+            {
+                remainingSeats.Sort((seatA, seatB) =>
+                {
+                    int nwA = CalculatePlayerNetWorth(seatA);
+                    int nwB = CalculatePlayerNetWorth(seatB);
+                    int cmp = nwB.CompareTo(nwA);
+                    return cmp != 0 ? cmp : State.Players[seatB].Cash.CompareTo(State.Players[seatA].Cash);
+                });
+
+                foreach (int seat in remainingSeats)
+                {
+                    PlayerState p = State.Players[seat];
+                    int props = 0;
+                    foreach (PropertyState prop in State.Properties)
+                    {
+                        if (prop.OwnerPlayerIndex == seat) props++;
+                    }
+
+                    int rank = standings.Count + 1;
+                    standings.Add(new PlayerStanding(
+                        rank: rank,
+                        playerIndex: seat,
+                        playerId: p.PlayerId,
+                        displayName: p.DisplayName,
+                        creatureId: p.CreatureId,
+                        cash: p.Cash,
+                        netWorth: CalculatePlayerNetWorth(seat),
+                        propertiesCount: props,
+                        isWinner: rank == 1,
+                        eliminationReason: null,
+                        eliminationTurn: 0));
+                }
+            }
+
+            string winnerName = winnerIndex >= 0 && winnerIndex < State.Players.Count
+                ? State.Players[winnerIndex].DisplayName
+                : "None";
+            string winnerCreature = winnerIndex >= 0 && winnerIndex < State.Players.Count
+                ? State.Players[winnerIndex].CreatureId
+                : string.Empty;
+            int totalTurns = State.Turn?.TurnNumber ?? 1;
+
+            return new MatchResult(
+                winnerIndex,
+                winnerName,
+                winnerCreature,
+                totalTurns,
+                standings);
         }
     }
 }
