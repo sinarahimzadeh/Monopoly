@@ -54,5 +54,38 @@ namespace Ropoly.Presentation.Lobby
 
             _creatureBody.color = bodyColor;
         }
+
+        private Button _button;
+        private System.Action<int> _onClick;
+        private int _playerIndex = -1;
+
+        public void BindClick(int playerIndex, System.Action<int> onClick)
+        {
+            _playerIndex = playerIndex;
+            _onClick = onClick;
+
+            if (_button == null)
+            {
+                _button = GetComponent<Button>();
+                if (_button == null)
+                {
+                    _button = gameObject.AddComponent<Button>();
+                    var colors = _button.colors;
+                    colors.normalColor = Color.white;
+                    colors.highlightedColor = new Color(1f, 1f, 1f, 0.85f);
+                    colors.pressedColor = new Color(0.75f, 0.75f, 0.75f, 1f);
+                    _button.colors = colors;
+                }
+
+                _button.onClick.RemoveAllListeners();
+                _button.onClick.AddListener(() =>
+                {
+                    if (_playerIndex >= 0)
+                    {
+                        _onClick?.Invoke(_playerIndex);
+                    }
+                });
+            }
+        }
     }
 }

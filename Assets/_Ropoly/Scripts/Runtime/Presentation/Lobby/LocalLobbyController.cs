@@ -321,6 +321,25 @@ namespace Ropoly.Presentation.Lobby
 
                 CreatureDefinition creature = FindCreature(players[index].CreatureId);
                 _hudRows[index].Refresh(players[index], creature);
+                _hudRows[index].BindClick(index, HandlePlayerRowClicked);
+            }
+        }
+
+        private void HandlePlayerRowClicked(int targetPlayerIndex)
+        {
+            if (_session == null || _session.State.Phase != MatchPhase.InProgress)
+            {
+                return;
+            }
+
+            var dice = FindFirstObjectByType<Dice.DiceController>();
+            if (dice != null && dice.TradeDialogView != null)
+            {
+                int localSeat = dice.GetCurrentLocalPlayerSeat();
+                if (targetPlayerIndex != localSeat)
+                {
+                    dice.TradeDialogView.OpenTradeDialog(localSeat, targetPlayerIndex);
+                }
             }
         }
 

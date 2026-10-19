@@ -93,14 +93,22 @@ namespace Ropoly.Presentation.Trading
                 return null;
             }
 
-            Canvas canvas = diceController.GetComponentInParent<Canvas>();
+            Canvas canvas = diceController.PrimaryButton != null
+                ? diceController.PrimaryButton.GetComponentInParent<Canvas>()
+                : UnityEngine.Object.FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
                 return null;
             }
 
-            var dialogObj = new GameObject("TradeDialogView");
+            var dialogObj = new GameObject("TradeDialogView", typeof(RectTransform));
             dialogObj.transform.SetParent(canvas.transform, false);
+            var rect = dialogObj.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                Stretch(rect);
+            }
+
             var view = dialogObj.AddComponent<TradeDialogView>();
             view.Initialize(lobby, diceController, boardPreview, onPropose, onAccept, onReject, onCancel);
             return view;
@@ -134,6 +142,7 @@ namespace Ropoly.Presentation.Trading
             }
 
             _lobby.MatchStarted += HandleMatchStarted;
+            RefreshHudButton();
         }
 
         private void OnDestroy()
@@ -186,9 +195,11 @@ namespace Ropoly.Presentation.Trading
 
         private void BuildHudButton()
         {
-            Transform parent = _diceController.PrimaryButton.transform.parent;
+            Transform parent = _diceController.PrimaryButton != null
+                ? _diceController.PrimaryButton.transform.parent
+                : transform;
             _hudTradeButton = CreateButton("TradeButton", parent, "TRADE",
-                new Vector2(0f, 130f), new Vector2(160f, 44f), PurpleColor, 17f, out _hudTradeButtonLabel);
+                new Vector2(-210f, -50f), new Vector2(130f, 50f), PurpleColor, 16f, out _hudTradeButtonLabel);
             _hudTradeButton.onClick.AddListener(OnHudTradeClicked);
             _hudTradeButton.gameObject.SetActive(true);
         }
@@ -354,7 +365,7 @@ namespace Ropoly.Presentation.Trading
             _waitingPanel.SetActive(false);
         }
 
-        public void OpenTradeDialog(int currentLocalPlayerSeat)
+        public void OpenTradeDialog(int currentLocalPlayerSeat, int preferredTargetSeat = -1)
         {
             if (_session == null || _session.State.Phase != MatchPhase.InProgress)
             {
@@ -386,14 +397,23 @@ namespace Ropoly.Presentation.Trading
             _offeredProperties.Clear();
             _requestedProperties.Clear();
 
-            // Default target: first available active opponent
             _targetSeat = -1;
-            for (int i = 0; i < _session.State.Players.Count; i++)
+            if (preferredTargetSeat >= 0 &&
+                preferredTargetSeat != _proposerSeat &&
+                preferredTargetSeat < _session.State.Players.Count &&
+                !_session.State.Players[preferredTargetSeat].IsEliminated)
             {
-                if (i != _proposerSeat && !_session.State.Players[i].IsEliminated)
+                _targetSeat = preferredTargetSeat;
+            }
+            else
+            {
+                for (int i = 0; i < _session.State.Players.Count; i++)
                 {
-                    _targetSeat = i;
-                    break;
+                    if (i != _proposerSeat && !_session.State.Players[i].IsEliminated)
+                    {
+                        _targetSeat = i;
+                        break;
+                    }
                 }
             }
 

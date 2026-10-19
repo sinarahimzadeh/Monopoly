@@ -50,14 +50,22 @@ namespace Ropoly.Presentation.Results
                 return null;
             }
 
-            Canvas canvas = diceController.GetComponentInParent<Canvas>();
+            Canvas canvas = diceController.PrimaryButton != null
+                ? diceController.PrimaryButton.GetComponentInParent<Canvas>()
+                : UnityEngine.Object.FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
                 return null;
             }
 
-            var dialogObj = new GameObject("MatchResultsView");
+            var dialogObj = new GameObject("MatchResultsView", typeof(RectTransform));
             dialogObj.transform.SetParent(canvas.transform, false);
+            var rect = dialogObj.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                Stretch(rect);
+            }
+
             var view = dialogObj.AddComponent<MatchResultsView>();
             view.Initialize(lobby, diceController, boardPreview, onRematch, onReturnToLobby, onReturnToMainMenu);
             return view;
