@@ -43,6 +43,7 @@ namespace Ropoly.Multiplayer
         public string LastError { get; private set; } = string.Empty;
         public bool IsOnlineSession => _session != null;
         public bool IsHost => _session?.IsHost == true;
+        public bool IsPrivateRoom => _session?.IsPrivate == true;
         public string JoinCode => _session?.Code ?? string.Empty;
         public OnlineLobbyStateData LobbyState => _lobbyState;
         public OnlineMultiplayerConfig Config => _config;
@@ -152,7 +153,7 @@ namespace Ropoly.Multiplayer
                     Type = _config.SessionType,
                     Name = _config.RoomName,
                     MaxPlayers = _config.MaximumPlayers,
-                    IsPrivate = true,
+                    IsPrivate = false,
                     IsLocked = false
                 }.WithRelayNetwork();
 
@@ -167,6 +168,73 @@ namespace Ropoly.Multiplayer
                 await FailConnectionAsync("COULD NOT CREATE ROOM", exception);
             }
         }
+
+        public async Task AutoJoinRoomAsync()
+        {
+            if (!CanBeginConnection())
+            {
+                return;
+            }
+
+            try
+            {
+                await EnsureServicesReadyAsync();
+                SetState(OnlineConnectionState.JoiningRoom, "FINDING OPEN ROOM...");
+                PrepareNetworkManager();
+
+                var sessionOptions = new SessionOptions
+                {
+                    Type = _config.SessionType,
+                    Name = _config.RoomName,
+                    MaxPlayers = _config.MaximumPlayers,
+                    IsPrivate = false,
+                    IsLocked = false
+                }.WithRelayNetwork();
+
+                var quickJoinOptions = new QuickJoinOptions
+                {
+                    CreateSession = false
+                };
+
+                _session = await MultiplayerService.Instance.MatchmakeSessionAsync(quickJoinOptions, sessionOptions);
+                RegisterMessageHandlers();
+
+                if (_session.IsHost)
+                {
+                    EnsureHostPlayer();
+                    SetState(OnlineConnectionState.InLobby, "ROOM READY");
+                    BroadcastLobbyState();
+                }
+                else
+                {
+                    SetState(OnlineConnectionState.InLobby, "CONNECTED");
+                    SendLobbyCommand(new OnlineLobbyCommandData
+                    {
+                        Kind = OnlineLobbyCommandKind.RequestState
+                    });
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Auto join did not find an open room: {exception.Message}", this);
+                if (_session != null)
+                {
+                    try
+                    {
+                        await _session.LeaveAsync();
+                    }
+                    catch
+                    {
+                        // Ignore leave error
+                    }
+                }
+
+                ResetOnlineState();
+                SetFailure("NO OPEN ROOMS FOUND. CREATE A ROOM FIRST.");
+            }
+        }
+
+        public Task QuickPlayAsync() => AutoJoinRoomAsync();
 
         public async Task JoinRoomAsync(string joinCode)
         {

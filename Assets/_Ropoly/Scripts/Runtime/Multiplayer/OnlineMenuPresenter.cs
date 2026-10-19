@@ -21,6 +21,7 @@ namespace Ropoly.Multiplayer
         private static readonly Color PanelLight = new(0.12f, 0.08f, 0.22f, 1f);
         private static readonly Color Purple = new(0.31f, 0.18f, 0.63f, 1f);
         private static readonly Color Mint = new(0.36f, 0.92f, 0.76f, 1f);
+        private static readonly Color Emerald = new(0.14f, 0.58f, 0.48f, 1f);
         private static readonly Color Pink = new(0.94f, 0.23f, 0.58f, 1f);
 
         private OnlineGameService _service;
@@ -32,6 +33,7 @@ namespace Ropoly.Multiplayer
         private TMP_Text _roomCodeText;
         private TMP_Text _playersText;
         private TMP_InputField _joinCodeInput;
+        private Button _autoJoinButton;
         private Button _createButton;
         private Button _joinButton;
         private Button _readyButton;
@@ -142,27 +144,37 @@ namespace Ropoly.Multiplayer
 
             _connectPanel = CreatePanel("ConnectPanel", shell.transform, Color.clear);
             SetRect(_connectPanel.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -28f), new Vector2(720f, 500f));
+                new Vector2(0f, -28f), new Vector2(720f, 510f));
 
-            CreateText("CreateHeading", _connectPanel.transform, "START A NEW ROOM", 25f, FontStyles.Bold,
-                TextAlignmentOptions.Center, new Vector2(0f, 168f), new Vector2(620f, 42f), Color.white);
+            CreateText("CreateHeading", _connectPanel.transform, "CREATE A ROOM", 24f, FontStyles.Bold,
+                TextAlignmentOptions.Center, new Vector2(0f, 205f), new Vector2(620f, 32f), Color.white);
             CreateText("CreateHelp", _connectPanel.transform,
-                "You become the host and receive a code to share with friends.", 17f, FontStyles.Normal,
-                TextAlignmentOptions.Center, new Vector2(0f, 122f), new Vector2(650f, 45f), new Color(0.76f, 0.72f, 0.86f));
+                "Start an open room so other players can join you directly or by code.", 15f, FontStyles.Normal,
+                TextAlignmentOptions.Center, new Vector2(0f, 175f), new Vector2(650f, 26f), new Color(0.76f, 0.72f, 0.86f));
             _createButton = CreateButton("CreateRoomButton", _connectPanel.transform, "CREATE ROOM",
-                new Vector2(0f, 57f), new Vector2(330f, 62f), Purple, 20f, out _);
+                new Vector2(0f, 122f), new Vector2(380f, 54f), Purple, 19f, out _);
             _createButton.onClick.AddListener(CreateRoom);
 
-            CreateText("JoinHeading", _connectPanel.transform, "JOIN A FRIEND", 25f, FontStyles.Bold,
-                TextAlignmentOptions.Center, new Vector2(0f, -44f), new Vector2(620f, 42f), Color.white);
-            _joinCodeInput = CreateInputField(_connectPanel.transform, new Vector2(-105f, -113f));
+            CreateText("AutoJoinHeading", _connectPanel.transform, "AUTO JOIN", 24f, FontStyles.Bold,
+                TextAlignmentOptions.Center, new Vector2(0f, 68f), new Vector2(620f, 28f), Mint);
+            CreateText("AutoJoinHelp", _connectPanel.transform,
+                "Join an open room that another player already created (no code needed):", 15f, FontStyles.Normal,
+                TextAlignmentOptions.Center, new Vector2(0f, 36f), new Vector2(650f, 24f), new Color(0.76f, 0.72f, 0.86f));
+            _autoJoinButton = CreateButton("AutoJoinButton", _connectPanel.transform, "AUTO JOIN OPEN ROOM",
+                new Vector2(0f, -10f), new Vector2(380f, 54f), Emerald, 19f, out _);
+            _autoJoinButton.onClick.AddListener(AutoJoin);
+
+            CreateText("JoinHelp", _connectPanel.transform,
+                "Or enter a friend's room code directly:", 15f, FontStyles.Normal,
+                TextAlignmentOptions.Center, new Vector2(0f, -62f), new Vector2(650f, 24f), new Color(0.76f, 0.72f, 0.86f));
+            _joinCodeInput = CreateInputField(_connectPanel.transform, new Vector2(-105f, -108f));
             _joinButton = CreateButton("JoinRoomButton", _connectPanel.transform, "JOIN ROOM",
-                new Vector2(192f, -113f), new Vector2(190f, 62f), Purple, 19f, out _);
+                new Vector2(192f, -108f), new Vector2(190f, 52f), Purple, 18f, out _);
             _joinButton.onClick.AddListener(JoinRoom);
 
             CreateText("Privacy", _connectPanel.transform,
-                "PRIVATE RELAY ROOM  •  2–4 PLAYERS  •  ANONYMOUS SIGN-IN", 15f, FontStyles.Bold,
-                TextAlignmentOptions.Center, new Vector2(0f, -207f), new Vector2(670f, 34f), Mint);
+                "ONLINE RELAY MULTIPLAYER  •  2–4 PLAYERS  •  CROSS-PLATFORM", 14f, FontStyles.Bold,
+                TextAlignmentOptions.Center, new Vector2(0f, -178f), new Vector2(670f, 30f), Mint);
 
             _lobbyPanel = CreatePanel("LobbyPanel", shell.transform, Color.clear);
             SetRect(_lobbyPanel.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f),
@@ -233,6 +245,13 @@ namespace Ropoly.Multiplayer
             }
         }
 
+        private async void AutoJoin()
+        {
+            SetConnectButtons(false);
+            await _service.AutoJoinRoomAsync();
+            Refresh();
+        }
+
         private async void CreateRoom()
         {
             SetConnectButtons(false);
@@ -289,7 +308,8 @@ namespace Ropoly.Multiplayer
             }
 
             OnlineLobbyStateData lobby = _service.LobbyState;
-            _roomCodeText.text = $"ROOM CODE: {lobby.JoinCode}";
+            string roomType = _service.IsPrivateRoom ? "PRIVATE" : "PUBLIC";
+            _roomCodeText.text = $"ROOM CODE: {lobby.JoinCode}  •  {roomType}";
             OnlineLobbyPlayerData[] players = lobby.Players ?? Array.Empty<OnlineLobbyPlayerData>();
             _playersText.text = players.Length == 0
                 ? "WAITING FOR PLAYERS..."
@@ -352,6 +372,11 @@ namespace Ropoly.Multiplayer
 
         private void SetConnectButtons(bool interactable)
         {
+            if (_autoJoinButton != null)
+            {
+                _autoJoinButton.interactable = interactable;
+            }
+
             if (_createButton != null)
             {
                 _createButton.interactable = interactable;
@@ -421,10 +446,15 @@ namespace Ropoly.Multiplayer
             return button;
         }
 
-        private TMP_InputField CreateInputField(Transform parent, Vector2 position)
+        private TMP_InputField CreateInputField(Transform parent, Vector2 position, Vector2 size = default)
         {
+            if (size == default)
+            {
+                size = new Vector2(380f, 52f);
+            }
+
             GameObject root = CreatePanel("JoinCodeInput", parent, PanelLight);
-            SetRect(root.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), position, new Vector2(380f, 62f));
+            SetRect(root.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), position, size);
             var input = root.AddComponent<TMP_InputField>();
 
             GameObject viewportObject = new GameObject("Text Area", typeof(RectTransform), typeof(RectMask2D));
@@ -432,13 +462,13 @@ namespace Ropoly.Multiplayer
             RectTransform viewport = viewportObject.GetComponent<RectTransform>();
             viewport.anchorMin = Vector2.zero;
             viewport.anchorMax = Vector2.one;
-            viewport.offsetMin = new Vector2(18f, 8f);
-            viewport.offsetMax = new Vector2(-18f, -8f);
+            viewport.offsetMin = new Vector2(18f, 6f);
+            viewport.offsetMax = new Vector2(-18f, -6f);
 
-            TMP_Text text = CreateText("Text", viewportObject.transform, string.Empty, 23f, FontStyles.Bold,
+            TMP_Text text = CreateText("Text", viewportObject.transform, string.Empty, 20f, FontStyles.Bold,
                 TextAlignmentOptions.MidlineLeft, Vector2.zero, Vector2.zero, Color.white);
             Stretch(text.rectTransform);
-            TMP_Text placeholder = CreateText("Placeholder", viewportObject.transform, "ROOM CODE", 20f,
+            TMP_Text placeholder = CreateText("Placeholder", viewportObject.transform, "ROOM CODE", 18f,
                 FontStyles.Bold, TextAlignmentOptions.MidlineLeft, Vector2.zero, Vector2.zero,
                 new Color(0.6f, 0.56f, 0.7f, 1f));
             Stretch(placeholder.rectTransform);
