@@ -29,7 +29,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(snapshot.TurnDurationSeconds, Is.EqualTo(60));
             Assert.That(snapshot.DisconnectGraceSeconds, Is.EqualTo(120));
             Assert.That(snapshot.MortgageEnabled, Is.True);
-            Assert.That(snapshot.AuctionsEnabled, Is.True);
+            Assert.That(snapshot.AuctionsEnabled, Is.False);
             Assert.That(snapshot.FullSetRentMultiplier, Is.EqualTo(2));
             Assert.That(snapshot.VacationRewardEnabled, Is.False);
             Assert.That(snapshot.VacationReward, Is.Zero);

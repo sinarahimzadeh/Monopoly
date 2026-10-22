@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Ropoly.Core.Auctions;
 using Ropoly.Core.Match;
 using Ropoly.Core.Trading;
 using Ropoly.Multiplayer.Protocol;
@@ -72,6 +73,10 @@ namespace Ropoly.Multiplayer
             if (_service.IsHost)
             {
                 _lobby.Session.PlayerEliminated += HandleAuthoritativePlayerEliminated;
+                _lobby.Session.AuctionStarted += HandleAuthoritativeAuctionStarted;
+                _lobby.Session.AuctionBidPlaced += HandleAuthoritativeAuctionBidPlaced;
+                _lobby.Session.AuctionPlayerPassed += HandleAuthoritativeAuctionPlayerPassed;
+                _lobby.Session.AuctionCompleted += HandleAuthoritativeAuctionCompleted;
             }
             _service.MarkMatchActive();
             _initialized = true;
@@ -108,6 +113,10 @@ namespace Ropoly.Multiplayer
             if (_service?.IsHost == true && _lobby?.Session != null)
             {
                 _lobby.Session.PlayerEliminated -= HandleAuthoritativePlayerEliminated;
+                _lobby.Session.AuctionStarted -= HandleAuthoritativeAuctionStarted;
+                _lobby.Session.AuctionBidPlaced -= HandleAuthoritativeAuctionBidPlaced;
+                _lobby.Session.AuctionPlayerPassed -= HandleAuthoritativeAuctionPlayerPassed;
+                _lobby.Session.AuctionCompleted -= HandleAuthoritativeAuctionCompleted;
             }
 
             _dice?.SetLocalSeatIndex(-1);
@@ -134,6 +143,8 @@ namespace Ropoly.Multiplayer
                 ExternalTurnAction.CancelTrade => OnlineMatchCommandKind.CancelTrade,
                 ExternalTurnAction.RequestRematch => OnlineMatchCommandKind.RequestRematch,
                 ExternalTurnAction.ReturnToLobby => OnlineMatchCommandKind.ReturnToLobby,
+                ExternalTurnAction.PlaceAuctionBid => OnlineMatchCommandKind.PlaceAuctionBid,
+                ExternalTurnAction.PassAuction => OnlineMatchCommandKind.PassAuction,
                 _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
             };
             _service.SendMatchCommand(command, intValue, stringValue);
@@ -181,7 +192,10 @@ namespace Ropoly.Multiplayer
             bool isMatchEndCommand = command.Kind is OnlineMatchCommandKind.RequestRematch
                 or OnlineMatchCommandKind.ReturnToLobby;
 
-            if (!isTradeCommand && !isMatchEndCommand && senderSeat != _lobby.Session.State.Turn.CurrentPlayerIndex)
+            bool isAuctionCommand = command.Kind is OnlineMatchCommandKind.PlaceAuctionBid
+                or OnlineMatchCommandKind.PassAuction;
+
+            if (!isTradeCommand && !isMatchEndCommand && !isAuctionCommand && senderSeat != _lobby.Session.State.Turn.CurrentPlayerIndex)
             {
                 return;
             }
@@ -204,6 +218,8 @@ namespace Ropoly.Multiplayer
                 OnlineMatchCommandKind.CancelTrade => ApplyHostCancelTrade(senderSeat),
                 OnlineMatchCommandKind.RequestRematch => ApplyHostRematch(),
                 OnlineMatchCommandKind.ReturnToLobby => ApplyHostReturnToLobby(),
+                OnlineMatchCommandKind.PlaceAuctionBid => ApplyHostAuctionBid(senderSeat, command.IntValue),
+                OnlineMatchCommandKind.PassAuction => ApplyHostAuctionPass(senderSeat),
                 _ => null
             };
 
@@ -243,9 +259,29 @@ namespace Ropoly.Multiplayer
 
         private OnlineMatchEventData ApplyHostPropertyDecline()
         {
-            return _dice.ApplyExternalPropertyDecline()
-                ? new OnlineMatchEventData { Kind = OnlineMatchEventKind.PropertyDeclined }
-                : null;
+            if (!_dice.ApplyExternalPropertyDecline())
+            {
+                return null;
+            }
+
+            if (_lobby.Session.ActiveAuction != null && _lobby.Session.ActiveAuction.IsActive)
+            {
+                return null;
+            }
+
+            return new OnlineMatchEventData { Kind = OnlineMatchEventKind.PropertyDeclined };
+        }
+
+        private OnlineMatchEventData ApplyHostAuctionBid(int senderSeat, int amount)
+        {
+            _lobby.Session.TryPlaceAuctionBid(senderSeat, amount);
+            return null;
+        }
+
+        private OnlineMatchEventData ApplyHostAuctionPass(int senderSeat)
+        {
+            _lobby.Session.TryPassAuction(senderSeat);
+            return null;
         }
 
         private OnlineMatchEventData ApplyHostPropertyUpgrade(int tileIndex)
@@ -486,6 +522,18 @@ namespace Ropoly.Multiplayer
                 case OnlineMatchEventKind.ReturnedToLobby:
                     _dice.ApplyExternalReturnToLobby();
                     break;
+                case OnlineMatchEventKind.AuctionStarted:
+                    _lobby.Session.ApplyAuthoritativeAuctionStarted(matchEvent.IntValue, matchEvent.SecondaryIntValue);
+                    break;
+                case OnlineMatchEventKind.AuctionBidPlaced:
+                    _dice.ApplyExternalAuctionBid(matchEvent.IntValue, matchEvent.SecondaryIntValue);
+                    break;
+                case OnlineMatchEventKind.AuctionPlayerPassed:
+                    _dice.ApplyExternalAuctionPass(matchEvent.IntValue);
+                    break;
+                case OnlineMatchEventKind.AuctionCompleted:
+                    _dice.ApplyExternalAuctionCompleted(matchEvent.IntValue, matchEvent.SecondaryIntValue);
+                    break;
             }
         }
 
@@ -513,6 +561,14 @@ namespace Ropoly.Multiplayer
             {
                 session.PlayerEliminated -= HandleAuthoritativePlayerEliminated;
                 session.PlayerEliminated += HandleAuthoritativePlayerEliminated;
+                session.AuctionStarted -= HandleAuthoritativeAuctionStarted;
+                session.AuctionStarted += HandleAuthoritativeAuctionStarted;
+                session.AuctionBidPlaced -= HandleAuthoritativeAuctionBidPlaced;
+                session.AuctionBidPlaced += HandleAuthoritativeAuctionBidPlaced;
+                session.AuctionPlayerPassed -= HandleAuthoritativeAuctionPlayerPassed;
+                session.AuctionPlayerPassed += HandleAuthoritativeAuctionPlayerPassed;
+                session.AuctionCompleted -= HandleAuthoritativeAuctionCompleted;
+                session.AuctionCompleted += HandleAuthoritativeAuctionCompleted;
             }
         }
 
@@ -533,6 +589,47 @@ namespace Ropoly.Multiplayer
                 Kind = OnlineMatchEventKind.PlayerEliminated,
                 IntValue = playerIndex,
                 SecondaryIntValue = (int)reason
+            });
+        }
+
+        private void HandleAuthoritativeAuctionStarted(PropertyAuctionState auction)
+        {
+            _service.BroadcastMatchEvent(new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.AuctionStarted,
+                IntValue = auction.TileIndex,
+                SecondaryIntValue = auction.TimeoutDurationSeconds,
+                StringValue = auction.PropertyDisplayName
+            });
+        }
+
+        private void HandleAuthoritativeAuctionBidPlaced(PropertyAuctionState auction, int bidderSeat, int amount)
+        {
+            _service.BroadcastMatchEvent(new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.AuctionBidPlaced,
+                IntValue = bidderSeat,
+                SecondaryIntValue = amount
+            });
+        }
+
+        private void HandleAuthoritativeAuctionPlayerPassed(PropertyAuctionState auction, int playerSeat)
+        {
+            _service.BroadcastMatchEvent(new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.AuctionPlayerPassed,
+                IntValue = playerSeat
+            });
+        }
+
+        private void HandleAuthoritativeAuctionCompleted(PropertyAuctionState auction)
+        {
+            _service.BroadcastMatchEvent(new OnlineMatchEventData
+            {
+                Kind = OnlineMatchEventKind.AuctionCompleted,
+                IntValue = auction.WinnerPlayerIndex,
+                SecondaryIntValue = auction.WinningBid,
+                StringValue = auction.PropertyDisplayName
             });
         }
     }

@@ -42,7 +42,9 @@ namespace Ropoly.Multiplayer.Protocol
         RejectTrade,
         CancelTrade,
         RequestRematch,
-        ReturnToLobby
+        ReturnToLobby,
+        PlaceAuctionBid,
+        PassAuction
     }
 
     public enum OnlineMatchEventKind
@@ -64,7 +66,11 @@ namespace Ropoly.Multiplayer.Protocol
         TradeRejected,
         TradeCancelled,
         RematchStarted,
-        ReturnedToLobby
+        ReturnedToLobby,
+        AuctionStarted,
+        AuctionBidPlaced,
+        AuctionPlayerPassed,
+        AuctionCompleted
     }
 
     [Serializable]

@@ -101,7 +101,10 @@ namespace Ropoly.Presentation.Lobby
                 clock: null,
                 rules.FullSetRentMultiplier,
                 rules.VacationRewardEnabled,
-                rules.VacationReward);
+                rules.VacationReward,
+                cardDecks: null,
+                rules.AuctionsEnabled,
+                rules.AuctionBidTimeoutSeconds);
             BindInterface();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);
@@ -521,7 +524,10 @@ namespace Ropoly.Presentation.Lobby
                 clock: null,
                 rules.FullSetRentMultiplier,
                 rules.VacationRewardEnabled,
-                rules.VacationReward);
+                rules.VacationReward,
+                cardDecks: null,
+                rules.AuctionsEnabled,
+                rules.AuctionBidTimeoutSeconds);
 
             for (int i = 0; i < chosenCreatures.Length; i++)
             {
@@ -576,7 +582,10 @@ namespace Ropoly.Presentation.Lobby
                 clock: null,
                 rules.FullSetRentMultiplier,
                 rules.VacationRewardEnabled,
-                rules.VacationReward);
+                rules.VacationReward,
+                cardDecks: null,
+                rules.AuctionsEnabled,
+                rules.AuctionBidTimeoutSeconds);
 
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);

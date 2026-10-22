@@ -22,7 +22,8 @@ namespace Ropoly.Core.Rules
             bool auctionsEnabled,
             int fullSetRentMultiplier,
             bool vacationRewardEnabled,
-            int vacationReward)
+            int vacationReward,
+            int auctionBidTimeoutSeconds = 15)
         {
             SchemaVersion = schemaVersion;
             RulesetId = rulesetId;
@@ -37,6 +38,7 @@ namespace Ropoly.Core.Rules
             FullSetRentMultiplier = fullSetRentMultiplier;
             VacationRewardEnabled = vacationRewardEnabled;
             VacationReward = vacationReward;
+            AuctionBidTimeoutSeconds = auctionBidTimeoutSeconds > 0 ? auctionBidTimeoutSeconds : 15;
         }
 
         public int SchemaVersion { get; }
@@ -64,5 +66,7 @@ namespace Ropoly.Core.Rules
         public bool VacationRewardEnabled { get; }
 
         public int VacationReward { get; }
+
+        public int AuctionBidTimeoutSeconds { get; }
     }
 }

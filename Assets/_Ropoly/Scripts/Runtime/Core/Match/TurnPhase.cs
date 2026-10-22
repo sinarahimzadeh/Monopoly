@@ -9,5 +9,6 @@ namespace Ropoly.Core.Match
         AwaitingTurnEnd = 4,
         AwaitingPropertyDecision = 5,
         DebtResolution = 6,
+        Auction = 7,
     }
 }

@@ -55,6 +55,20 @@ namespace Ropoly.Core.Match
             Phase = TurnPhase.AwaitingPropertyDecision;
         }
 
+        internal void BeginAuction(int tileIndex)
+        {
+            PendingPropertyTileIndex = tileIndex;
+            RentPayment = null;
+            Phase = TurnPhase.Auction;
+        }
+
+        internal void CompleteAuction()
+        {
+            PendingPropertyTileIndex = PropertyState.UnownedPlayerIndex;
+            RentPayment = null;
+            Phase = TurnPhase.AwaitingTurnEnd;
+        }
+
         internal void CompleteLanding()
         {
             PendingPropertyTileIndex = PropertyState.UnownedPlayerIndex;

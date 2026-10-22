@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Ropoly.Core.Auctions;
 using Ropoly.Core.Board;
 using Ropoly.Core.Cards;
 using Ropoly.Core.Match;
 using Ropoly.Core.Trading;
+using Ropoly.Presentation.Auctions;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Lobby;
 using Ropoly.Presentation.Navigation;
@@ -36,7 +38,9 @@ namespace Ropoly.Presentation.Dice
         RejectTrade,
         CancelTrade,
         RequestRematch,
-        ReturnToLobby
+        ReturnToLobby,
+        PlaceAuctionBid,
+        PassAuction
     }
 
     [DisallowMultipleComponent]
@@ -111,6 +115,9 @@ namespace Ropoly.Presentation.Dice
         [SerializeField]
         private MatchResultsView _matchResultsView;
 
+        [SerializeField]
+        private AuctionDialogView _auctionDialogView;
+
         private readonly SystemDiceRollSource _rollSource = new SystemDiceRollSource();
         private Coroutine _rollRoutine;
         private Coroutine _movementRoutine;
@@ -138,6 +145,7 @@ namespace Ropoly.Presentation.Dice
         public DebtResolutionView DebtResolutionView => _debtResolutionView;
         public TradeDialogView TradeDialogView => _tradeDialogView;
         public MatchResultsView MatchResultsView => _matchResultsView;
+        public AuctionDialogView AuctionDialogView => _auctionDialogView;
 
         private void Awake()
         {
@@ -188,6 +196,21 @@ namespace Ropoly.Presentation.Dice
                     onRematch: HandleRematchAction,
                     onReturnToLobby: HandleReturnToLobbyAction,
                     onReturnToMainMenu: HandleReturnToMainMenuAction);
+            }
+
+            if (_auctionDialogView == null)
+            {
+                _auctionDialogView = GetComponentInChildren<AuctionDialogView>(true);
+            }
+
+            if (_auctionDialogView == null)
+            {
+                _auctionDialogView = AuctionDialogView.Install(
+                    _lobby,
+                    this,
+                    _boardPreview,
+                    onBid: HandleAuctionBidByLocal,
+                    onPass: HandleAuctionPassByLocal);
             }
 
             if (_lobby.Session != null && _lobby.Session.State.Phase == MatchPhase.InProgress)
@@ -685,6 +708,7 @@ namespace Ropoly.Presentation.Dice
 
             _debtResolutionView?.Hide();
             _matchResultsView?.Hide();
+            _auctionDialogView?.Close();
             _diceRoot.SetActive(true);
             _firstDie.ApplySettings(_settings);
             _secondDie.ApplySettings(_settings);
@@ -1445,6 +1469,7 @@ namespace Ropoly.Presentation.Dice
         public void SetLocalSeatIndex(int seatIndex)
         {
             _localSeatIndex = seatIndex;
+            _auctionDialogView?.SetLocalSeatIndex(seatIndex);
         }
 
         public void RefreshMatchHud()
@@ -1615,7 +1640,74 @@ namespace Ropoly.Presentation.Dice
             _boardPreview.SetStatusText($"{result.WinnerDisplayName} WINS THE MATCH");
             _tradeDialogView?.CloseAllModals();
             _debtResolutionView?.Hide();
+            _auctionDialogView?.Close();
             _matchResultsView?.Show(result);
+        }
+
+        private void HandleAuctionBidByLocal(int bidderSeat, int amount)
+        {
+            if (_externalCommandHandler != null)
+            {
+                TrySendExternalCommand(ExternalTurnAction.PlaceAuctionBid, amount);
+            }
+            else
+            {
+                _lobby.Session.TryPlaceAuctionBid(bidderSeat, amount);
+            }
+        }
+
+        private void HandleAuctionPassByLocal(int playerSeat)
+        {
+            if (_externalCommandHandler != null)
+            {
+                TrySendExternalCommand(ExternalTurnAction.PassAuction, playerSeat);
+            }
+            else
+            {
+                _lobby.Session.TryPassAuction(playerSeat);
+            }
+        }
+
+        public bool ApplyExternalAuctionBid(int bidderSeat, int amount)
+        {
+            if (_lobby?.Session == null)
+            {
+                return false;
+            }
+
+            _lobby.Session.ApplyAuthoritativeAuctionBid(bidderSeat, amount);
+            return true;
+        }
+
+        public bool ApplyExternalAuctionPass(int playerSeat)
+        {
+            if (_lobby?.Session == null)
+            {
+                return false;
+            }
+
+            _lobby.Session.ApplyAuthoritativeAuctionPass(playerSeat);
+            return true;
+        }
+
+        public bool ApplyExternalAuctionCompleted(int winnerSeat, int winningBid)
+        {
+            if (_lobby?.Session == null)
+            {
+                return false;
+            }
+
+            _lobby.Session.ApplyAuthoritativeAuctionCompleted(winnerSeat, winningBid);
+            _lobby.RefreshMatchHud();
+            if (winnerSeat >= 0 && _lobby.Session.ActiveAuction != null)
+            {
+                var creature = _lobby.GetPlayerCreature(winnerSeat);
+                if (creature != null)
+                {
+                    _boardPreview.SetTileOwnerColor(_lobby.Session.ActiveAuction.TileIndex, creature.BodyColor);
+                }
+            }
+            return true;
         }
 
         private void HandleRematchAction()

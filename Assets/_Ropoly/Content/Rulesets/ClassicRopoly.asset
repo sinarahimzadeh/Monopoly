@@ -20,7 +20,8 @@ MonoBehaviour:
   _turnDurationSeconds: 60
   _disconnectGraceSeconds: 60
   _mortgageEnabled: 1
-  _auctionsEnabled: 1
+  _auctionsEnabled: 0
+  _auctionBidTimeoutSeconds: 15
   _fullSetRentMultiplier: 2
   _vacationRewardEnabled: 0
   _vacationReward: 0

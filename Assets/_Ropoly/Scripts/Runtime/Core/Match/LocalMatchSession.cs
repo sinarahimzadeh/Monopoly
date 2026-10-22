@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ropoly.Core.Auctions;
 using Ropoly.Core.Board;
 using Ropoly.Core.Cards;
 using Ropoly.Core.Time;
@@ -24,6 +25,8 @@ namespace Ropoly.Core.Match
         private readonly int _disconnectGraceSeconds;
         private readonly IClock _clock;
         private readonly int _fullSetRentMultiplier;
+        private readonly bool _auctionsEnabled;
+        private readonly int _auctionBidTimeoutSeconds;
         private readonly Dictionary<int, PropertyState> _propertiesByTileIndex;
         private readonly Dictionary<string, List<PropertyState>> _propertiesByCountryId;
         private readonly Dictionary<string, CountrySnapshot> _countriesById;
@@ -46,7 +49,9 @@ namespace Ropoly.Core.Match
             int fullSetRentMultiplier = 2,
             bool vacationRewardEnabled = false,
             int vacationReward = 0,
-            IReadOnlyDictionary<string, CardDeck> cardDecks = null)
+            IReadOnlyDictionary<string, CardDeck> cardDecks = null,
+            bool auctionsEnabled = false,
+            int auctionBidTimeoutSeconds = 15)
             : this(
                 playerCount,
                 startingCash,
@@ -61,7 +66,9 @@ namespace Ropoly.Core.Match
                 fullSetRentMultiplier,
                 vacationRewardEnabled,
                 vacationReward,
-                cardDecks)
+                cardDecks,
+                auctionsEnabled,
+                auctionBidTimeoutSeconds)
         {
         }
 
@@ -78,7 +85,9 @@ namespace Ropoly.Core.Match
             int fullSetRentMultiplier = 2,
             bool vacationRewardEnabled = false,
             int vacationReward = 0,
-            IReadOnlyDictionary<string, CardDeck> cardDecks = null)
+            IReadOnlyDictionary<string, CardDeck> cardDecks = null,
+            bool auctionsEnabled = false,
+            int auctionBidTimeoutSeconds = 15)
             : this(
                 playerCount,
                 startingCash,
@@ -93,7 +102,9 @@ namespace Ropoly.Core.Match
                 fullSetRentMultiplier,
                 vacationRewardEnabled,
                 vacationReward,
-                cardDecks)
+                cardDecks,
+                auctionsEnabled,
+                auctionBidTimeoutSeconds)
         {
         }
 
@@ -111,7 +122,9 @@ namespace Ropoly.Core.Match
             int fullSetRentMultiplier,
             bool vacationRewardEnabled,
             int vacationReward,
-            IReadOnlyDictionary<string, CardDeck> cardDecks)
+            IReadOnlyDictionary<string, CardDeck> cardDecks,
+            bool auctionsEnabled,
+            int auctionBidTimeoutSeconds)
         {
             if (playerCount < MinimumPlayers || playerCount > MaximumPlayers)
             {
@@ -166,6 +179,8 @@ namespace Ropoly.Core.Match
             _disconnectGraceSeconds = disconnectGraceSeconds;
             _clock = clock ?? SystemClock.Instance;
             _fullSetRentMultiplier = fullSetRentMultiplier;
+            _auctionsEnabled = auctionsEnabled;
+            _auctionBidTimeoutSeconds = auctionBidTimeoutSeconds > 0 ? auctionBidTimeoutSeconds : 15;
             _vacationRewardEnabled = vacationRewardEnabled;
             _baseVacationReward = Math.Max(0, vacationReward);
             _vacationPool = _baseVacationReward;
@@ -255,6 +270,9 @@ namespace Ropoly.Core.Match
 
         public int DisconnectGraceSeconds => _disconnectGraceSeconds;
         public int FullSetRentMultiplier => _fullSetRentMultiplier;
+        public bool AuctionsEnabled => _auctionsEnabled;
+        public int AuctionBidTimeoutSeconds => _auctionBidTimeoutSeconds;
+        public PropertyAuctionState ActiveAuction { get; private set; }
 
         public TimeSpan? CurrentTurnRemainingTime => State.Turn?.GetRemainingTime(_clock.UtcNow);
 
@@ -282,6 +300,10 @@ namespace Ropoly.Core.Match
         public event Action<TradeOffer> TradeRejected;
         public event Action<TradeOffer> TradeCancelled;
         public event Action<MatchResult> MatchEnded;
+        public event Action<PropertyAuctionState> AuctionStarted;
+        public event Action<PropertyAuctionState, int, int> AuctionBidPlaced;
+        public event Action<PropertyAuctionState, int> AuctionPlayerPassed;
+        public event Action<PropertyAuctionState> AuctionCompleted;
         private readonly List<PlayerEliminationRecord> _eliminations = new();
         public IReadOnlyList<PlayerEliminationRecord> Eliminations => _eliminations;
 
@@ -711,9 +733,279 @@ namespace Ropoly.Core.Match
                 return false;
             }
 
+            if (_auctionsEnabled)
+            {
+                return TryStartAuctionForCurrentProperty();
+            }
+
             State.Turn.CompleteLanding();
             ResetTurnDeadline();
             return true;
+        }
+
+        public bool TryStartAuctionForCurrentProperty()
+        {
+            if (State.Phase != MatchPhase.InProgress ||
+                State.Turn == null ||
+                State.Turn.Phase != TurnPhase.AwaitingPropertyDecision ||
+                !_propertiesByTileIndex.TryGetValue(
+                    State.Turn.PendingPropertyTileIndex,
+                    out PropertyState property) ||
+                property.IsOwned)
+            {
+                return false;
+            }
+
+            int tileIndex = property.TileIndex;
+            State.Turn.BeginAuction(tileIndex);
+            DateTimeOffset deadline = _clock.UtcNow + TimeSpan.FromSeconds(_auctionBidTimeoutSeconds);
+            ActiveAuction = new PropertyAuctionState(
+                tileIndex,
+                property.PropertyId,
+                property.DisplayName,
+                property.PurchasePrice,
+                _auctionBidTimeoutSeconds,
+                deadline);
+
+            AuctionStarted?.Invoke(ActiveAuction);
+            return true;
+        }
+
+        public bool TryPlaceAuctionBid(int playerIndex, int amount, out AuctionBidResult result)
+        {
+            if (ActiveAuction == null || !ActiveAuction.IsActive || State.Turn?.Phase != TurnPhase.Auction)
+            {
+                result = AuctionBidResult.NoActiveAuction;
+                return false;
+            }
+
+            if (playerIndex < 0 || playerIndex >= State.Players.Count || State.Players[playerIndex].IsEliminated)
+            {
+                result = AuctionBidResult.PlayerEliminated;
+                return false;
+            }
+
+            if (ActiveAuction.DroppedOutPlayerIndices.Contains(playerIndex))
+            {
+                result = AuctionBidResult.PlayerDroppedOut;
+                return false;
+            }
+
+            if (ActiveAuction.HighestBidderPlayerIndex == playerIndex)
+            {
+                result = AuctionBidResult.AlreadyHighestBidder;
+                return false;
+            }
+
+            if (amount <= ActiveAuction.CurrentBid || amount < 1)
+            {
+                result = AuctionBidResult.BidTooLow;
+                return false;
+            }
+
+            PlayerState player = State.Players[playerIndex];
+            if (player.Cash < amount)
+            {
+                result = AuctionBidResult.InsufficientCash;
+                return false;
+            }
+
+            ActiveAuction.CurrentBid = amount;
+            ActiveAuction.HighestBidderPlayerIndex = playerIndex;
+            ActiveAuction.Deadline = _clock.UtcNow + TimeSpan.FromSeconds(ActiveAuction.TimeoutDurationSeconds);
+
+            AuctionBidPlaced?.Invoke(ActiveAuction, playerIndex, amount);
+            result = AuctionBidResult.Success;
+            return true;
+        }
+
+        public bool TryPlaceAuctionBid(int playerIndex, int amount)
+        {
+            return TryPlaceAuctionBid(playerIndex, amount, out _);
+        }
+
+        public bool TryPassAuction(int playerIndex, out AuctionPassResult result)
+        {
+            if (ActiveAuction == null || !ActiveAuction.IsActive || State.Turn?.Phase != TurnPhase.Auction)
+            {
+                result = AuctionPassResult.NoActiveAuction;
+                return false;
+            }
+
+            if (playerIndex < 0 || playerIndex >= State.Players.Count || State.Players[playerIndex].IsEliminated)
+            {
+                result = AuctionPassResult.PlayerEliminated;
+                return false;
+            }
+
+            if (ActiveAuction.DroppedOutPlayerIndices.Contains(playerIndex))
+            {
+                result = AuctionPassResult.AlreadyDroppedOut;
+                return false;
+            }
+
+            if (ActiveAuction.HighestBidderPlayerIndex == playerIndex)
+            {
+                result = AuctionPassResult.HighestBidderCannotPass;
+                return false;
+            }
+
+            ActiveAuction.DroppedOutPlayerIndices.Add(playerIndex);
+            AuctionPlayerPassed?.Invoke(ActiveAuction, playerIndex);
+
+            CheckAuctionAutoConclusion();
+
+            result = AuctionPassResult.Success;
+            return true;
+        }
+
+        public bool TryPassAuction(int playerIndex)
+        {
+            return TryPassAuction(playerIndex, out _);
+        }
+
+        private void CheckAuctionAutoConclusion()
+        {
+            if (ActiveAuction == null || !ActiveAuction.IsActive)
+            {
+                return;
+            }
+
+            int activeCount = 0;
+            for (int i = 0; i < State.Players.Count; i++)
+            {
+                if (!State.Players[i].IsEliminated && !ActiveAuction.DroppedOutPlayerIndices.Contains(i))
+                {
+                    activeCount++;
+                }
+            }
+
+            if (ActiveAuction.HighestBidderPlayerIndex >= 0)
+            {
+                if (activeCount <= 1)
+                {
+                    ConcludeAuction();
+                }
+            }
+            else
+            {
+                if (activeCount == 0)
+                {
+                    ConcludeAuction();
+                }
+            }
+        }
+
+        public void ConcludeAuction()
+        {
+            if (ActiveAuction == null || !ActiveAuction.IsActive)
+            {
+                return;
+            }
+
+            PropertyAuctionState auction = ActiveAuction;
+            int winner = auction.HighestBidderPlayerIndex;
+            int winningBid = auction.CurrentBid;
+
+            if (winner >= 0 && winner < State.Players.Count && winningBid > 0)
+            {
+                PlayerState winnerPlayer = State.MutablePlayers[winner];
+                winnerPlayer.TrySpendCash(winningBid);
+                if (_propertiesByTileIndex.TryGetValue(auction.TileIndex, out PropertyState prop))
+                {
+                    prop.TryAssignOwner(winner);
+                }
+
+                auction.SetResult(winner, winningBid);
+            }
+            else
+            {
+                auction.SetResult(-1, 0);
+            }
+
+            if (State.Turn != null && State.Turn.Phase == TurnPhase.Auction)
+            {
+                State.Turn.CompleteAuction();
+                ResetTurnDeadline();
+            }
+
+            AuctionCompleted?.Invoke(auction);
+        }
+
+        public void ApplyAuthoritativeAuctionStarted(int tileIndex, int timeoutSeconds)
+        {
+            if (!_propertiesByTileIndex.TryGetValue(tileIndex, out PropertyState property))
+            {
+                return;
+            }
+
+            State.Turn?.BeginAuction(tileIndex);
+            int duration = timeoutSeconds > 0 ? timeoutSeconds : _auctionBidTimeoutSeconds;
+            DateTimeOffset deadline = _clock.UtcNow + TimeSpan.FromSeconds(duration);
+            ActiveAuction = new PropertyAuctionState(
+                tileIndex,
+                property.PropertyId,
+                property.DisplayName,
+                property.PurchasePrice,
+                duration,
+                deadline);
+
+            AuctionStarted?.Invoke(ActiveAuction);
+        }
+
+        public void ApplyAuthoritativeAuctionBid(int bidderPlayerIndex, int amount)
+        {
+            if (ActiveAuction == null)
+            {
+                return;
+            }
+
+            ActiveAuction.CurrentBid = amount;
+            ActiveAuction.HighestBidderPlayerIndex = bidderPlayerIndex;
+            ActiveAuction.Deadline = _clock.UtcNow + TimeSpan.FromSeconds(ActiveAuction.TimeoutDurationSeconds);
+            AuctionBidPlaced?.Invoke(ActiveAuction, bidderPlayerIndex, amount);
+        }
+
+        public void ApplyAuthoritativeAuctionPass(int playerIndex)
+        {
+            if (ActiveAuction == null)
+            {
+                return;
+            }
+
+            ActiveAuction.DroppedOutPlayerIndices.Add(playerIndex);
+            AuctionPlayerPassed?.Invoke(ActiveAuction, playerIndex);
+        }
+
+        public void ApplyAuthoritativeAuctionCompleted(int winnerPlayerIndex, int winningBid)
+        {
+            if (ActiveAuction == null)
+            {
+                return;
+            }
+
+            if (winnerPlayerIndex >= 0 && winnerPlayerIndex < State.Players.Count && winningBid > 0)
+            {
+                State.MutablePlayers[winnerPlayerIndex].TrySpendCash(winningBid);
+                if (_propertiesByTileIndex.TryGetValue(ActiveAuction.TileIndex, out PropertyState prop))
+                {
+                    prop.TryAssignOwner(winnerPlayerIndex);
+                }
+
+                ActiveAuction.SetResult(winnerPlayerIndex, winningBid);
+            }
+            else
+            {
+                ActiveAuction.SetResult(-1, 0);
+            }
+
+            if (State.Turn != null && State.Turn.Phase == TurnPhase.Auction)
+            {
+                State.Turn.CompleteAuction();
+                ResetTurnDeadline();
+            }
+
+            AuctionCompleted?.Invoke(ActiveAuction);
         }
 
         public RentPaymentResult TryPayCurrentDebt()
@@ -1143,8 +1435,15 @@ namespace Ropoly.Core.Match
                 }
             }
 
+            if (ActiveAuction != null && ActiveAuction.IsActive && ActiveAuction.Deadline <= now)
+            {
+                ConcludeAuction();
+                stateChanged = true;
+            }
+
             if (State.Phase == MatchPhase.InProgress &&
                 State.Turn != null &&
+                State.Turn.Phase != TurnPhase.Auction &&
                 State.Turn.Deadline.HasValue &&
                 State.Turn.Deadline.Value <= now)
             {
@@ -1213,6 +1512,18 @@ namespace Ropoly.Core.Match
                 cancelled.Status = TradeOfferStatus.Cancelled;
                 ActiveTradeOffer = null;
                 TradeCancelled?.Invoke(cancelled);
+            }
+
+            if (ActiveAuction != null && ActiveAuction.IsActive)
+            {
+                ActiveAuction.DroppedOutPlayerIndices.Add(playerIndex);
+                if (ActiveAuction.HighestBidderPlayerIndex == playerIndex)
+                {
+                    ActiveAuction.HighestBidderPlayerIndex = -1;
+                    ActiveAuction.CurrentBid = 0;
+                }
+
+                CheckAuctionAutoConclusion();
             }
 
             PlayerEliminated?.Invoke(playerIndex, reason);
@@ -1335,6 +1646,27 @@ namespace Ropoly.Core.Match
             }
 
             return Array.Empty<PropertyState>();
+        }
+
+        public int GetPropertyRent(int tileIndex, int diceTotal = 7)
+        {
+            if (!_propertiesByTileIndex.TryGetValue(tileIndex, out PropertyState property) || !property.IsOwned)
+            {
+                return 0;
+            }
+
+            int sameKindOwnedCount = CountOwnedProperties(property.OwnerPlayerIndex, property.Kind);
+            bool isFullCountrySetUnmortgaged =
+                property.Kind == BoardTileKind.City &&
+                !string.IsNullOrEmpty(property.CountryId) &&
+                IsCountrySetFullyOwned(property.CountryId, property.OwnerPlayerIndex) &&
+                !HasMortgagedPropertyInCountrySet(property.CountryId);
+
+            return property.CalculateRent(
+                sameKindOwnedCount,
+                diceTotal,
+                isFullCountrySetUnmortgaged,
+                _fullSetRentMultiplier);
         }
 
         public bool CanUpgradeProperty(int tileIndex, out PropertyUpgradeResult result)

@@ -48,7 +48,11 @@ namespace Ropoly.Infrastructure.Content
         private bool _mortgageEnabled = true;
 
         [SerializeField]
-        private bool _auctionsEnabled = true;
+        private bool _auctionsEnabled = false;
+
+        [SerializeField]
+        [Range(5, 60)]
+        private int _auctionBidTimeoutSeconds = 15;
 
         [SerializeField]
         [Range(
@@ -79,7 +83,8 @@ namespace Ropoly.Infrastructure.Content
                 _auctionsEnabled,
                 _fullSetRentMultiplier,
                 _vacationRewardEnabled,
-                _vacationReward);
+                _vacationReward,
+                _auctionBidTimeoutSeconds);
         }
 
         public GameRulesetValidationResult Validate()
