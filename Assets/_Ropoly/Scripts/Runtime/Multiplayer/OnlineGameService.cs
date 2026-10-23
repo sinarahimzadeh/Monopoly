@@ -5,6 +5,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Ropoly.Core.Rules;
+using Ropoly.Infrastructure.Content;
 using Ropoly.Multiplayer.Protocol;
 using Unity.Collections;
 using Unity.Netcode;
@@ -37,6 +39,59 @@ namespace Ropoly.Multiplayer
         private bool _leaving;
 
         public static OnlineGameService Instance { get; private set; }
+
+        private static readonly GameRulesetSnapshot DefaultRules = new(
+            GameRulesetLimits.CurrentSchemaVersion,
+            "classic-ropoly",
+            "Classic Ropoly",
+            4,
+            1500,
+            200,
+            60,
+            120,
+            true,
+            false,
+            2,
+            false,
+            0,
+            15);
+
+        private GameRulesetSnapshot _currentRules;
+
+        public GameRulesetSnapshot CurrentRules
+        {
+            get
+            {
+                if (_currentRules == null)
+                {
+                    _currentRules = GameRulesetData.LoadFromPlayerPrefs(DefaultRules);
+                }
+                return _currentRules;
+            }
+        }
+
+        public void UpdateLobbyRules(GameRulesetSnapshot rules)
+        {
+            if (rules == null)
+            {
+                return;
+            }
+
+            if (IsHost)
+            {
+                _currentRules = rules;
+                GameRulesetData.SaveToPlayerPrefs(rules);
+                BroadcastLobbyState();
+            }
+            else
+            {
+                SendLobbyCommand(new OnlineLobbyCommandData
+                {
+                    Kind = OnlineLobbyCommandKind.UpdateRules,
+                    StringValue = GameRulesetData.FromSnapshot(rules).ToJson()
+                });
+            }
+        }
 
         public OnlineConnectionState State { get; private set; } = OnlineConnectionState.Offline;
         public string StatusMessage { get; private set; } = "OFFLINE";
@@ -641,6 +696,14 @@ namespace Ropoly.Multiplayer
                     }
                     break;
 
+                case OnlineLobbyCommandKind.UpdateRules:
+                    if (senderClientId == NetworkManager.ServerClientId && !string.IsNullOrEmpty(command.StringValue))
+                    {
+                        _currentRules = GameRulesetData.FromJson(command.StringValue).ToSnapshot();
+                        GameRulesetData.SaveToPlayerPrefs(_currentRules);
+                    }
+                    break;
+
                 case OnlineLobbyCommandKind.StartMatch:
                     if (senderClientId == NetworkManager.ServerClientId && CanStartMatch())
                     {
@@ -694,6 +757,7 @@ namespace Ropoly.Multiplayer
             }
 
             _lobbyState.JoinCode = JoinCode;
+            _lobbyState.RulesJson = GameRulesetData.FromSnapshot(CurrentRules).ToJson();
             _lobbyState.Players = _hostPlayers
                 .OrderBy(player => player.SeatIndex)
                 .Select(ClonePlayer)
@@ -740,6 +804,10 @@ namespace Ropoly.Multiplayer
         private void ApplyLobbyState(OnlineLobbyStateData state)
         {
             _lobbyState = state ?? new OnlineLobbyStateData();
+            if (!IsHost && !string.IsNullOrEmpty(_lobbyState.RulesJson))
+            {
+                _currentRules = GameRulesetData.FromJson(_lobbyState.RulesJson).ToSnapshot();
+            }
             string localClientId = _networkManager.LocalClientId.ToString();
             OnlineLobbyPlayerData localPlayer = _lobbyState.Players?.FirstOrDefault(
                 player => player.ClientId == localClientId);

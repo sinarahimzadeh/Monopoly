@@ -119,8 +119,8 @@ namespace Ropoly.Tests.EditMode
         {
             var session = CreateStartedSession(auctionsEnabled: false);
 
-            // Player 0 rolls 1, lands on tile 1 (unowned city-1)
-            session.TryRollDice(new FixedDiceRollSource(1, 0), out _);
+            // Player 0 rolls 1+1=2, lands on tile 2 (unowned city-2)
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
             session.TryBeginMovement(out _);
             session.TryCompleteMovement();
 
@@ -133,7 +133,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(declined, Is.True);
             Assert.That(session.ActiveAuction, Is.Null);
             Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingTurnEnd));
-            Assert.That(session.TryGetPropertyAt(1, out PropertyState prop), Is.True);
+            Assert.That(session.TryGetPropertyAt(2, out PropertyState prop), Is.True);
             Assert.That(prop.IsOwned, Is.False);
         }
 
@@ -142,8 +142,8 @@ namespace Ropoly.Tests.EditMode
         {
             var session = CreateStartedSession(auctionsEnabled: true);
 
-            // Player 0 rolls 1, lands on tile 1
-            session.TryRollDice(new FixedDiceRollSource(1, 0), out _);
+            // Player 0 rolls 1+1=2, lands on tile 2
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
             session.TryBeginMovement(out _);
             session.TryCompleteMovement();
 
@@ -160,7 +160,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.Auction));
             Assert.That(session.ActiveAuction, Is.Not.Null);
             Assert.That(session.ActiveAuction.IsActive, Is.True);
-            Assert.That(session.ActiveAuction.TileIndex, Is.EqualTo(1));
+            Assert.That(session.ActiveAuction.TileIndex, Is.EqualTo(2));
             Assert.That(session.ActiveAuction.CurrentBid, Is.Zero);
             Assert.That(session.ActiveAuction.HighestBidderPlayerIndex, Is.EqualTo(-1));
         }
@@ -169,7 +169,7 @@ namespace Ropoly.Tests.EditMode
         public void AuctionBidding_ValidatesIncrementsAndRules()
         {
             var session = CreateStartedSession(auctionsEnabled: true);
-            session.TryRollDice(new FixedDiceRollSource(1, 0), out _);
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
             session.TryBeginMovement(out _);
             session.TryCompleteMovement();
             session.TryDeclineCurrentProperty();
@@ -217,7 +217,7 @@ namespace Ropoly.Tests.EditMode
         public void AuctionPassing_ConcludesImmediatelyWhenAllOthersPass()
         {
             var session = CreateStartedSession(auctionsEnabled: true, startingCash: 1500, playerCount: 2);
-            session.TryRollDice(new FixedDiceRollSource(1, 0), out _);
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
             session.TryBeginMovement(out _);
             session.TryCompleteMovement();
             session.TryDeclineCurrentProperty();
@@ -239,9 +239,9 @@ namespace Ropoly.Tests.EditMode
             Assert.That(session.ActiveAuction.WinnerPlayerIndex, Is.EqualTo(0));
             Assert.That(session.ActiveAuction.WinningBid, Is.EqualTo(25));
 
-            // Player 0 paid $25 and owns property 1
+            // Player 0 paid $25 and owns property 2
             Assert.That(session.State.Players[0].Cash, Is.EqualTo(1500 - 25));
-            Assert.That(session.TryGetPropertyAt(1, out PropertyState prop), Is.True);
+            Assert.That(session.TryGetPropertyAt(2, out PropertyState prop), Is.True);
             Assert.That(prop.OwnerPlayerIndex, Is.EqualTo(0));
 
             // Turn phase returns to AwaitingTurnEnd
@@ -252,7 +252,7 @@ namespace Ropoly.Tests.EditMode
         public void AuctionPassing_ConcludesWithoutWinner_WhenAllPassWithNoBids()
         {
             var session = CreateStartedSession(auctionsEnabled: true, playerCount: 2);
-            session.TryRollDice(new FixedDiceRollSource(1, 0), out _);
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
             session.TryBeginMovement(out _);
             session.TryCompleteMovement();
             session.TryDeclineCurrentProperty();
@@ -269,7 +269,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(session.ActiveAuction.WinnerPlayerIndex, Is.EqualTo(-1));
             Assert.That(session.ActiveAuction.WinningBid, Is.Zero);
 
-            Assert.That(session.TryGetPropertyAt(1, out PropertyState prop), Is.True);
+            Assert.That(session.TryGetPropertyAt(2, out PropertyState prop), Is.True);
             Assert.That(prop.IsOwned, Is.False);
             Assert.That(session.State.Turn.Phase, Is.EqualTo(TurnPhase.AwaitingTurnEnd));
         }
@@ -281,7 +281,7 @@ namespace Ropoly.Tests.EditMode
             var testClock = new TestClock(initialTime);
             var session = CreateStartedSession(auctionsEnabled: true, clock: testClock, playerCount: 3);
 
-            session.TryRollDice(new FixedDiceRollSource(1, 0), out _);
+            session.TryRollDice(new FixedDiceRollSource(1, 1), out _);
             session.TryBeginMovement(out _);
             session.TryCompleteMovement();
             session.TryDeclineCurrentProperty();
@@ -299,7 +299,7 @@ namespace Ropoly.Tests.EditMode
             Assert.That(session.ActiveAuction.IsActive, Is.False);
             Assert.That(session.ActiveAuction.WinnerPlayerIndex, Is.EqualTo(1));
             Assert.That(session.ActiveAuction.WinningBid, Is.EqualTo(50));
-            Assert.That(session.TryGetPropertyAt(1, out PropertyState prop), Is.True);
+            Assert.That(session.TryGetPropertyAt(2, out PropertyState prop), Is.True);
             Assert.That(prop.OwnerPlayerIndex, Is.EqualTo(1));
         }
 

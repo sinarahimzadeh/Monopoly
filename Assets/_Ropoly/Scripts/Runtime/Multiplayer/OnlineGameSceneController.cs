@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Ropoly.Core.Auctions;
 using Ropoly.Core.Match;
+using Ropoly.Core.Rules;
 using Ropoly.Core.Trading;
+using Ropoly.Infrastructure.Content;
 using Ropoly.Multiplayer.Protocol;
 using Ropoly.Presentation.Dice;
 using Ropoly.Presentation.Lobby;
@@ -56,9 +58,13 @@ namespace Ropoly.Multiplayer
                 .OrderBy(player => player.SeatIndex)
                 .ToArray();
             string[] creatureIds = players.Select(player => player.CreatureId).ToArray();
+            GameRulesetSnapshot authoritativeRules = !string.IsNullOrEmpty(_service.LobbyState?.RulesJson)
+                ? GameRulesetData.FromJson(_service.LobbyState.RulesJson).ToSnapshot()
+                : _service.CurrentRules;
+
             if (players.Length < LocalMatchSession.MinimumPlayers ||
                 creatureIds.Any(string.IsNullOrWhiteSpace) ||
-                !_lobby.StartOnlineMatch(creatureIds))
+                !_lobby.StartOnlineMatch(creatureIds, authoritativeRules))
             {
                 Debug.LogError("The authoritative online lobby could not be applied to the Game scene.", this);
                 yield break;

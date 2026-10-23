@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using Ropoly.Core.Match;
+using Ropoly.Core.Rules;
 using Ropoly.Infrastructure.Content;
 using Ropoly.Infrastructure.Content.Players;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Players;
+using Ropoly.Presentation.Settings;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -65,6 +67,31 @@ namespace Ropoly.Presentation.Lobby
         private readonly CreatureTokenView[] _spawnedTokens =
             new CreatureTokenView[LocalMatchSession.MaximumPlayers];
 
+        private GameRulesetSnapshot _activeRules;
+        private Button _rulesButton;
+        private GameSettingsDialogView _settingsDialog;
+
+        public GameRulesetSnapshot ActiveRules
+        {
+            get
+            {
+                if (_activeRules == null)
+                {
+                    _activeRules = GameRulesetData.LoadFromPlayerPrefs(
+                        _ruleset != null ? _ruleset.CreateSnapshot() : null);
+                }
+                return _activeRules;
+            }
+            set
+            {
+                _activeRules = value;
+                if (_activeRules != null)
+                {
+                    GameRulesetData.SaveToPlayerPrefs(_activeRules);
+                }
+            }
+        }
+
         public LocalMatchSession Session => _session;
         public int ActivePlayerIndex => _activePlayerIndex;
         public GameObject LobbyOverlay => _lobbyOverlay;
@@ -87,7 +114,7 @@ namespace Ropoly.Presentation.Lobby
                 creatureIds.Add(creature.CreatureId);
             }
 
-            var rules = _ruleset.CreateSnapshot();
+            var rules = ActiveRules;
             var board = _boardPreview.BoardDefinition.CreateSnapshot();
             _session = new LocalMatchSession(
                 rules.PlayerCount,
@@ -106,6 +133,7 @@ namespace Ropoly.Presentation.Lobby
                 rules.AuctionsEnabled,
                 rules.AuctionBidTimeoutSeconds);
             BindInterface();
+            EnsureRulesButton();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);
             ClearSpawnedTokens();
@@ -186,17 +214,47 @@ namespace Ropoly.Presentation.Lobby
         /// The multiplayer layer supplies the ordered creature ids; all rules and visuals remain
         /// owned by this scene controller.
         /// </summary>
-        public bool StartOnlineMatch(IReadOnlyList<string> creatureIds)
+        public bool StartOnlineMatch(
+            IReadOnlyList<string> creatureIds,
+            GameRulesetSnapshot authoritativeRules = null)
         {
-            if (_session == null ||
-                creatureIds == null ||
+            if (creatureIds == null ||
                 creatureIds.Count < LocalMatchSession.MinimumPlayers ||
-                creatureIds.Count > LocalMatchSession.MaximumPlayers ||
-                _session.State.Phase != MatchPhase.Lobby ||
-                !_session.TrySetPlayerCount(creatureIds.Count))
+                creatureIds.Count > LocalMatchSession.MaximumPlayers)
             {
                 return false;
             }
+
+            if (authoritativeRules != null)
+            {
+                _activeRules = authoritativeRules;
+            }
+
+            var rules = ActiveRules;
+            var board = _boardPreview.BoardDefinition.CreateSnapshot();
+            List<string> rosterIds = new List<string>(_creatureRoster.Creatures.Count);
+            foreach (CreatureDefinition creature in _creatureRoster.Creatures)
+            {
+                rosterIds.Add(creature.CreatureId);
+            }
+
+            _session = new LocalMatchSession(
+                creatureIds.Count,
+                rules.StartingCash,
+                rosterIds,
+                board,
+                rules.PassStartCash,
+                rules.MortgageEnabled,
+                rules.TurnDurationSeconds,
+                rules.DisconnectGraceSeconds,
+                clock: null,
+                rules.FullSetRentMultiplier,
+                rules.VacationRewardEnabled,
+                rules.VacationReward,
+                cardDecks: null,
+                rules.AuctionsEnabled,
+                rules.AuctionBidTimeoutSeconds);
+            BindInterface();
 
             for (int index = 0; index < creatureIds.Count; index++)
             {
@@ -211,6 +269,100 @@ namespace Ropoly.Presentation.Lobby
             _activePlayerIndex = 0;
             StartMatch();
             return _session.State.Phase == MatchPhase.InProgress;
+        }
+
+        private void EnsureRulesButton()
+        {
+            if (_rulesButton != null || _startButton == null)
+            {
+                return;
+            }
+
+            GameObject rulesObj = Instantiate(_startButton.gameObject, _startButton.transform.parent);
+            rulesObj.name = "RulesSettingsButton";
+            _rulesButton = rulesObj.GetComponent<Button>();
+            _rulesButton.onClick.RemoveAllListeners();
+            _rulesButton.onClick.AddListener(OpenSettingsDialog);
+
+            TMP_Text label = rulesObj.GetComponentInChildren<TMP_Text>(true);
+            if (label != null)
+            {
+                label.text = "⚙ RULES";
+            }
+
+            RectTransform startRect = _startButton.transform as RectTransform;
+            RectTransform rulesRect = rulesObj.transform as RectTransform;
+            if (startRect != null && rulesRect != null)
+            {
+                rulesRect.sizeDelta = new Vector2(160f, startRect.sizeDelta.y);
+                rulesRect.anchoredPosition = new Vector2(
+                    startRect.anchoredPosition.x,
+                    startRect.anchoredPosition.y + startRect.sizeDelta.y + 12f);
+            }
+        }
+
+        public void OpenSettingsDialog()
+        {
+            if (_settingsDialog == null)
+            {
+                _settingsDialog = GameSettingsDialogView.Install(_lobbyOverlay.transform.parent);
+            }
+
+            _settingsDialog.Open(ActiveRules, isReadOnly: false, onSave: updatedRules =>
+            {
+                ActiveRules = updatedRules;
+                RebuildLobbySession(updatedRules);
+            });
+        }
+
+        private void RebuildLobbySession(GameRulesetSnapshot rules)
+        {
+            if (_session == null)
+            {
+                return;
+            }
+
+            int currentCount = _session.State.Players.Count;
+            string[] currentCreatures = new string[currentCount];
+            for (int i = 0; i < currentCount; i++)
+            {
+                currentCreatures[i] = _session.State.Players[i].CreatureId;
+            }
+
+            var board = _boardPreview.BoardDefinition.CreateSnapshot();
+            List<string> rosterIds = new List<string>(_creatureRoster.Creatures.Count);
+            foreach (CreatureDefinition creature in _creatureRoster.Creatures)
+            {
+                rosterIds.Add(creature.CreatureId);
+            }
+
+            _session = new LocalMatchSession(
+                currentCount,
+                rules.StartingCash,
+                rosterIds,
+                board,
+                rules.PassStartCash,
+                rules.MortgageEnabled,
+                rules.TurnDurationSeconds,
+                rules.DisconnectGraceSeconds,
+                clock: null,
+                rules.FullSetRentMultiplier,
+                rules.VacationRewardEnabled,
+                rules.VacationReward,
+                cardDecks: null,
+                rules.AuctionsEnabled,
+                rules.AuctionBidTimeoutSeconds);
+            BindInterface();
+
+            for (int i = 0; i < currentCount; i++)
+            {
+                if (!string.IsNullOrEmpty(currentCreatures[i]))
+                {
+                    _session.TrySelectCreature(i, currentCreatures[i]);
+                }
+            }
+
+            RefreshInterface();
         }
 
         private bool ValidateConfiguration()
@@ -504,7 +656,7 @@ namespace Ropoly.Presentation.Lobby
 
             ClearSpawnedTokens();
 
-            var rules = _ruleset.CreateSnapshot();
+            var rules = ActiveRules;
             var board = _boardPreview.BoardDefinition.CreateSnapshot();
             List<string> rosterIds = new List<string>(_creatureRoster.Creatures.Count);
             foreach (CreatureDefinition creature in _creatureRoster.Creatures)
@@ -562,7 +714,7 @@ namespace Ropoly.Presentation.Lobby
 
             ClearSpawnedTokens();
 
-            var rules = _ruleset.CreateSnapshot();
+            var rules = ActiveRules;
             var board = _boardPreview.BoardDefinition.CreateSnapshot();
             List<string> rosterIds = new List<string>(_creatureRoster.Creatures.Count);
             foreach (CreatureDefinition creature in _creatureRoster.Creatures)

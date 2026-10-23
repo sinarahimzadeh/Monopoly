@@ -1,8 +1,11 @@
 using System;
 using System.Linq;
+using Ropoly.Core.Rules;
+using Ropoly.Infrastructure.Content;
 using Ropoly.Infrastructure.Content.Players;
 using Ropoly.Multiplayer.Protocol;
 using Ropoly.Presentation.Navigation;
+using Ropoly.Presentation.Settings;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,6 +43,8 @@ namespace Ropoly.Multiplayer
         private TMP_Text _readyButtonLabel;
         private Button _startButton;
         private TMP_Text _startButtonLabel;
+        private Button _rulesButton;
+        private GameSettingsDialogView _settingsDialog;
         private Button[] _creatureButtons = Array.Empty<Button>();
 
         public static void Install(OnlineGameService service)
@@ -196,10 +201,33 @@ namespace Ropoly.Multiplayer
                 new Vector2(178f, -180f), new Vector2(300f, 50f), Pink, 19f, out _startButtonLabel);
             _startButton.onClick.AddListener(() => _service.RequestStartMatch());
             Button leaveButton = CreateButton("LeaveButton", _lobbyPanel.transform, "LEAVE ROOM",
-                new Vector2(-202f, -213f), new Vector2(230f, 46f), PanelLight, 17f, out _);
+                new Vector2(-225f, -213f), new Vector2(180f, 46f), PanelLight, 17f, out _);
             leaveButton.onClick.AddListener(LeaveRoom);
 
+            _rulesButton = CreateButton("RulesButton", _lobbyPanel.transform, "⚙ RULES",
+                new Vector2(-25f, -213f), new Vector2(180f, 46f), Purple, 17f, out _);
+            _rulesButton.onClick.AddListener(OpenRulesDialog);
+
             _overlay.SetActive(false);
+        }
+
+        private void OpenRulesDialog()
+        {
+            if (_settingsDialog == null)
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                Transform canvasTransform = canvas != null ? canvas.transform : transform.parent;
+                _settingsDialog = GameSettingsDialogView.Install(canvasTransform);
+            }
+
+            bool isReadOnly = !_service.IsHost;
+            _settingsDialog.Open(_service.CurrentRules, isReadOnly, updatedRules =>
+            {
+                if (_service.IsHost)
+                {
+                    _service.UpdateLobbyRules(updatedRules);
+                }
+            });
         }
 
         private void BuildCreatureButtons(Transform parent)

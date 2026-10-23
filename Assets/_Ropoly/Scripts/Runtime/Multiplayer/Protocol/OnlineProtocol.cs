@@ -21,7 +21,8 @@ namespace Ropoly.Multiplayer.Protocol
         RequestState,
         SelectCreature,
         SetReady,
-        StartMatch
+        StartMatch,
+        UpdateRules
     }
 
     public enum OnlineMatchCommandKind
@@ -89,6 +90,7 @@ namespace Ropoly.Multiplayer.Protocol
     {
         public string JoinCode;
         public bool MatchStarted;
+        public string RulesJson;
         public OnlineLobbyPlayerData[] Players = Array.Empty<OnlineLobbyPlayerData>();
     }
 
