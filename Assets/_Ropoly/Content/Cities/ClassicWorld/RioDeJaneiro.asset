@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-rio-de-janeiro
   _displayName: Rio de Janeiro
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 578db7d7043d8e344bd684d663dcc913, type: 3}
   _purchasePrice: 110
   _mortgageValue: 55
   _upgradeCost: 50
   _rentByUpgradeLevel: 0a00000037000000a50000005e010000ef01000080020000
+  _countryMap: {fileID: 21300000, guid: dc5f722b705a94945a1e5a14d77acd87, type: 3}

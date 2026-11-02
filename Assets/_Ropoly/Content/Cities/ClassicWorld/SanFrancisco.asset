@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-san-francisco
   _displayName: San Francisco
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 33530dd4adee85349bebf46257eaa7e2, type: 3}
   _purchasePrice: 330
   _mortgageValue: 165
   _upgradeCost: 200
   _rentByUpgradeLevel: 19000000a5000000ef0100001f040000cd0500007b070000
+  _countryMap: {fileID: 21300000, guid: 12eac65c1d152524c8649e48f3df6951, type: 3}

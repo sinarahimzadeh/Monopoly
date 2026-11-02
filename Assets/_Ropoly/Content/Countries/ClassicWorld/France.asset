@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: France
   _expectedCityCount: 2
   _setColor: {r: 0.9098039, g: 0.2627451, b: 0.5764706, a: 1}
-  _flag: {fileID: 0}
+  _flag: {fileID: 21300000, guid: 14176c27436065e4a85980ee2ea0a9d6, type: 3}
+  _countryMap: {fileID: 0}
   _cities:
   - {fileID: 11400000, guid: 8ff5316a972c9fd4f813ecc61061660c, type: 2}
   - {fileID: 11400000, guid: 7b7954a34c68d9c469aa472c6f263bb8, type: 2}

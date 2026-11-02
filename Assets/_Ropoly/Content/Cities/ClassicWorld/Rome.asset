@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-rome
   _displayName: Rome
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: e21c2749c4530b74ea27d1a0c2c04a5f, type: 3}
   _purchasePrice: 220
   _mortgageValue: 110
   _upgradeCost: 150
   _rentByUpgradeLevel: 140000006e0000004a010000c1020000de030000fb040000
+  _countryMap: {fileID: 21300000, guid: 74aaf636a042ff748846267885e93add, type: 3}

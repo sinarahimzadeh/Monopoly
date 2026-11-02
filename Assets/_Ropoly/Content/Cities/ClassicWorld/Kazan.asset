@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-kazan
   _displayName: Kazan
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 82b53f659115a5748b5996d4e07214fd, type: 3}
   _purchasePrice: 180
   _mortgageValue: 90
   _upgradeCost: 100
   _rentByUpgradeLevel: 0f0000005a0000000e0100003f0200002a03000015040000
+  _countryMap: {fileID: 21300000, guid: c088787130c834440aab983f5e51692c, type: 3}

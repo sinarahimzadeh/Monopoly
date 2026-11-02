@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-delhi
   _displayName: Delhi
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: d02f28c2f4a2ce94e93280d991fa1f14, type: 3}
   _purchasePrice: 60
   _mortgageValue: 30
   _upgradeCost: 50
   _rentByUpgradeLevel: 050000001e0000005a000000be0000000e0100005e010000
+  _countryMap: {fileID: 21300000, guid: 4515a261140aa1b4b818053d9b268991, type: 3}

@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: Brazil
   _expectedCityCount: 3
   _setColor: {r: 0.08627451, g: 0.627451, b: 0.52156866, a: 1}
-  _flag: {fileID: 0}
+  _flag: {fileID: 21300000, guid: 2556f8deceab6e44894cc9356bdcd702, type: 3}
+  _countryMap: {fileID: 0}
   _cities:
   - {fileID: 11400000, guid: e5540cb52bc2cc0459ee0583c41e1d28, type: 2}
   - {fileID: 11400000, guid: 64540bbca510aec4ebf7e34eba220796, type: 2}

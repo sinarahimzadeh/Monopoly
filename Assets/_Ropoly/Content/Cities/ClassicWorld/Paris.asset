@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-paris
   _displayName: Paris
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: bd3f03679b2a7204cae16293a7196f55, type: 3}
   _purchasePrice: 260
   _mortgageValue: 130
   _upgradeCost: 150
   _rentByUpgradeLevel: 1400000082000000860100003e03000092040000e6050000
+  _countryMap: {fileID: 21300000, guid: a82d3ed166f1e7949967c1a9eaf48db7, type: 3}

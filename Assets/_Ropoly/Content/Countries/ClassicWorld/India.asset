@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: India
   _expectedCityCount: 3
   _setColor: {r: 0.5568628, g: 0.26666668, b: 0.6784314, a: 1}
-  _flag: {fileID: 0}
+  _flag: {fileID: 21300000, guid: 6cdd75f46e0971646ac71c78444b279b, type: 3}
+  _countryMap: {fileID: 0}
   _cities:
   - {fileID: 11400000, guid: 06f00972aa1407b48ba9fc9bcd6f5698, type: 2}
   - {fileID: 11400000, guid: 1c7117eb556a0fc429479d26ab110c50, type: 2}

@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-shanghai
   _displayName: Shanghai
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 61bbb59484236724a9c53a012e782259, type: 3}
   _purchasePrice: 160
   _mortgageValue: 80
   _upgradeCost: 100
   _rentByUpgradeLevel: 0f00000050000000f0000000fe010000d0020000a2030000
+  _countryMap: {fileID: 21300000, guid: 7ed01d1d951973547acbd286f8b76f67, type: 3}

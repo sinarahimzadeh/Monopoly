@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: United States
   _expectedCityCount: 3
   _setColor: {r: 0.15294118, g: 0.68235296, b: 0.3764706, a: 1}
-  _flag: {fileID: 0}
+  _flag: {fileID: 21300000, guid: 1e0bcadf7ce622e4b94f07947cf2de68, type: 3}
+  _countryMap: {fileID: 0}
   _cities:
   - {fileID: 11400000, guid: 71fcd4de566cfcf4ea483f864f70caec, type: 2}
   - {fileID: 11400000, guid: cc7164d7342e5ae469fecad262c0d3c5, type: 2}

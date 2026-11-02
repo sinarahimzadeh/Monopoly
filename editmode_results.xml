@@ -1,0 +1,1182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="126" result="Failed(Child)" total="126" passed="111" failed="15" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:51Z" duration="46.9660785">
+  <test-suite type="TestSuite" id="1000" name="Ropoly" fullname="Ropoly" runstate="Runnable" testcasecount="126" result="Failed" site="Child" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:51Z" duration="46.966079" total="126" passed="111" failed="15" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1143" name="Ropoly.EditModeTests.dll" fullname="D:/Unityprojects/ponomoly/Ponomoly/Library/ScriptAssemblies/Ropoly.EditModeTests.dll" runstate="Runnable" testcasecount="126" result="Failed" site="Child" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:51Z" duration="46.944352" total="126" passed="111" failed="15" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="19164" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1144" name="Ropoly" fullname="Ropoly" runstate="Runnable" testcasecount="126" result="Failed" site="Child" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:51Z" duration="46.939641" total="126" passed="111" failed="15" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1145" name="Tests" fullname="Ropoly.Tests" runstate="Runnable" testcasecount="126" result="Failed" site="Child" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:51Z" duration="46.933766" total="126" passed="111" failed="15" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestSuite" id="1146" name="EditMode" fullname="Ropoly.Tests.EditMode" runstate="Runnable" testcasecount="126" result="Failed" site="Child" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:51Z" duration="46.927821" total="126" passed="111" failed="15" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="TestFixture" id="1001" name="AuctionTests" fullname="Ropoly.Tests.EditMode.AuctionTests" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.114248" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1004" name="AuctionBidding_ValidatesIncrementsAndRules" fullname="Ropoly.Tests.EditMode.AuctionTests.AuctionBidding_ValidatesIncrementsAndRules" methodname="AuctionBidding_ValidatesIncrementsAndRules" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" seed="1182676704" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.051296" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1005" name="AuctionPassing_ConcludesImmediatelyWhenAllOthersPass" fullname="Ropoly.Tests.EditMode.AuctionTests.AuctionPassing_ConcludesImmediatelyWhenAllOthersPass" methodname="AuctionPassing_ConcludesImmediatelyWhenAllOthersPass" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" seed="1483402179" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.005317" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1006" name="AuctionPassing_ConcludesWithoutWinner_WhenAllPassWithNoBids" fullname="Ropoly.Tests.EditMode.AuctionTests.AuctionPassing_ConcludesWithoutWinner_WhenAllPassWithNoBids" methodname="AuctionPassing_ConcludesWithoutWinner_WhenAllPassWithNoBids" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" seed="1798104713" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.001794" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1007" name="AuctionTimeout_ConcludesAuctionWithHighestBidder" fullname="Ropoly.Tests.EditMode.AuctionTests.AuctionTimeout_ConcludesAuctionWithHighestBidder" methodname="AuctionTimeout_ConcludesAuctionWithHighestBidder" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" seed="831611593" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.003116" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1002" name="DeclineProperty_WhenAuctionsDisabled_SkipsPropertyWithoutAuction" fullname="Ropoly.Tests.EditMode.AuctionTests.DeclineProperty_WhenAuctionsDisabled_SkipsPropertyWithoutAuction" methodname="DeclineProperty_WhenAuctionsDisabled_SkipsPropertyWithoutAuction" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" seed="335637498" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.003744" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="DeclineProperty_WhenAuctionsEnabled_EntersAuction" fullname="Ropoly.Tests.EditMode.AuctionTests.DeclineProperty_WhenAuctionsEnabled_EntersAuction" methodname="DeclineProperty_WhenAuctionsEnabled_EntersAuction" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" seed="914974707" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.001849" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="PropertyEconomics_FullCountrySetRentMultiplier_CalculatesCorrectly" fullname="Ropoly.Tests.EditMode.AuctionTests.PropertyEconomics_FullCountrySetRentMultiplier_CalculatesCorrectly" methodname="PropertyEconomics_FullCountrySetRentMultiplier_CalculatesCorrectly" classname="Ropoly.Tests.EditMode.AuctionTests" runstate="Runnable" seed="2070971644" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.005643" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1009" name="BoardContentTests" fullname="Ropoly.Tests.EditMode.BoardContentTests" classname="Ropoly.Tests.EditMode.BoardContentTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.048152" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1013" name="Snapshots_CopyMutableInputArrays" fullname="Ropoly.Tests.EditMode.BoardContentTests.Snapshots_CopyMutableInputArrays" methodname="Snapshots_CopyMutableInputArrays" classname="Ropoly.Tests.EditMode.BoardContentTests" runstate="Runnable" seed="1329167370" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.004118" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1014" name="Validator_RejectsMissingSnapshot" fullname="Ropoly.Tests.EditMode.BoardContentTests.Validator_RejectsMissingSnapshot" methodname="Validator_RejectsMissingSnapshot" classname="Ropoly.Tests.EditMode.BoardContentTests" runstate="Runnable" seed="1061390591" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.002432" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1012" name="Validator_ReportsBrokenCountryMembershipAndDuplicatePlayableTiles" fullname="Ropoly.Tests.EditMode.BoardContentTests.Validator_ReportsBrokenCountryMembershipAndDuplicatePlayableTiles" methodname="Validator_ReportsBrokenCountryMembershipAndDuplicatePlayableTiles" classname="Ropoly.Tests.EditMode.BoardContentTests" runstate="Runnable" seed="1572805989" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.012389" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1011" name="Validator_ReportsMalformedEconomyAndSpecialSettings" fullname="Ropoly.Tests.EditMode.BoardContentTests.Validator_ReportsMalformedEconomyAndSpecialSettings" methodname="Validator_ReportsMalformedEconomyAndSpecialSettings" classname="Ropoly.Tests.EditMode.BoardContentTests" runstate="Runnable" seed="543786927" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.002529" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1010" name="ValidDefinition_CreatesOrderedProviderNeutralSnapshot" fullname="Ropoly.Tests.EditMode.BoardContentTests.ValidDefinition_CreatesOrderedProviderNeutralSnapshot" methodname="ValidDefinition_CreatesOrderedProviderNeutralSnapshot" classname="Ropoly.Tests.EditMode.BoardContentTests" runstate="Runnable" seed="827492824" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.016779" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1015" name="BoardPreviewAssetTests" fullname="Ropoly.Tests.EditMode.BoardPreviewAssetTests" classname="Ropoly.Tests.EditMode.BoardPreviewAssetTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.099796" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1016" name="OrganizedScenes_ArePresentAndEnabledInBuildOrder" fullname="Ropoly.Tests.EditMode.BoardPreviewAssetTests.OrganizedScenes_ArePresentAndEnabledInBuildOrder" methodname="OrganizedScenes_ArePresentAndEnabledInBuildOrder" classname="Ropoly.Tests.EditMode.BoardPreviewAssetTests" runstate="Runnable" seed="1597323427" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.003150" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="PreviewPrefab_HasDirectBoardAndThemeReferences" fullname="Ropoly.Tests.EditMode.BoardPreviewAssetTests.PreviewPrefab_HasDirectBoardAndThemeReferences" methodname="PreviewPrefab_HasDirectBoardAndThemeReferences" classname="Ropoly.Tests.EditMode.BoardPreviewAssetTests" runstate="Runnable" seed="590211110" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.094860" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1018" name="CreatureRosterAssetTests" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.028674" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1025" name="CreatureGaze_ChoosesCardinalTravelDirection" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests.CreatureGaze_ChoosesCardinalTravelDirection" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.005229" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1021" name="CreatureGaze_ChoosesCardinalTravelDirection(-1.0f,0.0f,-1.0f,0.0f)" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests.CreatureGaze_ChoosesCardinalTravelDirection(-1.0f,0.0f,-1.0f,0.0f)" methodname="CreatureGaze_ChoosesCardinalTravelDirection" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" seed="1401750183" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.001827" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1022" name="CreatureGaze_ChoosesCardinalTravelDirection(1.0f,0.0f,1.0f,0.0f)" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests.CreatureGaze_ChoosesCardinalTravelDirection(1.0f,0.0f,1.0f,0.0f)" methodname="CreatureGaze_ChoosesCardinalTravelDirection" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" seed="445256434" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.000343" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1023" name="CreatureGaze_ChoosesCardinalTravelDirection(0.0f,1.0f,0.0f,1.0f)" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests.CreatureGaze_ChoosesCardinalTravelDirection(0.0f,1.0f,0.0f,1.0f)" methodname="CreatureGaze_ChoosesCardinalTravelDirection" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" seed="1955356600" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.000275" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1024" name="CreatureGaze_ChoosesCardinalTravelDirection(0.0f,-1.0f,0.0f,-1.0f)" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests.CreatureGaze_ChoosesCardinalTravelDirection(0.0f,-1.0f,0.0f,-1.0f)" methodname="CreatureGaze_ChoosesCardinalTravelDirection" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" seed="602684718" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.000254" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1020" name="CreaturePrefab_UsesFlatSpritesAndOnlyThreeDimensionalPhysics" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests.CreaturePrefab_UsesFlatSpritesAndOnlyThreeDimensionalPhysics" methodname="CreaturePrefab_UsesFlatSpritesAndOnlyThreeDimensionalPhysics" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" seed="1568133834" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.011628" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="DefaultRoster_HasEightUniqueValidCreatures" fullname="Ropoly.Tests.EditMode.CreatureRosterAssetTests.DefaultRoster_HasEightUniqueValidCreatures" methodname="DefaultRoster_HasEightUniqueValidCreatures" classname="Ropoly.Tests.EditMode.CreatureRosterAssetTests" runstate="Runnable" seed="851837760" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.005428" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1026" name="DefaultWorldBoardTests" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.013676" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1033" name="DefaultWorldBoard_AllCitiesHaveLandmarkArtworkAndCountryHasFlagAssigned" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests.DefaultWorldBoard_AllCitiesHaveLandmarkArtworkAndCountryHasFlagAssigned" methodname="DefaultWorldBoard_AllCitiesHaveLandmarkArtworkAndCountryHasFlagAssigned" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" seed="917998779" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.001972" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1029" name="DefaultWorldBoard_CountriesFollowLockedGdpPerCapitaOrder" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests.DefaultWorldBoard_CountriesFollowLockedGdpPerCapitaOrder" methodname="DefaultWorldBoard_CountriesFollowLockedGdpPerCapitaOrder" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" seed="199830479" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.001821" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1027" name="DefaultWorldBoard_ExistsAndIsValid" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests.DefaultWorldBoard_ExistsAndIsValid" methodname="DefaultWorldBoard_ExistsAndIsValid" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" seed="929875031" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.000882" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1032" name="DefaultWorldBoard_HasExpectedCornersAndEventDistribution" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests.DefaultWorldBoard_HasExpectedCornersAndEventDistribution" methodname="DefaultWorldBoard_HasExpectedCornersAndEventDistribution" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" seed="952812433" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.000686" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1028" name="DefaultWorldBoard_HasExpectedFortySpaceComposition" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests.DefaultWorldBoard_HasExpectedFortySpaceComposition" methodname="DefaultWorldBoard_HasExpectedFortySpaceComposition" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" seed="824972463" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.003082" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1031" name="DefaultWorldBoard_PricesIncreaseAcrossCountryTiers" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests.DefaultWorldBoard_PricesIncreaseAcrossCountryTiers" methodname="DefaultWorldBoard_PricesIncreaseAcrossCountryTiers" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" seed="1818682944" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.000971" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1030" name="DefaultWorldBoard_UsesTwoCitiesForItalyAndFranceAndThreeForOthers" fullname="Ropoly.Tests.EditMode.DefaultWorldBoardTests.DefaultWorldBoard_UsesTwoCitiesForItalyAndFranceAndThreeForOthers" methodname="DefaultWorldBoard_UsesTwoCitiesForItalyAndFranceAndThreeForOthers" classname="Ropoly.Tests.EditMode.DefaultWorldBoardTests" runstate="Runnable" seed="1260605516" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.000869" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1034" name="DiceAssetTests" fullname="Ropoly.Tests.EditMode.DiceAssetTests" classname="Ropoly.Tests.EditMode.DiceAssetTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:18Z" duration="14.402417" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1036" name="DiePrefab_HasAllPipsAndOnlyThreeDimensionalPhysics" fullname="Ropoly.Tests.EditMode.DiceAssetTests.DiePrefab_HasAllPipsAndOnlyThreeDimensionalPhysics" methodname="DiePrefab_HasAllPipsAndOnlyThreeDimensionalPhysics" classname="Ropoly.Tests.EditMode.DiceAssetTests" runstate="Runnable" seed="1956500932" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.004840" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1037" name="EveryDieValue_HasAValidTopFacingOrientation" fullname="Ropoly.Tests.EditMode.DiceAssetTests.EveryDieValue_HasAValidTopFacingOrientation" methodname="EveryDieValue_HasAValidTopFacingOrientation" classname="Ropoly.Tests.EditMode.DiceAssetTests" runstate="Runnable" seed="1141715817" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:04Z" duration="0.001904" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1038" name="GameScene_HasInactiveDebtResolutionViewConnectedToDiceController" fullname="Ropoly.Tests.EditMode.DiceAssetTests.GameScene_HasInactiveDebtResolutionViewConnectedToDiceController" methodname="GameScene_HasInactiveDebtResolutionViewConnectedToDiceController" classname="Ropoly.Tests.EditMode.DiceAssetTests" runstate="Runnable" seed="2104106702" result="Passed" start-time="2026-11-02 08:45:04Z" end-time="2026-11-02 08:45:18Z" duration="14.389461" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1035" name="RoundedDieMesh_IsDetailedThreeDimensionalGeometry" fullname="Ropoly.Tests.EditMode.DiceAssetTests.RoundedDieMesh_IsDetailedThreeDimensionalGeometry" methodname="RoundedDieMesh_IsDetailedThreeDimensionalGeometry" classname="Ropoly.Tests.EditMode.DiceAssetTests" runstate="Runnable" seed="429876863" result="Passed" start-time="2026-11-02 08:45:18Z" end-time="2026-11-02 08:45:18Z" duration="0.004436" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1039" name="GameRulesetTests" fullname="Ropoly.Tests.EditMode.GameRulesetTests" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-11-02 08:45:18Z" end-time="2026-11-02 08:45:19Z" duration="0.184379" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <output><![CDATA[The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+]]></output>
+              <test-case id="1043" name="ClassicRulesetAsset_ExistsAndIsValid" fullname="Ropoly.Tests.EditMode.GameRulesetTests.ClassicRulesetAsset_ExistsAndIsValid" methodname="ClassicRulesetAsset_ExistsAndIsValid" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="1870918792" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001688" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1040" name="DefaultDefinition_CreatesExpectedValidSnapshot" fullname="Ropoly.Tests.EditMode.GameRulesetTests.DefaultDefinition_CreatesExpectedValidSnapshot" methodname="DefaultDefinition_CreatesExpectedValidSnapshot" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="355937668" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000698" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1047" name="GameRulesetData_HandlesNullAndCorruptedJsonGracefully" fullname="Ropoly.Tests.EditMode.GameRulesetTests.GameRulesetData_HandlesNullAndCorruptedJsonGracefully" methodname="GameRulesetData_HandlesNullAndCorruptedJsonGracefully" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="2117753897" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.003619" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Failed to deserialize ruleset data: JSON parse error: Missing a name for object member.
+]]></output>
+              </test-case>
+              <test-case id="1046" name="GameRulesetData_PlayerPrefsPersistenceRoundTrip" fullname="Ropoly.Tests.EditMode.GameRulesetTests.GameRulesetData_PlayerPrefsPersistenceRoundTrip" methodname="GameRulesetData_PlayerPrefsPersistenceRoundTrip" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="1888773432" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.004004" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1044" name="GameRulesetData_RoundTripsSnapshotAccurately" fullname="Ropoly.Tests.EditMode.GameRulesetTests.GameRulesetData_RoundTripsSnapshotAccurately" methodname="GameRulesetData_RoundTripsSnapshotAccurately" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="2031843880" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000931" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1045" name="GameRulesetData_SerializesAndDeserializesJson" fullname="Ropoly.Tests.EditMode.GameRulesetTests.GameRulesetData_SerializesAndDeserializesJson" methodname="GameRulesetData_SerializesAndDeserializesJson" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="767413085" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000418" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1042" name="SerializedDefinition_MapsInspectorValuesIntoSnapshot" fullname="Ropoly.Tests.EditMode.GameRulesetTests.SerializedDefinition_MapsInspectorValuesIntoSnapshot" methodname="SerializedDefinition_MapsInspectorValuesIntoSnapshot" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="1400239719" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001963" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1041" name="Validator_ReportsEveryInvalidValue" fullname="Ropoly.Tests.EditMode.GameRulesetTests.Validator_ReportsEveryInvalidValue" methodname="Validator_ReportsEveryInvalidValue" classname="Ropoly.Tests.EditMode.GameRulesetTests" runstate="Runnable" seed="1433226670" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001078" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1048" name="LocalMatchSessionTests" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.024512" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1053" name="AuthoritativeDiceRoll_RecordsValuesAndControlsTurnOrder" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.AuthoritativeDiceRoll_RecordsValuesAndControlsTurnOrder" methodname="AuthoritativeDiceRoll_RecordsValuesAndControlsTurnOrder" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="369557548" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.003145" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1055" name="AuthoritativeDiceRoll_RejectsInvalidSourceValues" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.AuthoritativeDiceRoll_RejectsInvalidSourceValues" methodname="AuthoritativeDiceRoll_RejectsInvalidSourceValues" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1814765146" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000488" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1066" name="Bankruptcy_EliminatesPlayerReturnsAssetsAndFinishesTwoPlayerMatch" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.Bankruptcy_EliminatesPlayerReturnsAssetsAndFinishesTwoPlayerMatch" methodname="Bankruptcy_EliminatesPlayerReturnsAssetsAndFinishesTwoPlayerMatch" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="2026619306" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.004328" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1067" name="Bankruptcy_SkipsEliminatedPlayerWhenMatchContinues" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.Bankruptcy_SkipsEliminatedPlayerWhenMatchContinues" methodname="Bankruptcy_SkipsEliminatedPlayerWhenMatchContinues" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1979747284" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000397" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1050" name="CreatureSelection_IsExclusiveAcrossPlayers" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.CreatureSelection_IsExclusiveAcrossPlayers" methodname="CreatureSelection_IsExclusiveAcrossPlayers" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1083132309" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000401" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1064" name="DebtResolution_MortgageRaisesCashAndAllowsRentPayment" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.DebtResolution_MortgageRaisesCashAndAllowsRentPayment" methodname="DebtResolution_MortgageRaisesCashAndAllowsRentPayment" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="102473912" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001292" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1065" name="DebtResolution_SaleReturnsPropertyToBankAndAllowsPayment" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.DebtResolution_SaleReturnsPropertyToBankAndAllowsPayment" methodname="DebtResolution_SaleReturnsPropertyToBankAndAllowsPayment" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1314392980" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000598" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1051" name="MatchStartsOnlyAfterEveryIncludedPlayerChooses" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.MatchStartsOnlyAfterEveryIncludedPlayerChooses" methodname="MatchStartsOnlyAfterEveryIncludedPlayerChooses" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="2077380548" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000318" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1068" name="MortgageRule_CanDisableMortgagingWithoutDisablingBankSale" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.MortgageRule_CanDisableMortgagingWithoutDisablingBankSale" methodname="MortgageRule_CanDisableMortgagingWithoutDisablingBankSale" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1355655151" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000222" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1054" name="Movement_WrapsBoardAndAwardsConfiguredPassStartCash" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.Movement_WrapsBoardAndAwardsConfiguredPassStartCash" methodname="Movement_WrapsBoardAndAwardsConfiguredPassStartCash" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="211614560" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000423" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1049" name="NewSession_CreatesSerializableLobbyPlayersFromRules" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.NewSession_CreatesSerializableLobbyPlayersFromRules" methodname="NewSession_CreatesSerializableLobbyPlayersFromRules" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1354130019" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.002297" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1061" name="OwnedAirport_UsesTheConfiguredOwnedCountRent" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.OwnedAirport_UsesTheConfiguredOwnedCountRent" methodname="OwnedAirport_UsesTheConfiguredOwnedCountRent" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="647712041" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001207" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1060" name="OwnedCity_TransfersBaseRentExactlyOnce" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.OwnedCity_TransfersBaseRentExactlyOnce" methodname="OwnedCity_TransfersBaseRentExactlyOnce" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1048483058" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000572" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1059" name="OwnedProperty_DoesNotCreateAnotherPurchaseOffer" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.OwnedProperty_DoesNotCreateAnotherPurchaseOffer" methodname="OwnedProperty_DoesNotCreateAnotherPurchaseOffer" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1428548991" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000661" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1062" name="OwnedUtility_MultipliesRentByTheLandingDiceTotal" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.OwnedUtility_MultipliesRentByTheLandingDiceTotal" methodname="OwnedUtility_MultipliesRentByTheLandingDiceTotal" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="267230060" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000309" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1052" name="PlayerCount_CanChangeOnlyWithinLobbyLimits" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.PlayerCount_CanChangeOnlyWithinLobbyLimits" methodname="PlayerCount_CanChangeOnlyWithinLobbyLimits" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="333667380" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000519" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1057" name="PropertyDecision_CanBeDeclinedWithoutChangingCashOrOwnership" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.PropertyDecision_CanBeDeclinedWithoutChangingCashOrOwnership" methodname="PropertyDecision_CanBeDeclinedWithoutChangingCashOrOwnership" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="1706746764" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000389" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1058" name="PropertyPurchase_RejectsInsufficientCashButKeepsSkipAvailable" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.PropertyPurchase_RejectsInsufficientCashButKeepsSkipAvailable" methodname="PropertyPurchase_RejectsInsufficientCashButKeepsSkipAvailable" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="596416963" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000518" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1063" name="UnaffordableRent_BlocksTheTurnInDebtResolution" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.UnaffordableRent_BlocksTheTurnInDebtResolution" methodname="UnaffordableRent_BlocksTheTurnInDebtResolution" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="688864262" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000783" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1056" name="UnownedProperty_CanBePurchasedByTheCurrentPlayer" fullname="Ropoly.Tests.EditMode.LocalMatchSessionTests.UnownedProperty_CanBePurchasedByTheCurrentPlayer" methodname="UnownedProperty_CanBePurchasedByTheCurrentPlayer" classname="Ropoly.Tests.EditMode.LocalMatchSessionTests" runstate="Runnable" seed="748866144" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001677" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1069" name="MatchEndingTests" fullname="Ropoly.Tests.EditMode.MatchEndingTests" classname="Ropoly.Tests.EditMode.MatchEndingTests" runstate="Runnable" testcasecount="6" result="Failed" site="Child" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.011973" total="6" passed="3" failed="3" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1073" name="CalculatePlayerNetWorth_IncludesCashPropertiesUpgradesAndWaivers" fullname="Ropoly.Tests.EditMode.MatchEndingTests.CalculatePlayerNetWorth_IncludesCashPropertiesUpgradesAndWaivers" methodname="CalculatePlayerNetWorth_IncludesCashPropertiesUpgradesAndWaivers" classname="Ropoly.Tests.EditMode.MatchEndingTests" runstate="Runnable" seed="1013310377" result="Failed" label="Error" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.004354" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                  <stack-trace><![CDATA[  at System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Func`2[T,TResult] predicate) [0x00011] in <e1f614c5eede4689988594bcb9796955>:0 
+  at Ropoly.Tests.EditMode.MatchEndingTests.CalculatePlayerNetWorth_IncludesCashPropertiesUpgradesAndWaivers () [0x00027] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\MatchEndingTests.cs:132 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <d49d4cb128564ee1b54a84338c98d353>:0 ]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1074" name="EliminatedPlayerFinalAssetsSnapshot_PreservedInStandingRecord" fullname="Ropoly.Tests.EditMode.MatchEndingTests.EliminatedPlayerFinalAssetsSnapshot_PreservedInStandingRecord" methodname="EliminatedPlayerFinalAssetsSnapshot_PreservedInStandingRecord" classname="Ropoly.Tests.EditMode.MatchEndingTests" runstate="Runnable" seed="886061312" result="Failed" label="Error" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000694" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                  <stack-trace><![CDATA[  at System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Func`2[T,TResult] predicate) [0x00011] in <e1f614c5eede4689988594bcb9796955>:0 
+  at Ropoly.Tests.EditMode.MatchEndingTests.EliminatedPlayerFinalAssetsSnapshot_PreservedInStandingRecord () [0x0000c] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\MatchEndingTests.cs:161 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <d49d4cb128564ee1b54a84338c98d353>:0 ]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1071" name="MatchEndedEventDispatched_WithAuthoritativeMatchResult" fullname="Ropoly.Tests.EditMode.MatchEndingTests.MatchEndedEventDispatched_WithAuthoritativeMatchResult" methodname="MatchEndedEventDispatched_WithAuthoritativeMatchResult" classname="Ropoly.Tests.EditMode.MatchEndingTests" runstate="Runnable" seed="1483953192" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.003115" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1075" name="MatchEnding_TickDetectsDisconnectTimeoutAndConcludesMatch" fullname="Ropoly.Tests.EditMode.MatchEndingTests.MatchEnding_TickDetectsDisconnectTimeoutAndConcludesMatch" methodname="MatchEnding_TickDetectsDisconnectTimeoutAndConcludesMatch" classname="Ropoly.Tests.EditMode.MatchEndingTests" runstate="Runnable" seed="125693027" result="Failed" label="Error" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000903" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[System.ArgumentNullException : Value cannot be null.
+Parameter name: board]]></message>
+                  <stack-trace><![CDATA[  at Ropoly.Core.Match.LocalMatchSession.GetBoardTileCount (Ropoly.Core.Board.BoardSnapshot board) [0x0000e] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Scripts\Runtime\Core\Match\LocalMatchSession.cs:2334 
+  at Ropoly.Core.Match.LocalMatchSession..ctor (System.Int32 playerCount, System.Int32 startingCash, System.Collections.Generic.IEnumerable`1[T] availableCreatureIds, Ropoly.Core.Board.BoardSnapshot board, System.Int32 passStartCash, System.Boolean mortgageEnabled, System.Int32 turnDurationSeconds, System.Int32 disconnectGraceSeconds, Ropoly.Core.Time.IClock clock, System.Int32 fullSetRentMultiplier, System.Boolean vacationRewardEnabled, System.Int32 vacationReward, System.Collections.Generic.IReadOnlyDictionary`2[TKey,TValue] cardDecks, System.Boolean auctionsEnabled, System.Int32 auctionBidTimeoutSeconds) [0x00000] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Scripts\Runtime\Core\Match\LocalMatchSession.cs:91 
+  at Ropoly.Tests.EditMode.MatchEndingTests.MatchEnding_TickDetectsDisconnectTimeoutAndConcludesMatch () [0x0001d] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\MatchEndingTests.cs:187 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <d49d4cb128564ee1b54a84338c98d353>:0 ]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1070" name="SoleActivePlayerWinsMatch_WhenOpponentEliminated" fullname="Ropoly.Tests.EditMode.MatchEndingTests.SoleActivePlayerWinsMatch_WhenOpponentEliminated" methodname="SoleActivePlayerWinsMatch_WhenOpponentEliminated" classname="Ropoly.Tests.EditMode.MatchEndingTests" runstate="Runnable" seed="1399709695" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000370" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="StandingsFollowReverseEliminationOrder_InFourPlayerMatch" fullname="Ropoly.Tests.EditMode.MatchEndingTests.StandingsFollowReverseEliminationOrder_InFourPlayerMatch" methodname="StandingsFollowReverseEliminationOrder_InFourPlayerMatch" classname="Ropoly.Tests.EditMode.MatchEndingTests" runstate="Runnable" seed="859405273" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000942" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1076" name="MatchTimeoutTests" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" testcasecount="9" result="Failed" site="Child" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.013613" total="9" passed="6" failed="3" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1081" name="AcceptedAction_ResetsTurnDeadline" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.AcceptedAction_ResetsTurnDeadline" methodname="AcceptedAction_ResetsTurnDeadline" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="202446334" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.003369" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="DebtTimeout_ExecutesAutoBankruptcyAndElimination" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.DebtTimeout_ExecutesAutoBankruptcyAndElimination" methodname="DebtTimeout_ExecutesAutoBankruptcyAndElimination" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="116629812" result="Failed" label="Error" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001703" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[System.NullReferenceException : Object reference not set to an instance of an object]]></message>
+                  <stack-trace><![CDATA[  at Ropoly.Tests.EditMode.MatchTimeoutTests.DebtTimeout_ExecutesAutoBankruptcyAndElimination () [0x000f5] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\MatchTimeoutTests.cs:118 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <d49d4cb128564ee1b54a84338c98d353>:0 ]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1082" name="Disconnect_StartsGracePeriodAndDoesNotImmediatelyEliminate" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.Disconnect_StartsGracePeriodAndDoesNotImmediatelyEliminate" methodname="Disconnect_StartsGracePeriodAndDoesNotImmediatelyEliminate" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="28148175" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001039" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1084" name="DisconnectTimeout_EliminatesPlayerAndReleasesAssets" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.DisconnectTimeout_EliminatesPlayerAndReleasesAssets" methodname="DisconnectTimeout_EliminatesPlayerAndReleasesAssets" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="370140666" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.002084" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: 1
+  But was:  0
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.MatchTimeoutTests.DisconnectTimeout_EliminatesPlayerAndReleasesAssets () [0x0007d] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\MatchTimeoutTests.cs:221
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1085" name="EliminatedPlayer_IsSkippedBySubsequentTurns" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.EliminatedPlayer_IsSkippedBySubsequentTurns" methodname="EliminatedPlayer_IsSkippedBySubsequentTurns" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="1720790659" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000475" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: 2
+  But was:  0
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.MatchTimeoutTests.EliminatedPlayer_IsSkippedBySubsequentTurns () [0x000a2] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\MatchTimeoutTests.cs:252
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1078" name="InactivityTimeout_EliminatesCurrentPlayerReleasesAssetsAndAdvancesTurn" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.InactivityTimeout_EliminatesCurrentPlayerReleasesAssetsAndAdvancesTurn" methodname="InactivityTimeout_EliminatesCurrentPlayerReleasesAssetsAndAdvancesTurn" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="908985520" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000913" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1079" name="InactivityTimeout_InTwoPlayerMatch_FinishesMatchWithRemainingPlayerAsWinner" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.InactivityTimeout_InTwoPlayerMatch_FinishesMatchWithRemainingPlayerAsWinner" methodname="InactivityTimeout_InTwoPlayerMatch_FinishesMatchWithRemainingPlayerAsWinner" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="1225932857" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000278" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1077" name="MatchStart_SetsTurnDeadline" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.MatchStart_SetsTurnDeadline" methodname="MatchStart_SetsTurnDeadline" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="181074990" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000662" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1083" name="Reconnect_BeforeGracePeriodExpires_RestoresConnectedStatus" fullname="Ropoly.Tests.EditMode.MatchTimeoutTests.Reconnect_BeforeGracePeriodExpires_RestoresConnectedStatus" methodname="Reconnect_BeforeGracePeriodExpires_RestoresConnectedStatus" classname="Ropoly.Tests.EditMode.MatchTimeoutTests" runstate="Runnable" seed="711177685" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000712" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1086" name="PropertyStructureVisualTests" fullname="Ropoly.Tests.EditMode.PropertyStructureVisualTests" classname="Ropoly.Tests.EditMode.PropertyStructureVisualTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.010056" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1091" name="Clear_HidesAllStructuresAndResetsState" fullname="Ropoly.Tests.EditMode.PropertyStructureVisualTests.Clear_HidesAllStructuresAndResetsState" methodname="Clear_HidesAllStructuresAndResetsState" classname="Ropoly.Tests.EditMode.PropertyStructureVisualTests" runstate="Runnable" seed="658308621" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.005146" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1087" name="InitialState_IsUnownedAndInactive" fullname="Ropoly.Tests.EditMode.PropertyStructureVisualTests.InitialState_IsUnownedAndInactive" methodname="InitialState_IsUnownedAndInactive" classname="Ropoly.Tests.EditMode.PropertyStructureVisualTests" runstate="Runnable" seed="1773547579" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000828" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1088" name="SetOwnerMaterial_ActivatesBaseOwnershipFlag" fullname="Ropoly.Tests.EditMode.PropertyStructureVisualTests.SetOwnerMaterial_ActivatesBaseOwnershipFlag" methodname="SetOwnerMaterial_ActivatesBaseOwnershipFlag" classname="Ropoly.Tests.EditMode.PropertyStructureVisualTests" runstate="Runnable" seed="886714431" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000749" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1090" name="SetUpgradeLevel_LevelFive_ActivatesHotelAndDeactivatesHouses" fullname="Ropoly.Tests.EditMode.PropertyStructureVisualTests.SetUpgradeLevel_LevelFive_ActivatesHotelAndDeactivatesHouses" methodname="SetUpgradeLevel_LevelFive_ActivatesHotelAndDeactivatesHouses" classname="Ropoly.Tests.EditMode.PropertyStructureVisualTests" runstate="Runnable" seed="1275789243" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000937" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1089" name="SetUpgradeLevel_LevelsOneThroughFour_ActivatesHousesAndFlag" fullname="Ropoly.Tests.EditMode.PropertyStructureVisualTests.SetUpgradeLevel_LevelsOneThroughFour_ActivatesHousesAndFlag" methodname="SetUpgradeLevel_LevelsOneThroughFour_ActivatesHousesAndFlag" classname="Ropoly.Tests.EditMode.PropertyStructureVisualTests" runstate="Runnable" seed="1375290620" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001100" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1092" name="PropertyUpgradeTests" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" testcasecount="11" result="Failed" site="Child" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.010622" total="11" passed="9" failed="2" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1103" name="Bankruptcy_ResetsUpgradesToZero" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.Bankruptcy_ResetsUpgradesToZero" methodname="Bankruptcy_ResetsUpgradesToZero" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="1275309459" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001563" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1093" name="DefaultWorldBoard_DefaultUpgradeCosts_MatchSpecifiedCountryTiers" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.DefaultWorldBoard_DefaultUpgradeCosts_MatchSpecifiedCountryTiers" methodname="DefaultWorldBoard_DefaultUpgradeCosts_MatchSpecifiedCountryTiers" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="400238441" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000910" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1098" name="EvenBuildingRule_Enforced_DuringUpgrades" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.EvenBuildingRule_Enforced_DuringUpgrades" methodname="EvenBuildingRule_Enforced_DuringUpgrades" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="1613129812" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000480" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1101" name="EvenDowngradeRule_And_RefundCalculation" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.EvenDowngradeRule_And_RefundCalculation" methodname="EvenDowngradeRule_And_RefundCalculation" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="173942269" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001235" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1100" name="InsufficientCash_BlocksUpgrade" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.InsufficientCash_BlocksUpgrade" methodname="InsufficientCash_BlocksUpgrade" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="224662171" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000192" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1099" name="MaximumUpgradeLevel_CappedAtFive" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.MaximumUpgradeLevel_CappedAtFive" methodname="MaximumUpgradeLevel_CappedAtFive" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="831199622" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000368" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1102" name="MortgageAndBankSale_BlockedWhileBuildingsExistInCountrySet" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.MortgageAndBankSale_BlockedWhileBuildingsExistInCountrySet" methodname="MortgageAndBankSale_BlockedWhileBuildingsExistInCountrySet" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="1566351948" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000748" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1097" name="UnimprovedFullSet_DoublesBaseRent_WhenAllUnmortgaged" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.UnimprovedFullSet_DoublesBaseRent_WhenAllUnmortgaged" methodname="UnimprovedFullSet_DoublesBaseRent_WhenAllUnmortgaged" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="1615041480" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001200" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.PropertyUpgradeTests.UnimprovedFullSet_DoublesBaseRent_WhenAllUnmortgaged () [0x00140] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\PropertyUpgradeTests.cs:148
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1096" name="UpgradeProperty_DeductsCost_IncreasesLevel_IncreasesRent" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.UpgradeProperty_DeductsCost_IncreasesLevel_IncreasesRent" methodname="UpgradeProperty_DeductsCost_IncreasesLevel_IncreasesRent" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="1721739664" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000423" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1095" name="UpgradeProperty_DisallowedWhenAnySisterPropertyIsMortgaged" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.UpgradeProperty_DisallowedWhenAnySisterPropertyIsMortgaged" methodname="UpgradeProperty_DisallowedWhenAnySisterPropertyIsMortgaged" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="941309212" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000356" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1094" name="UpgradeProperty_DisallowedWithoutFullCountrySet" fullname="Ropoly.Tests.EditMode.PropertyUpgradeTests.UpgradeProperty_DisallowedWithoutFullCountrySet" methodname="UpgradeProperty_DisallowedWithoutFullCountrySet" classname="Ropoly.Tests.EditMode.PropertyUpgradeTests" runstate="Runnable" seed="1123335633" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000538" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: CountrySetIncomplete
+  But was:  NotOwnedByPlayer
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.PropertyUpgradeTests.UpgradeProperty_DisallowedWithoutFullCountrySet () [0x00025] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\PropertyUpgradeTests.cs:68
+]]></stack-trace>
+                </failure>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1104" name="SpecialSpaceTests" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" testcasecount="17" result="Failed" site="Child" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.020121" total="17" passed="11" failed="6" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1111" name="Detention_PayBailAtStartOfTurn_AllowsNormalMovement" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_PayBailAtStartOfTurn_AllowsNormalMovement" methodname="Detention_PayBailAtStartOfTurn_AllowsNormalMovement" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="2143606188" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001409" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1113" name="Detention_PlayerCanCollectRentWhileInDetention" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_PlayerCanCollectRentWhileInDetention" methodname="Detention_PlayerCanCollectRentWhileInDetention" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="2125509237" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000812" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_PlayerCanCollectRentWhileInDetention () [0x00079] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\SpecialSpaceTests.cs:311
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1107" name="Detention_RollDoubles_EscapesFreelyAndMovesWithoutExtraTurn" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_RollDoubles_EscapesFreelyAndMovesWithoutExtraTurn" methodname="Detention_RollDoubles_EscapesFreelyAndMovesWithoutExtraTurn" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1926002754" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000934" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: AwaitingTurnEnd
+  But was:  AwaitingPropertyDecision
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_RollDoubles_EscapesFreelyAndMovesWithoutExtraTurn () [0x0014c] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\SpecialSpaceTests.cs:158
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1108" name="Detention_RollNonDoubles_IncrementsTurnCounterAndEndsTurnWithoutMoving" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_RollNonDoubles_IncrementsTurnCounterAndEndsTurnWithoutMoving" methodname="Detention_RollNonDoubles_IncrementsTurnCounterAndEndsTurnWithoutMoving" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="199649343" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000942" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_RollNonDoubles_IncrementsTurnCounterAndEndsTurnWithoutMoving () [0x0011f] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\SpecialSpaceTests.cs:180
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1110" name="Detention_ThirdTurnNonDoubles_EntersDebtResolutionIfCannotAffordBail" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_ThirdTurnNonDoubles_EntersDebtResolutionIfCannotAffordBail" methodname="Detention_ThirdTurnNonDoubles_EntersDebtResolutionIfCannotAffordBail" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="212698756" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000906" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1109" name="Detention_ThirdTurnNonDoubles_ForcesBailPaymentAndReleasesToMove" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_ThirdTurnNonDoubles_ForcesBailPaymentAndReleasesToMove" methodname="Detention_ThirdTurnNonDoubles_ForcesBailPaymentAndReleasesToMove" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1200713674" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000648" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1112" name="Detention_UseWaiverCard_AllowsNormalMovement" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.Detention_UseWaiverCard_AllowsNormalMovement" methodname="Detention_UseWaiverCard_AllowsNormalMovement" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1610114417" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000945" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1114" name="FeeSpace_DeductsFeeDirectlyWhenPlayerHasCash" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.FeeSpace_DeductsFeeDirectlyWhenPlayerHasCash" methodname="FeeSpace_DeductsFeeDirectlyWhenPlayerHasCash" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1626714922" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000660" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1115" name="FeeSpace_TriggersDebtResolutionWhenPlayerCannotAffordFee" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.FeeSpace_TriggersDebtResolutionWhenPlayerCannotAffordFee" methodname="FeeSpace_TriggersDebtResolutionWhenPlayerCannotAffordFee" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="680733096" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000825" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: greater than or equal to 200
+  But was:  130
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.SpecialSpaceTests.FeeSpace_TriggersDebtResolutionWhenPlayerCannotAffordFee () [0x0013c] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\SpecialSpaceTests.cs:364
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1105" name="GoToDetention_SendsPlayerDirectlyToDetentionAndEndsTurn" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.GoToDetention_SendsPlayerDirectlyToDetentionAndEndsTurn" methodname="GoToDetention_SendsPlayerDirectlyToDetentionAndEndsTurn" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1370082341" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001001" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.SpecialSpaceTests.GoToDetention_SendsPlayerDirectlyToDetentionAndEndsTurn () [0x00056] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\SpecialSpaceTests.cs:68
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1118" name="OpportunityCard_AdvanceToStart_Collects200AndSetsPositionToZero" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.OpportunityCard_AdvanceToStart_Collects200AndSetsPositionToZero" methodname="OpportunityCard_AdvanceToStart_Collects200AndSetsPositionToZero" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="62518051" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.002438" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1117" name="OpportunityCard_MoveToTile_CollectsPassStartIfPassingStart" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.OpportunityCard_MoveToTile_CollectsPassStartIfPassingStart" methodname="OpportunityCard_MoveToTile_CollectsPassStartIfPassingStart" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1168882535" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000590" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1119" name="OpportunityCard_PropertyRepair_ChargesPerHouseAndHotel" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.OpportunityCard_PropertyRepair_ChargesPerHouseAndHotel" methodname="OpportunityCard_PropertyRepair_ChargesPerHouseAndHotel" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="79813961" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000920" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1106" name="ThreeConsecutiveDoubles_SendsPlayerDirectlyToDetentionWithoutMoving" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.ThreeConsecutiveDoubles_SendsPlayerDirectlyToDetentionWithoutMoving" methodname="ThreeConsecutiveDoubles_SendsPlayerDirectlyToDetentionWithoutMoving" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1907464619" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001315" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.SpecialSpaceTests.ThreeConsecutiveDoubles_SendsPlayerDirectlyToDetentionWithoutMoving () [0x000f7] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\SpecialSpaceTests.cs:121
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1116" name="VacationSpace_CollectsAccumulatedPoolWhenEnabled" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.VacationSpace_CollectsAccumulatedPoolWhenEnabled" methodname="VacationSpace_CollectsAccumulatedPoolWhenEnabled" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="747127481" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001020" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1120" name="WorldEventCard_BankError_AwardsCash" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.WorldEventCard_BankError_AwardsCash" methodname="WorldEventCard_BankError_AwardsCash" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="671593975" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000701" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1121" name="WorldEventCard_CollectFromAllPlayers_TransfersCash" fullname="Ropoly.Tests.EditMode.SpecialSpaceTests.WorldEventCard_CollectFromAllPlayers_TransfersCash" methodname="WorldEventCard_CollectFromAllPlayers_TransfersCash" classname="Ropoly.Tests.EditMode.SpecialSpaceTests" runstate="Runnable" seed="1154073327" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000734" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1122" name="TradeTests" fullname="Ropoly.Tests.EditMode.TradeTests" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" testcasecount="16" result="Failed" site="Child" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.013527" total="16" passed="15" failed="1" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1123" name="CanProposeTrade_RejectsEmptyTrade" fullname="Ropoly.Tests.EditMode.TradeTests.CanProposeTrade_RejectsEmptyTrade" methodname="CanProposeTrade_RejectsEmptyTrade" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="264575812" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001285" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1125" name="CanProposeTrade_RejectsInsufficientCash" fullname="Ropoly.Tests.EditMode.TradeTests.CanProposeTrade_RejectsInsufficientCash" methodname="CanProposeTrade_RejectsInsufficientCash" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="287717428" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000282" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1126" name="CanProposeTrade_RejectsInsufficientWaivers" fullname="Ropoly.Tests.EditMode.TradeTests.CanProposeTrade_RejectsInsufficientWaivers" methodname="CanProposeTrade_RejectsInsufficientWaivers" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="2001273510" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000313" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1128" name="CanProposeTrade_RejectsPropertyWithBuildings" fullname="Ropoly.Tests.EditMode.TradeTests.CanProposeTrade_RejectsPropertyWithBuildings" methodname="CanProposeTrade_RejectsPropertyWithBuildings" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1832803062" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000231" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1124" name="CanProposeTrade_RejectsSelfTrade" fullname="Ropoly.Tests.EditMode.TradeTests.CanProposeTrade_RejectsSelfTrade" methodname="CanProposeTrade_RejectsSelfTrade" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1715037766" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000196" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1127" name="CanProposeTrade_RejectsUnownedProperty" fullname="Ropoly.Tests.EditMode.TradeTests.CanProposeTrade_RejectsUnownedProperty" methodname="CanProposeTrade_RejectsUnownedProperty" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1768029745" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000873" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1137" name="CreateCounterOffer_SwapsAssetsAndRoles" fullname="Ropoly.Tests.EditMode.TradeTests.CreateCounterOffer_SwapsAssetsAndRoles" methodname="CreateCounterOffer_SwapsAssetsAndRoles" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="304709312" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.001860" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1138" name="PlayerElimination_AutomaticallyCancelsPendingTrade" fullname="Ropoly.Tests.EditMode.TradeTests.PlayerElimination_AutomaticallyCancelsPendingTrade" methodname="PlayerElimination_AutomaticallyCancelsPendingTrade" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="520336434" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000774" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1134" name="TryAcceptActiveTrade_RejectsNonTargetPlayer" fullname="Ropoly.Tests.EditMode.TradeTests.TryAcceptActiveTrade_RejectsNonTargetPlayer" methodname="TryAcceptActiveTrade_RejectsNonTargetPlayer" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1758432888" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000828" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1131" name="TryAcceptActiveTrade_TransfersCashAtomically" fullname="Ropoly.Tests.EditMode.TradeTests.TryAcceptActiveTrade_TransfersCashAtomically" methodname="TryAcceptActiveTrade_TransfersCashAtomically" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="871300996" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000576" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1133" name="TryAcceptActiveTrade_TransfersDetentionWaivers" fullname="Ropoly.Tests.EditMode.TradeTests.TryAcceptActiveTrade_TransfersDetentionWaivers" methodname="TryAcceptActiveTrade_TransfersDetentionWaivers" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1775555206" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000390" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1132" name="TryAcceptActiveTrade_TransfersPropertiesAndPreservesMortgage" fullname="Ropoly.Tests.EditMode.TradeTests.TryAcceptActiveTrade_TransfersPropertiesAndPreservesMortgage" methodname="TryAcceptActiveTrade_TransfersPropertiesAndPreservesMortgage" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1960328294" result="Failed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000534" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[at Ropoly.Tests.EditMode.TradeTests.TryAcceptActiveTrade_TransfersPropertiesAndPreservesMortgage () [0x0000c] in D:\Unityprojects\ponomoly\Ponomoly\Assets\_Ropoly\Tests\EditMode\TradeTests.cs:192
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1136" name="TryCancelActiveTrade_ClearsActiveTradeAndFiresEvent" fullname="Ropoly.Tests.EditMode.TradeTests.TryCancelActiveTrade_ClearsActiveTradeAndFiresEvent" methodname="TryCancelActiveTrade_ClearsActiveTradeAndFiresEvent" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1091554519" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000545" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1130" name="TryProposeTrade_RejectsIfAnotherTradeAlreadyActive" fullname="Ropoly.Tests.EditMode.TradeTests.TryProposeTrade_RejectsIfAnotherTradeAlreadyActive" methodname="TryProposeTrade_RejectsIfAnotherTradeAlreadyActive" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1105278181" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000261" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1129" name="TryProposeTrade_SetsActiveTradeAndFiresEvent" fullname="Ropoly.Tests.EditMode.TradeTests.TryProposeTrade_SetsActiveTradeAndFiresEvent" methodname="TryProposeTrade_SetsActiveTradeAndFiresEvent" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="1971018382" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000658" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1135" name="TryRejectActiveTrade_ClearsActiveTradeAndFiresEvent" fullname="Ropoly.Tests.EditMode.TradeTests.TryRejectActiveTrade_ClearsActiveTradeAndFiresEvent" methodname="TryRejectActiveTrade_ClearsActiveTradeAndFiresEvent" classname="Ropoly.Tests.EditMode.TradeTests" runstate="Runnable" seed="56554646" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000932" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1139" name="TypographyQualityTests" fullname="Ropoly.Tests.EditMode.TypographyQualityTests" classname="Ropoly.Tests.EditMode.TypographyQualityTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:51Z" duration="31.921222" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1142" name="BoardTheme_UsesRopolyFont" fullname="Ropoly.Tests.EditMode.TypographyQualityTests.BoardTheme_UsesRopolyFont" methodname="BoardTheme_UsesRopolyFont" classname="Ropoly.Tests.EditMode.TypographyQualityTests" runstate="Runnable" seed="1470298327" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:19Z" duration="0.000427" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1141" name="GameScene_UsesRopolyFontAndPixelPerfectCanvas" fullname="Ropoly.Tests.EditMode.TypographyQualityTests.GameScene_UsesRopolyFontAndPixelPerfectCanvas" methodname="GameScene_UsesRopolyFontAndPixelPerfectCanvas" classname="Ropoly.Tests.EditMode.TypographyQualityTests" runstate="Runnable" seed="1956078315" result="Passed" start-time="2026-11-02 08:45:19Z" end-time="2026-11-02 08:45:51Z" duration="31.918755" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1140" name="RopolyFont_UsesHighResolutionSdfAtlas" fullname="Ropoly.Tests.EditMode.TypographyQualityTests.RopolyFont_UsesHighResolutionSdfAtlas" methodname="RopolyFont_UsesHighResolutionSdfAtlas" classname="Ropoly.Tests.EditMode.TypographyQualityTests" runstate="Runnable" seed="955587347" result="Passed" start-time="2026-11-02 08:45:51Z" end-time="2026-11-02 08:45:51Z" duration="0.001020" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+The character used for Ellipsis is not available in font asset [Ropoly UI SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+Saving results to: C:/Users/Admin/AppData/LocalLow/DefaultCompany/Ropoly\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

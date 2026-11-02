@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-mumbai
   _displayName: Mumbai
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: e3e01e04e06959c4680e071363c74ea9, type: 3}
   _purchasePrice: 80
   _mortgageValue: 40
   _upgradeCost: 50
   _rentByUpgradeLevel: 050000002800000078000000ff00000068010000d1010000
+  _countryMap: {fileID: 21300000, guid: 6991f877105dba44faaf60dd296effb3, type: 3}

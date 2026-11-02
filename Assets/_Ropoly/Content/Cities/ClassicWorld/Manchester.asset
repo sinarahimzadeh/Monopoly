@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-manchester
   _displayName: Manchester
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 78dc9adc9e5491b4c8cbdf19dfd6ea5c, type: 3}
   _purchasePrice: 290
   _mortgageValue: 145
   _upgradeCost: 200
   _rentByUpgradeLevel: 1900000091000000b3010000a20300001905000090060000
+  _countryMap: {fileID: 21300000, guid: 032caa8f08fefad4aa4a97602ca1d285, type: 3}

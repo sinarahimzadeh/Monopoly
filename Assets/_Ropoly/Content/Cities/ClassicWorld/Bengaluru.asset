@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-bengaluru
   _displayName: Bengaluru
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 5fba55981a9a7a14abcd9d7bd78fd56e, type: 3}
   _purchasePrice: 70
   _mortgageValue: 35
   _upgradeCost: 50
   _rentByUpgradeLevel: 050000002300000069000000e10000003b01000095010000
+  _countryMap: {fileID: 21300000, guid: 92c7b26154d1510499edafe4e4c66fa3, type: 3}

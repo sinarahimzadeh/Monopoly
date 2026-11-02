@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-new-york
   _displayName: New York
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 92db3dc233c54bc4694edfa8e45facfe, type: 3}
   _purchasePrice: 400
   _mortgageValue: 200
   _upgradeCost: 200
   _rentByUpgradeLevel: 1e000000c800000058020000000500000807000010090000
+  _countryMap: {fileID: 21300000, guid: 4a72c320389591347a617f4526ad29f1, type: 3}

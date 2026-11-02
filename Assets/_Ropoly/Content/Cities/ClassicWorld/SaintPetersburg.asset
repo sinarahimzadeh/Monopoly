@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-saint-petersburg
   _displayName: Saint Petersburg
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: b5d3fc865d8e77b479a1be11fc063859, type: 3}
   _purchasePrice: 190
   _mortgageValue: 95
   _upgradeCost: 100
   _rentByUpgradeLevel: 0f0000005f0000001d01000062020000570300004c040000
+  _countryMap: {fileID: 21300000, guid: bca24cab36f517e4b99e7fcb773b40be, type: 3}

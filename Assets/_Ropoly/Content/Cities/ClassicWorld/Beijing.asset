@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-beijing
   _displayName: Beijing
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 11781252fe3389e4bbbfa91e5040eb45, type: 3}
   _purchasePrice: 140
   _mortgageValue: 70
   _upgradeCost: 100
   _rentByUpgradeLevel: 0a00000046000000d2000000c2010000760200002a030000
+  _countryMap: {fileID: 21300000, guid: b19453773500d364fb1a5e84a7a46db8, type: 3}

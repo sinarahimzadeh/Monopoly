@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: China
   _expectedCityCount: 3
   _setColor: {r: 0.7529412, g: 0.22352941, b: 0.16862746, a: 1}
-  _flag: {fileID: 0}
+  _flag: {fileID: 21300000, guid: 381ef522eda5c4845912c8dbb57ebfce, type: 3}
+  _countryMap: {fileID: 0}
   _cities:
   - {fileID: 11400000, guid: bff2a76dc954ed440858a08853e09dde, type: 2}
   - {fileID: 11400000, guid: cc5f7f7e712d6ba47b6c8fd06bc42d4b, type: 2}

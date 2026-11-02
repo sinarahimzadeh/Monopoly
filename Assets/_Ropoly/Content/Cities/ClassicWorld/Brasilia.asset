@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-brasilia
   _displayName: "Bras\xEDlia"
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: c3d7d42bcd795d140b6d81739265bda0, type: 3}
   _purchasePrice: 100
   _mortgageValue: 50
   _upgradeCost: 50
   _rentByUpgradeLevel: 0a000000320000009600000040010000c201000044020000
+  _countryMap: {fileID: 21300000, guid: 2050489151348834a8e7969b6fbff57a, type: 3}

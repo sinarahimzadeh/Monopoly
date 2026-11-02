@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-london
   _displayName: London
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: b223589fce6e4164a82e4705b0b53188, type: 3}
   _purchasePrice: 310
   _mortgageValue: 155
   _upgradeCost: 200
   _rentByUpgradeLevel: 190000009b000000d1010000de0300007305000008070000
+  _countryMap: {fileID: 21300000, guid: 3a3c110ab02265748a374d91f6ab5902, type: 3}

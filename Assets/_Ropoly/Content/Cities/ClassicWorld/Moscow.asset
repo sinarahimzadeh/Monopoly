@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-moscow
   _displayName: Moscow
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: adf3258c3a4d87545a0bf873af51f6f9, type: 3}
   _purchasePrice: 200
   _mortgageValue: 100
   _upgradeCost: 100
   _rentByUpgradeLevel: 0f000000640000002c010000800200008403000088040000
+  _countryMap: {fileID: 21300000, guid: b74e89921d1c51c4b9def25c27bff135, type: 3}

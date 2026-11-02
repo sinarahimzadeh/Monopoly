@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-shenzhen
   _displayName: Shenzhen
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 935c9a960464dc94783dc5b497db4372, type: 3}
   _purchasePrice: 150
   _mortgageValue: 75
   _upgradeCost: 100
   _rentByUpgradeLevel: 0a0000004b000000e1000000e0010000a302000066030000
+  _countryMap: {fileID: 21300000, guid: aeafc731008dd1046950eb8870ff4155, type: 3}

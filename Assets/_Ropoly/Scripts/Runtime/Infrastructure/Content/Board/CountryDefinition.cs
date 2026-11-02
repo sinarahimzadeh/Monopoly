@@ -27,6 +27,9 @@ namespace Ropoly.Infrastructure.Content.Board
         private Sprite _flag;
 
         [SerializeField]
+        private Sprite _countryMap;
+
+        [SerializeField]
         private List<CityDefinition> _cities = new List<CityDefinition>();
 
         [Header("Economic ordering")]
@@ -48,6 +51,7 @@ namespace Ropoly.Infrastructure.Content.Board
         public int ExpectedCityCount => _expectedCityCount;
         public Color SetColor => _setColor;
         public Sprite Flag => _flag;
+        public Sprite CountryMap => _countryMap;
         public IReadOnlyList<CityDefinition> Cities => _cities;
 
         public CountrySnapshot CreateSnapshot()

@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: Russia
   _expectedCityCount: 3
   _setColor: {r: 0.20392157, g: 0.59607846, b: 0.85882354, a: 1}
-  _flag: {fileID: 0}
+  _flag: {fileID: 21300000, guid: 8196c28a362dc374a90d826817afc496, type: 3}
+  _countryMap: {fileID: 0}
   _cities:
   - {fileID: 11400000, guid: 96c3ed2546595ff41830c62b736d073a, type: 2}
   - {fileID: 11400000, guid: 24824cc477349524ab3b8b2a4d0d4bb5, type: 2}

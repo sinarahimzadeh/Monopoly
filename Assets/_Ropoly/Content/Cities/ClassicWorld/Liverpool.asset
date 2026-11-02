@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-liverpool
   _displayName: Liverpool
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 3d22dee454fbb97479df6f7684ad3c7f, type: 3}
   _purchasePrice: 280
   _mortgageValue: 140
   _upgradeCost: 200
   _rentByUpgradeLevel: 140000008c000000a40100007f030000ec04000059060000
+  _countryMap: {fileID: 21300000, guid: 6dce7ae4b71219f4d9f2336d87e6f2cb, type: 3}

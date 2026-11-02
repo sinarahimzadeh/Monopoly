@@ -94,6 +94,14 @@ namespace Ropoly.Editor
             }
 
             controller.RebuildPreview();
+
+            // Hide the UI overlay for board capture
+            Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            foreach (Canvas c in canvases)
+            {
+                c.enabled = false;
+            }
+
             Canvas.ForceUpdateCanvases();
 
             const int width = 1920;
@@ -111,6 +119,11 @@ namespace Ropoly.Editor
             string outputFolder = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, ".."));
             string outputPath = Path.Combine(outputFolder, "P6BoardPreview.png");
             File.WriteAllBytes(outputPath, image.EncodeToPNG());
+
+            foreach (Canvas c in canvases)
+            {
+                c.enabled = true;
+            }
 
             camera.targetTexture = previousTarget;
             RenderTexture.active = previousActive;

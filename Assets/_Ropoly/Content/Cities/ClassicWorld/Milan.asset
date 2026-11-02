@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-milan
   _displayName: Milan
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: f49b94196637d2847a9095dae5259ff1, type: 3}
   _purchasePrice: 230
   _mortgageValue: 115
   _upgradeCost: 150
   _rentByUpgradeLevel: 140000007300000059010000df0200000b04000037050000
+  _countryMap: {fileID: 21300000, guid: 49026b9f9203d4249934a176a8287cbe, type: 3}

@@ -145,6 +145,28 @@ namespace Ropoly.Tests.EditMode
             Assert.That(localOpportunities, Is.EqualTo(3));
         }
 
+        [Test]
+        public void DefaultWorldBoard_AllCitiesHaveLandmarkArtworkAndCountryHasFlagAssigned()
+        {
+            BoardDefinition definition = AssetDatabase.LoadAssetAtPath<BoardDefinition>(DefaultBoardPath);
+            Assert.That(definition, Is.Not.Null);
+
+            int verifiedCities = 0;
+            foreach (CountryDefinition country in definition.Countries)
+            {
+                Assert.That(country, Is.Not.Null);
+                Assert.That(country.Flag, Is.Not.Null, $"Country {country.DisplayName} ({country.CountryId}) is missing Flag sprite.");
+                foreach (CityDefinition city in country.Cities)
+                {
+                    Assert.That(city, Is.Not.Null);
+                    Assert.That(city.Artwork, Is.Not.Null, $"City {city.DisplayName} ({city.ContentId}) is missing Landmark Artwork sprite.");
+                    verifiedCities++;
+                }
+            }
+
+            Assert.That(verifiedCities, Is.EqualTo(22), "Expected exactly 22 cities with visuals.");
+        }
+
         private static BoardSnapshot LoadSnapshot()
         {
             BoardDefinition definition = AssetDatabase.LoadAssetAtPath<BoardDefinition>(DefaultBoardPath);

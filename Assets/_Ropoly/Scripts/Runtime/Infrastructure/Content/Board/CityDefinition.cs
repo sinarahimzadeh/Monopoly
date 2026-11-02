@@ -23,7 +23,13 @@ namespace Ropoly.Infrastructure.Content.Board
         [Tooltip("Rent at upgrade levels 0 through 5. Level 0 is the base rent.")]
         private int[] _rentByUpgradeLevel = { 2, 10, 30, 90, 160, 250 };
 
+        [Header("Map")]
+        [SerializeField]
+        [Tooltip("Highlighted map of the country where this city is located.")]
+        private Sprite _countryMap;
+
         public override BoardTileKind Kind => BoardTileKind.City;
+        public Sprite CountryMap => _countryMap;
 
         public CitySnapshot CreateSnapshot()
         {

@@ -25,10 +25,13 @@ namespace Ropoly.Presentation.Board
         [SerializeField]
         private TMP_Text _upgradeText;
 
+        private PropertyStructureView _structureView;
+
         public int Index => _index;
         public BoardTileKind Kind => _kind;
         public string ContentId => _contentId;
         public int UpgradeLevel { get; private set; }
+        public PropertyStructureView StructureView => _structureView;
 
         public void Initialize(
             int index,
@@ -36,7 +39,8 @@ namespace Ropoly.Presentation.Board
             string contentId,
             GameObject ownerMarker,
             MeshRenderer ownerMarkerRenderer,
-            TMP_Text upgradeText = null)
+            TMP_Text upgradeText = null,
+            PropertyStructureView structureView = null)
         {
             _index = index;
             _kind = kind;
@@ -44,43 +48,65 @@ namespace Ropoly.Presentation.Board
             _ownerMarker = ownerMarker;
             _ownerMarkerRenderer = ownerMarkerRenderer;
             _upgradeText = upgradeText;
-            _ownerMarker.SetActive(false);
+            _structureView = structureView;
+
+            if (_ownerMarker != null)
+            {
+                _ownerMarker.SetActive(false);
+            }
+
+            if (_structureView != null)
+            {
+                _structureView.Clear();
+            }
+
             SetUpgradeLevel(0);
         }
 
         public void SetOwnerMaterial(Material material)
         {
-            if (_ownerMarker == null || _ownerMarkerRenderer == null || material == null)
+            if (material == null)
             {
                 return;
             }
 
-            _ownerMarkerRenderer.sharedMaterial = material;
-            _ownerMarker.SetActive(true);
+            if (_structureView != null)
+            {
+                _structureView.SetOwnerMaterial(material);
+                if (_ownerMarker != null)
+                {
+                    _ownerMarker.SetActive(false);
+                }
+            }
+            else if (_ownerMarker != null && _ownerMarkerRenderer != null)
+            {
+                _ownerMarkerRenderer.sharedMaterial = material;
+                _ownerMarker.SetActive(true);
+            }
         }
 
         public void SetUpgradeLevel(int level)
         {
             UpgradeLevel = Mathf.Max(0, level);
+
+            if (_structureView != null)
+            {
+                _structureView.SetUpgradeLevel(UpgradeLevel);
+            }
+
             if (_upgradeText != null)
             {
-                if (UpgradeLevel <= 0)
-                {
-                    _upgradeText.text = string.Empty;
-                }
-                else if (UpgradeLevel >= 5)
-                {
-                    _upgradeText.text = "HTL";
-                }
-                else
-                {
-                    _upgradeText.text = $"H{UpgradeLevel}";
-                }
+                _upgradeText.text = string.Empty;
             }
         }
 
         public void ClearOwner()
         {
+            if (_structureView != null)
+            {
+                _structureView.Clear();
+            }
+
             if (_ownerMarker != null)
             {
                 _ownerMarker.SetActive(false);

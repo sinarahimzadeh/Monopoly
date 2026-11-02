@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
   _contentId: city-los-angeles
   _displayName: Los Angeles
-  _artwork: {fileID: 0}
+  _artwork: {fileID: 21300000, guid: 6a2a61f9b585fd0489784fb44a246831, type: 3}
   _purchasePrice: 360
   _mortgageValue: 180
   _upgradeCost: 200
   _rentByUpgradeLevel: 1e000000b40000001c0200007e040000540600002a080000
+  _countryMap: {fileID: 21300000, guid: 3a0f0af0e2c85084aa7ee80892aeb829, type: 3}
