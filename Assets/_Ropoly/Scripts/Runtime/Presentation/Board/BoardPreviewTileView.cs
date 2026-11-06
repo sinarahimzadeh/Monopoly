@@ -26,6 +26,10 @@ namespace Ropoly.Presentation.Board
         private TMP_Text _upgradeText;
 
         private PropertyStructureView _structureView;
+        private MeshRenderer _ownerBandRenderer;
+        private Material _neutralOwnerBandMaterial;
+        private TMP_Text _ownerBandUpgradeText;
+        private bool _isOwned;
 
         public int Index => _index;
         public BoardTileKind Kind => _kind;
@@ -63,11 +67,33 @@ namespace Ropoly.Presentation.Board
             SetUpgradeLevel(0);
         }
 
+        public void SetOwnerBand(
+            MeshRenderer bandRenderer,
+            Material neutralMaterial,
+            TMP_Text upgradeText)
+        {
+            _ownerBandRenderer = bandRenderer;
+            _neutralOwnerBandMaterial = neutralMaterial;
+            _ownerBandUpgradeText = upgradeText;
+            if (_ownerBandRenderer != null)
+            {
+                _ownerBandRenderer.sharedMaterial = neutralMaterial;
+            }
+
+            RefreshOwnerBandUpgradeText();
+        }
+
         public void SetOwnerMaterial(Material material)
         {
             if (material == null)
             {
                 return;
+            }
+
+            _isOwned = true;
+            if (_ownerBandRenderer != null)
+            {
+                _ownerBandRenderer.sharedMaterial = material;
             }
 
             if (_structureView != null)
@@ -78,11 +104,13 @@ namespace Ropoly.Presentation.Board
                     _ownerMarker.SetActive(false);
                 }
             }
-            else if (_ownerMarker != null && _ownerMarkerRenderer != null)
+            else if (_ownerBandRenderer == null && _ownerMarker != null && _ownerMarkerRenderer != null)
             {
                 _ownerMarkerRenderer.sharedMaterial = material;
                 _ownerMarker.SetActive(true);
             }
+
+            RefreshOwnerBandUpgradeText();
         }
 
         public void SetUpgradeLevel(int level)
@@ -98,10 +126,18 @@ namespace Ropoly.Presentation.Board
             {
                 _upgradeText.text = string.Empty;
             }
+
+            RefreshOwnerBandUpgradeText();
         }
 
         public void ClearOwner()
         {
+            _isOwned = false;
+            if (_ownerBandRenderer != null)
+            {
+                _ownerBandRenderer.sharedMaterial = _neutralOwnerBandMaterial;
+            }
+
             if (_structureView != null)
             {
                 _structureView.Clear();
@@ -113,6 +149,29 @@ namespace Ropoly.Presentation.Board
             }
 
             SetUpgradeLevel(0);
+        }
+
+        private void RefreshOwnerBandUpgradeText()
+        {
+            if (_ownerBandUpgradeText == null)
+            {
+                return;
+            }
+
+            if (!_isOwned || UpgradeLevel == 0)
+            {
+                _ownerBandUpgradeText.text = string.Empty;
+            }
+            else if (UpgradeLevel >= 5)
+            {
+                _ownerBandUpgradeText.text = "HOTEL";
+            }
+            else
+            {
+                _ownerBandUpgradeText.text = UpgradeLevel == 1
+                    ? "1 HOUSE"
+                    : $"{UpgradeLevel} HOUSES";
+            }
         }
     }
 }
