@@ -170,16 +170,22 @@ namespace Ropoly.Presentation.Board
 
         private void OnEnable()
         {
-            if (_generatedRoot == null)
-            {
-                RebuildPreview();
-            }
+            RebuildPreview();
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            // Keep preview tiles in clean initial state
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
+                    if (this != null)
+                    {
+                        RebuildPreview();
+                    }
+                };
+            }
         }
 #endif
 
@@ -319,7 +325,17 @@ namespace Ropoly.Presentation.Board
 
             foreach (BoardTileSnapshot tile in board.Tiles)
             {
-                bool isMilanSample = tile.Kind == BoardTileKind.City && tile.ContentId == "city-milan";
+                CityDefinition cityDef = null;
+                CountryDefinition countryDef = null;
+                if (tile.Kind == BoardTileKind.City)
+                {
+                    cityDefinitions.TryGetValue(tile.ContentId, out cityDef);
+                    countryDefinitions.TryGetValue(tile.ContentId, out countryDef);
+                }
+
+                bool isItalianCity = tile.Kind == BoardTileKind.City &&
+                    (tile.ContentId == "city-rome" || tile.ContentId == "city-milan");
+
                 GetTileLayout(tile.Index, out Vector3 center, out Vector2 size, out Vector3 inward, out Vector3 textUp);
                 // This is a screen-first board, so labels remain upright instead of
                 // forcing the player to read the far and side edges upside down.
@@ -349,59 +365,60 @@ namespace Ropoly.Presentation.Board
                     out string detail,
                     out Color accentColor);
 
-                if (!isMilanSample)
+                GameObject ownerMarker = null;
+                PropertyStructureView structureView = null;
+                TMP_Text upgradeText = null;
+
+                if (!isItalianCity)
                 {
                     CreateAccent(tile.Index, center, size, inward, accentColor, tileGroup.transform);
-                }
-                GameObject ownerMarker = CreateOwnerMarker(
-                    tile.Index,
-                    center,
-                    size,
-                    inward,
-                    tileGroup.transform);
 
-                PropertyStructureView structureView = isMilanSample
-                    ? null
-                    : CreateStructureLot(tile.Index, center, size, inward, tileGroup.transform);
+                    ownerMarker = CreateOwnerMarker(
+                        tile.Index,
+                        center,
+                        size,
+                        inward,
+                        tileGroup.transform);
+
+                    structureView = CreateStructureLot(tile.Index, center, size, inward, tileGroup.transform);
+
+                    if (tile.Kind == BoardTileKind.City)
+                    {
+                        Quaternion textRotation = Quaternion.LookRotation(Vector3.down, textUp);
+                        upgradeText = CreateWorldText(
+                            "Upgrade Text",
+                            string.Empty,
+                            ownerMarker.transform.position + (Vector3.up * 0.08f),
+                            textRotation,
+                            0.45f,
+                            FontStyles.Bold,
+                            Color.white,
+                            new Vector2(1f, 0.5f),
+                            tileGroup.transform);
+                    }
+                }
 
                 BoardPreviewTileView tileView = tileObject.AddComponent<BoardPreviewTileView>();
-                TMP_Text upgradeText = null;
-                if (tile.Kind == BoardTileKind.City && !isMilanSample)
-                {
-                    Quaternion textRotation = Quaternion.LookRotation(Vector3.down, textUp);
-                    upgradeText = CreateWorldText(
-                        "Upgrade Text",
-                        string.Empty,
-                        ownerMarker.transform.position + (Vector3.up * 0.08f),
-                        textRotation,
-                        0.45f,
-                        FontStyles.Bold,
-                        Color.white,
-                        new Vector2(1f, 0.5f),
-                        tileGroup.transform);
-                }
-
                 tileView.Initialize(
                     tile.Index,
                     tile.Kind,
                     tile.ContentId,
                     ownerMarker,
-                    ownerMarker.GetComponent<MeshRenderer>(),
+                    ownerMarker != null ? ownerMarker.GetComponent<MeshRenderer>() : null,
                     upgradeText,
                     structureView);
                 _tileViews.Add(tile.Index, tileView);
 
-                CityDefinition cityDef = null;
-                CountryDefinition countryDef = null;
-                if (tile.Kind == BoardTileKind.City)
+                if (isItalianCity)
                 {
-                    cityDefinitions.TryGetValue(tile.ContentId, out cityDef);
-                    countryDefinitions.TryGetValue(tile.ContentId, out countryDef);
-                }
-
-                if (isMilanSample)
-                {
-                    CreateMilanTileVisuals(center, size, detail, tileView, tileGroup.transform);
+                    CreateItalianCityTileVisuals(
+                        tile.Index,
+                        label,
+                        detail,
+                        center,
+                        size,
+                        tileView,
+                        tileGroup.transform);
                 }
                 else
                 {
@@ -421,63 +438,176 @@ namespace Ropoly.Presentation.Board
             }
         }
 
-        private void CreateMilanTileVisuals(
+        private void CreateItalianCityTileVisuals(
+            int tileIndex,
+            string cityName,
+            string priceText,
             Vector3 center,
             Vector2 tileSize,
-            string detail,
             BoardPreviewTileView tileView,
             Transform parent)
         {
-            // Milan is the first city-tile design sample. The flag fills the face,
-            // while the separate band can change color without changing the art.
-            const float bandDepth = 0.34f;
-            float faceWidth = tileSize.x - _theme.TileGap - 0.10f;
-            float flagDepth = tileSize.y - _theme.TileGap - bandDepth - 0.12f;
-            Vector3 flagPosition = center + new Vector3(0f, 0.35f, bandDepth * 0.5f + 0.01f);
-            Sprite flagArt = Resources.Load<Sprite>("CityTiles/MilanFlagPanel");
-            if (flagArt != null)
-            {
-                CreateCardQuad("Soft Italian Flag", flagPosition,
-                    new Vector2(faceWidth, flagDepth), flagArt.texture, Color.white, parent);
-            }
+            // Clean, modern Italian city square (Rome / Milan):
+            // Full Italian woven flag on the card body, prominent bold city name, price at top,
+            // and an ownership band underneath that dynamically takes the owner's color when bought.
+            const float bandDepth = 0.36f;
+            float faceWidth = tileSize.x - _theme.TileGap - 0.08f;
+            float flagDepth = tileSize.y - _theme.TileGap - bandDepth - 0.10f;
 
-            Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
-            Vector3 titlePosition = center + new Vector3(0f, 0.405f, 0.13f);
-            CreateWorldText("Milan Name Shadow", "MILAN",
-                titlePosition + new Vector3(0.025f, -0.005f, -0.022f), rotation,
-                0.43f, FontStyles.Bold, new Color(0.05f, 0.06f, 0.11f, 0.95f),
-                new Vector2(faceWidth - 0.08f, 0.55f), parent);
-            CreateWorldText("Milan Name", "MILAN", titlePosition, rotation,
-                0.43f, FontStyles.Bold, Color.white,
-                new Vector2(faceWidth - 0.08f, 0.55f), parent);
+            // Bottom ownership band (-Z direction is towards the board center, underneath the card face)
+            Vector3 bandPosition = center + new Vector3(
+                0f,
+                0.36f,
+                -(tileSize.y * 0.5f) + (_theme.TileGap * 0.5f) + (bandDepth * 0.5f) + 0.02f);
 
-            Vector3 pricePosition = center + new Vector3(0f, 0.405f, 0.88f);
-            CreateWorldText("Milan Price Shadow", detail,
-                pricePosition + new Vector3(0.015f, -0.005f, -0.012f), rotation,
-                0.28f, FontStyles.Bold, new Color(0.05f, 0.06f, 0.11f, 0.95f),
-                new Vector2(faceWidth - 0.18f, 0.30f), parent);
-            CreateWorldText("Milan Price", detail, pricePosition, rotation,
-                0.28f, FontStyles.Bold, Color.white,
-                new Vector2(faceWidth - 0.18f, 0.30f), parent);
+            Color neutralBandColor = new Color(0.24f, 0.23f, 0.32f);
+            Material neutralBandMaterial = GetMaterial(neutralBandColor);
 
-            Vector3 bandPosition = center + new Vector3(0f, 0.37f,
-                -(tileSize.y * 0.5f) + (_theme.TileGap * 0.5f) + (bandDepth * 0.5f) + 0.03f);
-            Material neutralBandMaterial = GetMaterial(new Color(0.17f, 0.16f, 0.24f));
-            GameObject band = CreateCube("Owner Color Band", bandPosition,
-                new Vector3(faceWidth, 0.06f, bandDepth),
-                new Color(0.17f, 0.16f, 0.24f), false, parent);
+            GameObject band = CreateCube(
+                $"{cityName} Owner Band",
+                bandPosition,
+                new Vector3(faceWidth, 0.05f, bandDepth),
+                neutralBandColor,
+                false,
+                parent);
+
             MeshRenderer bandRenderer = band.GetComponent<MeshRenderer>();
             bandRenderer.sharedMaterial = neutralBandMaterial;
 
-            CreateCube("Band Top Rule", bandPosition + new Vector3(0f, 0.032f, bandDepth * 0.5f),
-                new Vector3(faceWidth, 0.005f, 0.018f),
-                new Color(0.86f, 0.82f, 0.71f), false, parent);
+            // Elegant rule line dividing flag and ownership band
+            CreateCube(
+                $"{cityName} Band Rule",
+                bandPosition + new Vector3(0f, 0.027f, bandDepth * 0.5f),
+                new Vector3(faceWidth, 0.005f, 0.016f),
+                new Color(0.88f, 0.84f, 0.74f),
+                false,
+                parent);
 
-            TMP_Text upgradeLabel = CreateWorldText("Milan Upgrade", string.Empty,
-                bandPosition + new Vector3(0f, 0.045f, 0f), rotation,
-                0.18f, FontStyles.Bold, Color.white,
-                new Vector2(faceWidth - 0.08f, bandDepth - 0.03f), parent);
+            // Full woven Italian flag quad above the band
+            Vector3 flagPosition = center + new Vector3(
+                0f,
+                0.345f,
+                (bandPosition.z - center.z) + (bandDepth * 0.5f) + (flagDepth * 0.5f) + 0.02f);
+
+            Texture flagTexture = GetItalianFlagTexture();
+            if (flagTexture != null)
+            {
+                CreateCardQuad(
+                    $"{cityName} Italian Flag",
+                    flagPosition,
+                    new Vector2(faceWidth, flagDepth),
+                    flagTexture,
+                    Color.white,
+                    parent);
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+
+            // Bold, clear City Name centered across the Italian flag
+            Vector3 namePosition = center + new Vector3(0f, 0.38f, 0.12f);
+            CreateWorldText(
+                $"{cityName} Name Shadow",
+                cityName.ToUpperInvariant(),
+                namePosition + new Vector3(0.02f, -0.005f, -0.02f),
+                rotation,
+                0.44f,
+                FontStyles.Bold,
+                new Color(0.05f, 0.06f, 0.11f, 0.95f),
+                new Vector2(faceWidth - 0.06f, 0.55f),
+                parent);
+            CreateWorldText(
+                $"{cityName} Name",
+                cityName.ToUpperInvariant(),
+                namePosition,
+                rotation,
+                0.44f,
+                FontStyles.Bold,
+                Color.white,
+                new Vector2(faceWidth - 0.06f, 0.55f),
+                parent);
+
+            // Price lettering placed neatly near the top of the flag
+            Vector3 pricePosition = center + new Vector3(0f, 0.38f, 0.86f);
+            CreateWorldText(
+                $"{cityName} Price Shadow",
+                priceText,
+                pricePosition + new Vector3(0.015f, -0.005f, -0.012f),
+                rotation,
+                0.28f,
+                FontStyles.Bold,
+                new Color(0.05f, 0.06f, 0.11f, 0.95f),
+                new Vector2(faceWidth - 0.14f, 0.30f),
+                parent);
+            CreateWorldText(
+                $"{cityName} Price",
+                priceText,
+                pricePosition,
+                rotation,
+                0.28f,
+                FontStyles.Bold,
+                Color.white,
+                new Vector2(faceWidth - 0.14f, 0.30f),
+                parent);
+
+            // Upgrade label centered on ownership band (displays "1 HOUSE", "HOTEL" when owned/upgraded)
+            TMP_Text upgradeLabel = CreateWorldText(
+                $"{cityName} Upgrade",
+                string.Empty,
+                bandPosition + new Vector3(0f, 0.035f, 0f),
+                rotation,
+                0.18f,
+                FontStyles.Bold,
+                Color.white,
+                new Vector2(faceWidth - 0.08f, bandDepth - 0.04f),
+                parent);
+
             tileView.SetOwnerBand(bandRenderer, neutralBandMaterial, upgradeLabel);
+        }
+
+        private Texture2D _proceduralItalianFlag;
+
+        private Texture GetItalianFlagTexture()
+        {
+            Texture texture = null;
+
+#if UNITY_EDITOR
+            texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+                "Assets/_Ropoly/Resources/CityTiles/MilanFlagPanel.png")
+                ?? UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+                "Assets/_Ropoly/Resources/CityTiles/ItalyFlagPanel.png");
+#endif
+
+            if (texture == null)
+            {
+                texture = Resources.Load<Texture2D>("CityTiles/MilanFlagPanel")
+                       ?? Resources.Load<Texture2D>("CityTiles/ItalyFlagPanel");
+            }
+
+            if (texture == null)
+            {
+                Sprite sprite = Resources.Load<Sprite>("CityTiles/MilanFlagPanel")
+                             ?? Resources.Load<Sprite>("CityTiles/ItalyFlagPanel");
+                if (sprite != null)
+                {
+                    texture = sprite.texture;
+                }
+            }
+
+            if (texture == null)
+            {
+                if (_proceduralItalianFlag == null)
+                {
+                    _proceduralItalianFlag = new Texture2D(3, 1, TextureFormat.RGB24, false);
+                    _proceduralItalianFlag.name = "Procedural_Italy_Flag";
+                    _proceduralItalianFlag.SetPixel(0, 0, new Color(0.09f, 0.56f, 0.37f));
+                    _proceduralItalianFlag.SetPixel(1, 0, new Color(0.96f, 0.94f, 0.88f));
+                    _proceduralItalianFlag.SetPixel(2, 0, new Color(0.80f, 0.18f, 0.22f));
+                    _proceduralItalianFlag.Apply();
+                }
+                texture = _proceduralItalianFlag;
+            }
+
+            return texture;
         }
 
         private GameObject CreateOwnerMarker(
@@ -1533,6 +1663,23 @@ namespace Ropoly.Presentation.Board
                 _generatedRoot = null;
                 _statusText = null;
             }
+
+            Transform orphan = transform.Find("Generated Board Preview");
+            if (orphan != null)
+            {
+                if (UnityEngine.Application.isPlaying)
+                {
+                    Destroy(orphan.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(orphan.gameObject);
+                }
+
+                _statusText = null;
+            }
+
+            _tileViews.Clear();
 
             foreach (Material material in _materials.Values)
             {
