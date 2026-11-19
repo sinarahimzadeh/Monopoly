@@ -378,6 +378,8 @@ namespace Ropoly.Presentation.Board
                 bool isCity = tile.Kind == BoardTileKind.City;
                 bool isAirport = tile.Kind == BoardTileKind.Airport;
                 bool isUtility = tile.Kind == BoardTileKind.Utility;
+                bool isWorldEvent = tile.Kind == BoardTileKind.Special && tile.ContentId == "space-world-event";
+                bool isCardVisual = isCity || isAirport || isUtility || isWorldEvent;
                 bool isProperty = isCity || isAirport || isUtility;
                 if (isCity)
                 {
@@ -418,7 +420,7 @@ namespace Ropoly.Presentation.Board
                 PropertyStructureView structureView = null;
                 TMP_Text upgradeText = null;
 
-                if (!isProperty)
+                if (!isCardVisual)
                 {
                     CreateAccent(tile.Index, center, size, inward, accentColor, tileGroup.transform);
 
@@ -443,7 +445,7 @@ namespace Ropoly.Presentation.Board
                     structureView);
                 _tileViews.Add(tile.Index, tileView);
 
-                if (isProperty)
+                if (isCardVisual)
                 {
                     CreatePropertyTileVisuals(
                         tile.Index,
@@ -561,6 +563,10 @@ namespace Ropoly.Presentation.Board
                 string utilPrefix = contentId.Contains("water") ? "Water" : "Electric";
                 panelTexture = GetUtilityPanelTexture(utilPrefix, _cityFlagBlur, isWide);
             }
+            else if (contentId == "space-world-event")
+            {
+                panelTexture = GetUtilityPanelTexture("WorldEvent", _cityFlagBlur, isWide);
+            }
 
             if (panelTexture != null)
             {
@@ -669,6 +675,40 @@ namespace Ropoly.Presentation.Board
                         new Vector2(faceWidth - 0.14f, 0.30f),
                         parent);
                 }
+            }
+            else if (contentId == "space-world-event")
+            {
+                // World Event space: Big prominent '?' mark centered across the themed card panel
+                Vector3 markPosition = flagPosition + new Vector3(0f, 0.035f, 0f);
+                Vector2 markBounds = horizontalTile
+                    ? new Vector2(faceWidth - 0.10f, flagDepth - 0.10f)
+                    : new Vector2(flagDepth - 0.10f, faceWidth - 0.10f);
+
+                float markFontSize = horizontalTile ? 1.05f : 0.95f;
+
+                TextMeshPro markShadow = CreateWorldText(
+                    $"{label} Question Mark Shadow",
+                    "?",
+                    markPosition + new Vector3(0.025f, -0.005f, -0.025f),
+                    rotation,
+                    markFontSize,
+                    FontStyles.Bold,
+                    new Color(0.04f, 0.04f, 0.08f, 0.95f),
+                    markBounds,
+                    parent);
+                markShadow.alignment = TextAlignmentOptions.Center;
+
+                TextMeshPro markText = CreateWorldText(
+                    $"{label} Question Mark",
+                    "?",
+                    markPosition,
+                    rotation,
+                    markFontSize,
+                    FontStyles.Bold,
+                    Color.white,
+                    markBounds,
+                    parent);
+                markText.alignment = TextAlignmentOptions.Center;
             }
             else
             {
@@ -953,6 +993,11 @@ namespace Ropoly.Presentation.Board
             {
                 string iconName = contentId.Contains("water") ? "Water" : "Electric";
                 return LoadTileIconTexture($"{iconName}_White") ?? LoadTileIconTexture(iconName);
+            }
+
+            if (contentId == "space-world-event")
+            {
+                return LoadTileIconTexture("WorldEvent_White") ?? LoadTileIconTexture("WorldEvent");
             }
 
             return null;
