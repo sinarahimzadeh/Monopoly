@@ -32,6 +32,37 @@ namespace Ropoly.Presentation.Board
         private string _bandPriceText;
         private bool _isOwned;
 
+        [Header("Dynamic Shake & Bounce Physics")]
+        [SerializeField]
+        private Transform _tileRoot;
+
+        [Tooltip("Overall cushion intensity.")]
+        [SerializeField]
+        [Range(0.02f, 0.30f)]
+        private float _shakeIntensity = 0.08f;
+
+        [Tooltip("Natural oscillation speed.")]
+        [SerializeField]
+        [Range(8f, 30f)]
+        private float _shakeFrequency = 16f;
+
+        [Tooltip("Decay speed of the cushion (higher settles faster).")]
+        [SerializeField]
+        [Range(4f, 15f)]
+        private float _shakeDecay = 7.5f;
+
+        [Tooltip("Vertical dip compression depth (meters).")]
+        [SerializeField]
+        [Range(0.01f, 0.15f)]
+        private float _verticalDip = 0.05f;
+
+        private Vector3 _rootBasePosition;
+        private Vector3 _inward = Vector3.forward;
+        private Vector3 _perp = Vector3.left;
+        private float _shakeTrauma;
+        private float _shakeTimer;
+        private bool _isShaking;
+
         public int Index => _index;
         public BoardTileKind Kind => _kind;
         public string ContentId => _contentId;
@@ -46,7 +77,9 @@ namespace Ropoly.Presentation.Board
             GameObject ownerMarker,
             MeshRenderer ownerMarkerRenderer,
             TMP_Text upgradeText = null,
-            PropertyStructureView structureView = null)
+            PropertyStructureView structureView = null,
+            Transform tileRoot = null,
+            Vector3 inward = default)
         {
             _index = index;
             _kind = kind;
@@ -55,6 +88,20 @@ namespace Ropoly.Presentation.Board
             _ownerMarkerRenderer = ownerMarkerRenderer;
             _upgradeText = upgradeText;
             _structureView = structureView;
+            _tileRoot = tileRoot != null ? tileRoot : (transform.parent != null ? transform.parent : transform);
+            _rootBasePosition = _tileRoot.localPosition;
+            if (inward.sqrMagnitude > 0.001f)
+            {
+                _inward = inward.normalized;
+            }
+            else
+            {
+                _inward = Vector3.forward;
+            }
+            _perp = new Vector3(-_inward.z, 0f, _inward.x).normalized;
+            _shakeTrauma = 0f;
+            _shakeTimer = 0f;
+            _isShaking = false;
 
             if (_ownerMarker != null)
             {
@@ -67,6 +114,81 @@ namespace Ropoly.Presentation.Board
             }
 
             SetUpgradeLevel(0);
+        }
+
+        public void ConfigureBounce(float intensity, float frequency, float decay, float verticalDip = 0.10f)
+        {
+            _shakeIntensity = intensity;
+            _shakeFrequency = frequency;
+            _shakeDecay = decay;
+            _verticalDip = verticalDip;
+        }
+
+        [ContextMenu("Test Shake This Tile")]
+        public void TestShake()
+        {
+            Bounce(1.5f);
+        }
+
+        public void Bounce(float strength = 1f)
+        {
+            if (_tileRoot == null)
+            {
+                _tileRoot = transform.parent != null ? transform.parent : transform;
+                _rootBasePosition = _tileRoot.localPosition;
+            }
+
+            // Add smooth trauma scaled by strength (capped for natural response)
+            float addedTrauma = Mathf.Clamp(strength, 0.3f, 2.0f);
+            _shakeTrauma = Mathf.Min(1.2f, _shakeTrauma + (0.7f * addedTrauma));
+            _shakeTimer = 0f;
+            _isShaking = true;
+        }
+
+        private void Update()
+        {
+            if (!_isShaking || _tileRoot == null)
+            {
+                return;
+            }
+
+            float dt = Mathf.Min(Time.deltaTime, 0.05f);
+            _shakeTimer += dt;
+            _shakeTrauma = Mathf.Max(0f, _shakeTrauma - (_shakeDecay * dt));
+
+            if (_shakeTrauma <= 0.001f || _shakeTimer > 0.40f)
+            {
+                _shakeTrauma = 0f;
+                _shakeTimer = 0f;
+                _isShaking = false;
+                _tileRoot.localPosition = _rootBasePosition;
+                return;
+            }
+
+            // Smooth exponential decay envelope
+            float envelope = Mathf.Exp(-_shakeDecay * _shakeTimer) * _shakeTrauma;
+            float wave = Mathf.Sin(_shakeTimer * _shakeFrequency);
+
+            // Natural vertical cushion dip (compress downward, slight rebound)
+            float vertical = -wave * _verticalDip * envelope;
+            // Gentle inward give towards center
+            float inward = -wave * (_shakeIntensity * 0.5f) * envelope;
+            // Very subtle lateral cushion
+            float lateral = Mathf.Sin(_shakeTimer * (_shakeFrequency * 0.8f)) * (_shakeIntensity * 0.25f) * envelope;
+
+            Vector3 offset = (_perp * lateral) + (_inward * inward) + new Vector3(0f, vertical, 0f);
+            _tileRoot.localPosition = _rootBasePosition + offset;
+        }
+
+        private void OnDisable()
+        {
+            if (_tileRoot != null)
+            {
+                _tileRoot.localPosition = _rootBasePosition;
+            }
+            _shakeTrauma = 0f;
+            _shakeTimer = 0f;
+            _isShaking = false;
         }
 
         public void SetOwnerBand(

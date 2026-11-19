@@ -66,14 +66,46 @@ namespace Ropoly.Presentation.Dice
         [SerializeField]
         private DieView _secondDie;
 
-        [Header("Player movement")]
+        [Header("Player Movement Pacing & Dynamics")]
+        [Tooltip("Base step duration used to scale transit speed across tiles.")]
         [SerializeField]
-        [Range(0.05f, 1f)]
+        [Range(0.04f, 0.50f)]
         private float _moveStepDuration = 0.18f;
 
+        [Tooltip("Rhythmic bound hop height of the token while moving across houses.")]
         [SerializeField]
         [Range(0f, 2f)]
         private float _moveHopHeight = 0.48f;
+
+        [Tooltip("Minimum transit duration (seconds) for short moves.")]
+        [SerializeField]
+        [Range(0.10f, 1f)]
+        private float _moveMinDuration = 0.25f;
+
+        [Tooltip("Maximum transit duration (seconds) for long moves across the board.")]
+        [SerializeField]
+        [Range(0.50f, 3f)]
+        private float _moveMaxDuration = 1.35f;
+
+        [Tooltip("Bounce strength applied to the origin tile when beginning movement.")]
+        [SerializeField]
+        [Range(0f, 2f)]
+        private float _movePushOffStrength = 0.45f;
+
+        [Tooltip("Bounce strength applied to each intermediate house passed over.")]
+        [SerializeField]
+        [Range(0.1f, 2f)]
+        private float _movePassBounceStrength = 0.55f;
+
+        [Tooltip("Bounce strength applied to the final destination house when landing.")]
+        [SerializeField]
+        [Range(0.5f, 3f)]
+        private float _moveLandingBounceStrength = 1.10f;
+
+        [Tooltip("Brief cushion delay (seconds) after landing before showing outcome labels.")]
+        [SerializeField]
+        [Range(0f, 0.5f)]
+        private float _moveLandingSettleDuration = 0.10f;
 
         [Header("Interface")]
         [SerializeField]
@@ -840,6 +872,11 @@ namespace Ropoly.Presentation.Dice
                 }
 
                 token.transform.position = targetPos;
+                _boardPreview.BounceTile(detentionTileIndex, _moveLandingBounceStrength);
+                if (_moveLandingSettleDuration > 0f)
+                {
+                    yield return new WaitForSeconds(_moveLandingSettleDuration);
+                }
             }
 
             _movementRoutine = null;
@@ -881,39 +918,87 @@ namespace Ropoly.Presentation.Dice
             }
 
             int tileCount = _boardPreview.TileCount;
-            for (int step = 1; step <= movement.Spaces; step++)
+            int totalSpaces = movement.Spaces;
+            if (totalSpaces <= 0)
             {
-                int fromTile = (movement.FromIndex + step - 1) % tileCount;
-                int toTile = (movement.FromIndex + step) % tileCount;
-                if (!_boardPreview.TryGetTokenPosition(
-                        fromTile,
-                        movement.PlayerIndex,
-                        out Vector3 fromPosition) ||
-                    !_boardPreview.TryGetTokenPosition(
-                        toTile,
-                        movement.PlayerIndex,
-                        out Vector3 toPosition))
+                CompleteMovement(movement);
+                yield break;
+            }
+
+            Vector3[] waypoints = new Vector3[totalSpaces + 1];
+            int[] tileIndices = new int[totalSpaces + 1];
+
+            for (int i = 0; i <= totalSpaces; i++)
+            {
+                int tileIdx = (movement.FromIndex + i) % tileCount;
+                tileIndices[i] = tileIdx;
+                if (!_boardPreview.TryGetTokenPosition(tileIdx, movement.PlayerIndex, out waypoints[i]))
                 {
                     Debug.LogError("The board could not provide a token movement path.", _boardPreview);
                     CompleteMovement(movement);
                     yield break;
                 }
+            }
 
-                token.LookTowards(toPosition - fromPosition);
+            // Initial push-off impulse on the start tile
+            _boardPreview.BounceTile(tileIndices[0], _movePushOffStrength);
 
-                float elapsed = 0f;
-                while (elapsed < _moveStepDuration)
+            // Faster, energetic continuous traversal without intermediate stops
+            float stepPacing = Mathf.Max(0.04f, _moveStepDuration * 0.50f);
+            float totalDuration = Mathf.Clamp(0.16f + (totalSpaces * stepPacing), _moveMinDuration, _moveMaxDuration);
+            float elapsed = 0f;
+            int lastBouncedStep = 0;
+
+            while (elapsed < totalDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / totalDuration);
+                float easedT = t * t * (3f - (2f * t));
+                float currentProgress = easedT * totalSpaces;
+
+                int segIndex = Mathf.Clamp(Mathf.FloorToInt(currentProgress), 0, totalSpaces - 1);
+                float segFraction = currentProgress - segIndex;
+
+                Vector3 segFrom = waypoints[segIndex];
+                Vector3 segTo = waypoints[segIndex + 1];
+                Vector3 moveDir = segTo - segFrom;
+                if (moveDir.sqrMagnitude > 0.0001f)
                 {
-                    elapsed += Time.deltaTime;
-                    float time = Mathf.Clamp01(elapsed / _moveStepDuration);
-                    float eased = time * time * (3f - (2f * time));
-                    float hop = Mathf.Sin(time * Mathf.PI) * _moveHopHeight;
-                    token.transform.position =
-                        Vector3.Lerp(fromPosition, toPosition, eased) + (Vector3.up * hop);
-                    yield return null;
+                    token.LookTowards(moveDir);
                 }
 
-                token.transform.position = toPosition;
+                // Lively rhythmic bounding hop over each house
+                float hop = Mathf.Abs(Mathf.Sin(currentProgress * Mathf.PI)) * _moveHopHeight;
+                token.transform.position = Vector3.Lerp(segFrom, segTo, segFraction) + (Vector3.up * hop);
+
+                // As the token crosses each house, trigger that house's reactive bounce one by one
+                int stepThreshold = Mathf.FloorToInt(currentProgress);
+                while (lastBouncedStep < stepThreshold && lastBouncedStep < totalSpaces)
+                {
+                    lastBouncedStep++;
+                    bool isLanding = (lastBouncedStep == totalSpaces);
+                    _boardPreview.BounceTile(
+                        tileIndices[lastBouncedStep],
+                        isLanding ? _moveLandingBounceStrength : _movePassBounceStrength);
+                }
+
+                yield return null;
+            }
+
+            token.transform.position = waypoints[totalSpaces];
+            while (lastBouncedStep < totalSpaces)
+            {
+                lastBouncedStep++;
+                bool isLanding = (lastBouncedStep == totalSpaces);
+                _boardPreview.BounceTile(
+                    tileIndices[lastBouncedStep],
+                    isLanding ? _moveLandingBounceStrength : _movePassBounceStrength);
+            }
+
+            // Brief landing cushion settle
+            if (_moveLandingSettleDuration > 0f)
+            {
+                yield return new WaitForSeconds(_moveLandingSettleDuration);
             }
 
             CompleteMovement(movement);
@@ -991,35 +1076,86 @@ namespace Ropoly.Presentation.Dice
                     }
 
                     token.transform.position = targetPos;
+                    _boardPreview.BounceTile(targetTile, _moveLandingBounceStrength);
+                    if (_moveLandingSettleDuration > 0f)
+                    {
+                        yield return new WaitForSeconds(_moveLandingSettleDuration);
+                    }
                 }
             }
             else if (card != null && card.EffectKind == CardEffectKind.MoveRelative && card.RelativeSteps < 0)
             {
                 int stepsBack = Mathf.Abs(card.RelativeSteps);
-                for (int step = 1; step <= stepsBack; step++)
-                {
-                    int fromTile = (initialTile - step + 1 + tileCount) % tileCount;
-                    int toTile = (initialTile - step + tileCount) % tileCount;
-                    if (_boardPreview.TryGetTokenPosition(fromTile, originalMovement.PlayerIndex, out Vector3 fromPos) &&
-                        _boardPreview.TryGetTokenPosition(toTile, originalMovement.PlayerIndex, out Vector3 toPos))
-                    {
-                        if (token != null)
-                        {
-                            token.LookTowards(toPos - fromPos);
-                            float elapsed = 0f;
-                            float duration = _moveStepDuration * 0.9f;
-                            while (elapsed < duration)
-                            {
-                                elapsed += Time.deltaTime;
-                                float t = Mathf.Clamp01(elapsed / duration);
-                                float eased = t * t * (3f - (2f * t));
-                                float hop = Mathf.Sin(t * Mathf.PI) * _moveHopHeight;
-                                token.transform.position = Vector3.Lerp(fromPos, toPos, eased) + (Vector3.up * hop);
-                                yield return null;
-                            }
+                Vector3[] waypoints = new Vector3[stepsBack + 1];
+                int[] tileIndices = new int[stepsBack + 1];
+                bool pathValid = true;
 
-                            token.transform.position = toPos;
+                for (int i = 0; i <= stepsBack; i++)
+                {
+                    int tileIdx = (initialTile - i + tileCount) % tileCount;
+                    tileIndices[i] = tileIdx;
+                    if (!_boardPreview.TryGetTokenPosition(tileIdx, originalMovement.PlayerIndex, out waypoints[i]))
+                    {
+                        pathValid = false;
+                        break;
+                    }
+                }
+
+                if (pathValid && token != null)
+                {
+                    _boardPreview.BounceTile(tileIndices[0], _movePushOffStrength);
+                    float stepPacing = Mathf.Max(0.04f, _moveStepDuration * 0.50f);
+                    float totalDuration = Mathf.Clamp(0.16f + (stepsBack * stepPacing), _moveMinDuration, _moveMaxDuration);
+                    float elapsed = 0f;
+                    int lastBouncedStep = 0;
+
+                    while (elapsed < totalDuration)
+                    {
+                        elapsed += Time.deltaTime;
+                        float t = Mathf.Clamp01(elapsed / totalDuration);
+                        float easedT = t * t * (3f - (2f * t));
+                        float currentProgress = easedT * stepsBack;
+
+                        int segIndex = Mathf.Clamp(Mathf.FloorToInt(currentProgress), 0, stepsBack - 1);
+                        float segFraction = currentProgress - segIndex;
+
+                        Vector3 segFrom = waypoints[segIndex];
+                        Vector3 segTo = waypoints[segIndex + 1];
+                        Vector3 moveDir = segTo - segFrom;
+                        if (moveDir.sqrMagnitude > 0.0001f)
+                        {
+                            token.LookTowards(moveDir);
                         }
+
+                        float hop = Mathf.Abs(Mathf.Sin(currentProgress * Mathf.PI)) * _moveHopHeight;
+                        token.transform.position = Vector3.Lerp(segFrom, segTo, segFraction) + (Vector3.up * hop);
+
+                        int stepThreshold = Mathf.FloorToInt(currentProgress);
+                        while (lastBouncedStep < stepThreshold && lastBouncedStep < stepsBack)
+                        {
+                            lastBouncedStep++;
+                            bool isLanding = (lastBouncedStep == stepsBack);
+                            _boardPreview.BounceTile(
+                                tileIndices[lastBouncedStep],
+                                isLanding ? _moveLandingBounceStrength : _movePassBounceStrength);
+                        }
+
+                        yield return null;
+                    }
+
+                    token.transform.position = waypoints[stepsBack];
+                    while (lastBouncedStep < stepsBack)
+                    {
+                        lastBouncedStep++;
+                        bool isLanding = (lastBouncedStep == stepsBack);
+                        _boardPreview.BounceTile(
+                            tileIndices[lastBouncedStep],
+                            isLanding ? _moveLandingBounceStrength : _movePassBounceStrength);
+                    }
+
+                    if (_moveLandingSettleDuration > 0f)
+                    {
+                        yield return new WaitForSeconds(_moveLandingSettleDuration);
                     }
                 }
             }
@@ -1031,30 +1167,76 @@ namespace Ropoly.Presentation.Dice
                     forwardSteps = tileCount;
                 }
 
-                float stepDuration = Mathf.Clamp(1.6f / forwardSteps, 0.04f, 0.09f);
-                for (int step = 1; step <= forwardSteps; step++)
-                {
-                    int fromTile = (initialTile + step - 1) % tileCount;
-                    int toTile = (initialTile + step) % tileCount;
-                    if (_boardPreview.TryGetTokenPosition(fromTile, originalMovement.PlayerIndex, out Vector3 fromPos) &&
-                        _boardPreview.TryGetTokenPosition(toTile, originalMovement.PlayerIndex, out Vector3 toPos))
-                    {
-                        if (token != null)
-                        {
-                            token.LookTowards(toPos - fromPos);
-                            float elapsed = 0f;
-                            while (elapsed < stepDuration)
-                            {
-                                elapsed += Time.deltaTime;
-                                float t = Mathf.Clamp01(elapsed / stepDuration);
-                                float eased = t * t * (3f - (2f * t));
-                                float hop = Mathf.Sin(t * Mathf.PI) * _moveHopHeight;
-                                token.transform.position = Vector3.Lerp(fromPos, toPos, eased) + (Vector3.up * hop);
-                                yield return null;
-                            }
+                Vector3[] waypoints = new Vector3[forwardSteps + 1];
+                int[] tileIndices = new int[forwardSteps + 1];
+                bool pathValid = true;
 
-                            token.transform.position = toPos;
+                for (int i = 0; i <= forwardSteps; i++)
+                {
+                    int tileIdx = (initialTile + i) % tileCount;
+                    tileIndices[i] = tileIdx;
+                    if (!_boardPreview.TryGetTokenPosition(tileIdx, originalMovement.PlayerIndex, out waypoints[i]))
+                    {
+                        pathValid = false;
+                        break;
+                    }
+                }
+
+                if (pathValid && token != null)
+                {
+                    _boardPreview.BounceTile(tileIndices[0], _movePushOffStrength);
+                    float stepPacing = Mathf.Max(0.04f, _moveStepDuration * 0.50f);
+                    float totalDuration = Mathf.Clamp(0.16f + (forwardSteps * stepPacing), _moveMinDuration, _moveMaxDuration);
+                    float elapsed = 0f;
+                    int lastBouncedStep = 0;
+
+                    while (elapsed < totalDuration)
+                    {
+                        elapsed += Time.deltaTime;
+                        float t = Mathf.Clamp01(elapsed / totalDuration);
+                        float easedT = t * t * (3f - (2f * t));
+                        float currentProgress = easedT * forwardSteps;
+
+                        int segIndex = Mathf.Clamp(Mathf.FloorToInt(currentProgress), 0, forwardSteps - 1);
+                        float segFraction = currentProgress - segIndex;
+
+                        Vector3 segFrom = waypoints[segIndex];
+                        Vector3 segTo = waypoints[segIndex + 1];
+                        Vector3 moveDir = segTo - segFrom;
+                        if (moveDir.sqrMagnitude > 0.0001f)
+                        {
+                            token.LookTowards(moveDir);
                         }
+
+                        float hop = Mathf.Abs(Mathf.Sin(currentProgress * Mathf.PI)) * _moveHopHeight;
+                        token.transform.position = Vector3.Lerp(segFrom, segTo, segFraction) + (Vector3.up * hop);
+
+                        int stepThreshold = Mathf.FloorToInt(currentProgress);
+                        while (lastBouncedStep < stepThreshold && lastBouncedStep < forwardSteps)
+                        {
+                            lastBouncedStep++;
+                            bool isLanding = (lastBouncedStep == forwardSteps);
+                            _boardPreview.BounceTile(
+                                tileIndices[lastBouncedStep],
+                                isLanding ? _moveLandingBounceStrength : _movePassBounceStrength);
+                        }
+
+                        yield return null;
+                    }
+
+                    token.transform.position = waypoints[forwardSteps];
+                    while (lastBouncedStep < forwardSteps)
+                    {
+                        lastBouncedStep++;
+                        bool isLanding = (lastBouncedStep == forwardSteps);
+                        _boardPreview.BounceTile(
+                            tileIndices[lastBouncedStep],
+                            isLanding ? _moveLandingBounceStrength : _movePassBounceStrength);
+                    }
+
+                    if (_moveLandingSettleDuration > 0f)
+                    {
+                        yield return new WaitForSeconds(_moveLandingSettleDuration);
                     }
                 }
             }

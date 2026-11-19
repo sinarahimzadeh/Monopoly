@@ -64,6 +64,31 @@ namespace Ropoly.Presentation.Board
         [FormerlySerializedAs("_italianBandTextColor")]
         private Color _cityBandTextColor = Color.white;
 
+        [Header("House Dynamic Shake Physics")]
+        [Tooltip("Whether houses physically react and shake when players move.")]
+        [SerializeField]
+        private bool _tileBounceEnabled = true;
+
+        [Tooltip("Overall cushion intensity for smooth natural movement.")]
+        [SerializeField]
+        [Range(0.02f, 0.30f)]
+        private float _tileShakeIntensity = 0.08f;
+
+        [Tooltip("Natural oscillation speed (lower = smoother and softer, higher = snappier).")]
+        [SerializeField]
+        [Range(8f, 30f)]
+        private float _tileShakeFrequency = 16f;
+
+        [Tooltip("Decay speed of the cushion (higher settles faster).")]
+        [SerializeField]
+        [Range(4f, 15f)]
+        private float _tileShakeDecay = 7.5f;
+
+        [Tooltip("Vertical dip compression depth (meters).")]
+        [SerializeField]
+        [Range(0.01f, 0.15f)]
+        private float _tileVerticalDip = 0.05f;
+
         public float CityFlagOpacity => _cityFlagOpacity;
         public float CityFlagBlur => _cityFlagBlur;
         public Color CityFlagTint => _cityFlagTint;
@@ -71,6 +96,11 @@ namespace Ropoly.Presentation.Board
         public bool CityShowPriceOnFlag => _cityShowPriceOnFlag;
         public Color CityBandNeutralColor => _cityBandNeutralColor;
         public Color CityBandTextColor => _cityBandTextColor;
+        public bool TileBounceEnabled => _tileBounceEnabled;
+        public float TileShakeIntensity => _tileShakeIntensity;
+        public float TileShakeFrequency => _tileShakeFrequency;
+        public float TileShakeDecay => _tileShakeDecay;
+        public float TileVerticalDip => _tileVerticalDip;
 
         private readonly Dictionary<Color32, Material> _materials = new Dictionary<Color32, Material>();
         private readonly Dictionary<Texture, Material> _texturedMaterials = new Dictionary<Texture, Material>();
@@ -125,6 +155,22 @@ namespace Ropoly.Presentation.Board
             }
 
             tile.SetUpgradeLevel(level);
+            return true;
+        }
+
+        public bool BounceTile(int tileIndex, float strength = 1f)
+        {
+            if (!_tileBounceEnabled)
+            {
+                return false;
+            }
+
+            if (!_tileViews.TryGetValue(tileIndex, out BoardPreviewTileView tile) || tile == null)
+            {
+                return false;
+            }
+
+            tile.Bounce(strength);
             return true;
         }
 
@@ -274,6 +320,23 @@ namespace Ropoly.Presentation.Board
             CreateTiles(board);
             CreateCenterBranding(board);
         }
+
+#if UNITY_EDITOR
+        [ContextMenu("Test Shake Tile 01")]
+        public void TestShakeFirstTile()
+        {
+            BounceTile(1, 1.6f);
+        }
+
+        [ContextMenu("Test Shake All Tiles Wave")]
+        public void TestShakeWave()
+        {
+            for (int i = 0; i < TileCount; i++)
+            {
+                BounceTile(i, 1.2f);
+            }
+        }
+#endif
 
         [ContextMenu("Show Demo Structures")]
         public void PopulateDemoStructures()
@@ -442,7 +505,10 @@ namespace Ropoly.Presentation.Board
                     ownerMarker,
                     ownerMarker != null ? ownerMarker.GetComponent<MeshRenderer>() : null,
                     upgradeText,
-                    structureView);
+                    structureView,
+                    tileGroup.transform,
+                    inward);
+                tileView.ConfigureBounce(_tileShakeIntensity, _tileShakeFrequency, _tileShakeDecay, _tileVerticalDip);
                 _tileViews.Add(tile.Index, tileView);
 
                 if (isCardVisual)
