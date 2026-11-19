@@ -25,8 +25,40 @@ namespace Ropoly.Presentation.Board
         [Range(0f, 0.6f)]
         private float _tokenSlotOffset = 0.34f;
 
+        [Header("Italian City Tiles Styling")]
+        [Tooltip("Controls the opacity / transparency of the Italian flag texture over the dark tile base.")]
+        [SerializeField]
+        [Range(0.05f, 1f)]
+        private float _italianFlagOpacity = 0.45f;
+
+        [Tooltip("Controls the blur level of the Italian flag (0 = sharp fabric, 0.5 = soft blur, 1 = heavy blur).")]
+        [SerializeField]
+        [Range(0f, 1f)]
+        private float _italianFlagBlur = 0.65f;
+
+        [Tooltip("Optional color tint applied to the flag texture.")]
+        [SerializeField]
+        private Color _italianFlagTint = Color.white;
+
+        [Tooltip("Display the city price in the ownership band underneath the flag.")]
+        [SerializeField]
+        private bool _italianShowPriceInBand = true;
+
+        [Tooltip("Display the city price at the top of the flag face.")]
+        [SerializeField]
+        private bool _italianShowPriceOnFlag = false;
+
+        [Tooltip("Neutral background color of the ownership band when the city is unowned.")]
+        [SerializeField]
+        private Color _italianBandNeutralColor = new Color(0.18f, 0.17f, 0.25f);
+
+        [Tooltip("Text color of the price in the ownership band.")]
+        [SerializeField]
+        private Color _italianBandTextColor = Color.white;
+
         private readonly Dictionary<Color32, Material> _materials = new Dictionary<Color32, Material>();
         private readonly Dictionary<Texture, Material> _texturedMaterials = new Dictionary<Texture, Material>();
+        private readonly List<Material> _customFlagMaterials = new List<Material>();
         private readonly Dictionary<int, BoardPreviewTileView> _tileViews =
             new Dictionary<int, BoardPreviewTileView>();
         private Transform _generatedRoot;
@@ -448,8 +480,8 @@ namespace Ropoly.Presentation.Board
             Transform parent)
         {
             // Clean, modern Italian city square (Rome / Milan):
-            // Full Italian woven flag on the card body, prominent bold city name, price at top,
-            // and an ownership band underneath that dynamically takes the owner's color when bought.
+            // Soft, blurred Italian flag on the card body with adjustable opacity and blur,
+            // prominent bold city name centered, and the price displayed in the bottom ownership band.
             const float bandDepth = 0.36f;
             float faceWidth = tileSize.x - _theme.TileGap - 0.08f;
             float flagDepth = tileSize.y - _theme.TileGap - bandDepth - 0.10f;
@@ -460,14 +492,13 @@ namespace Ropoly.Presentation.Board
                 0.36f,
                 -(tileSize.y * 0.5f) + (_theme.TileGap * 0.5f) + (bandDepth * 0.5f) + 0.02f);
 
-            Color neutralBandColor = new Color(0.24f, 0.23f, 0.32f);
-            Material neutralBandMaterial = GetMaterial(neutralBandColor);
+            Material neutralBandMaterial = GetMaterial(_italianBandNeutralColor);
 
             GameObject band = CreateCube(
                 $"{cityName} Owner Band",
                 bandPosition,
                 new Vector3(faceWidth, 0.05f, bandDepth),
-                neutralBandColor,
+                _italianBandNeutralColor,
                 false,
                 parent);
 
@@ -479,7 +510,7 @@ namespace Ropoly.Presentation.Board
                 $"{cityName} Band Rule",
                 bandPosition + new Vector3(0f, 0.027f, bandDepth * 0.5f),
                 new Vector3(faceWidth, 0.005f, 0.016f),
-                new Color(0.88f, 0.84f, 0.74f),
+                new Color(0.88f, 0.84f, 0.74f, 0.75f),
                 false,
                 parent);
 
@@ -489,16 +520,33 @@ namespace Ropoly.Presentation.Board
                 0.345f,
                 (bandPosition.z - center.z) + (bandDepth * 0.5f) + (flagDepth * 0.5f) + 0.02f);
 
-            Texture flagTexture = GetItalianFlagTexture();
+            Texture flagTexture = GetItalianFlagTexture(_italianFlagBlur);
             if (flagTexture != null)
             {
-                CreateCardQuad(
-                    $"{cityName} Italian Flag",
-                    flagPosition,
-                    new Vector2(faceWidth, flagDepth),
-                    flagTexture,
-                    Color.white,
-                    parent);
+                Material flagMaterial = GetFlagMaterial(flagTexture, _italianFlagOpacity, _italianFlagTint);
+                _customFlagMaterials.Add(flagMaterial);
+
+                GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                quad.name = $"{cityName} Italian Flag";
+                quad.transform.SetParent(parent, false);
+                quad.transform.position = flagPosition;
+                quad.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                quad.transform.localScale = new Vector3(faceWidth, flagDepth, 1f);
+
+                MeshCollider collider = quad.GetComponent<MeshCollider>();
+                if (collider != null)
+                {
+                    if (UnityEngine.Application.isPlaying)
+                    {
+                        Destroy(collider);
+                    }
+                    else
+                    {
+                        DestroyImmediate(collider);
+                    }
+                }
+
+                quad.GetComponent<MeshRenderer>().sharedMaterial = flagMaterial;
             }
 
             Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
@@ -510,9 +558,9 @@ namespace Ropoly.Presentation.Board
                 cityName.ToUpperInvariant(),
                 namePosition + new Vector3(0.02f, -0.005f, -0.02f),
                 rotation,
-                0.44f,
+                0.46f,
                 FontStyles.Bold,
-                new Color(0.05f, 0.06f, 0.11f, 0.95f),
+                new Color(0.04f, 0.04f, 0.08f, 0.95f),
                 new Vector2(faceWidth - 0.06f, 0.55f),
                 parent);
             CreateWorldText(
@@ -520,77 +568,100 @@ namespace Ropoly.Presentation.Board
                 cityName.ToUpperInvariant(),
                 namePosition,
                 rotation,
-                0.44f,
+                0.46f,
                 FontStyles.Bold,
                 Color.white,
                 new Vector2(faceWidth - 0.06f, 0.55f),
                 parent);
 
-            // Price lettering placed neatly near the top of the flag
-            Vector3 pricePosition = center + new Vector3(0f, 0.38f, 0.86f);
-            CreateWorldText(
-                $"{cityName} Price Shadow",
-                priceText,
-                pricePosition + new Vector3(0.015f, -0.005f, -0.012f),
-                rotation,
-                0.28f,
-                FontStyles.Bold,
-                new Color(0.05f, 0.06f, 0.11f, 0.95f),
-                new Vector2(faceWidth - 0.14f, 0.30f),
-                parent);
-            CreateWorldText(
-                $"{cityName} Price",
-                priceText,
-                pricePosition,
-                rotation,
-                0.28f,
-                FontStyles.Bold,
-                Color.white,
-                new Vector2(faceWidth - 0.14f, 0.30f),
-                parent);
+            // Optional price lettering near top of the flag (if enabled in inspector)
+            if (_italianShowPriceOnFlag)
+            {
+                Vector3 pricePosition = center + new Vector3(0f, 0.38f, 0.86f);
+                CreateWorldText(
+                    $"{cityName} Price Shadow",
+                    priceText,
+                    pricePosition + new Vector3(0.015f, -0.005f, -0.012f),
+                    rotation,
+                    0.28f,
+                    FontStyles.Bold,
+                    new Color(0.04f, 0.04f, 0.08f, 0.95f),
+                    new Vector2(faceWidth - 0.14f, 0.30f),
+                    parent);
+                CreateWorldText(
+                    $"{cityName} Price",
+                    priceText,
+                    pricePosition,
+                    rotation,
+                    0.28f,
+                    FontStyles.Bold,
+                    Color.white,
+                    new Vector2(faceWidth - 0.14f, 0.30f),
+                    parent);
+            }
 
-            // Upgrade label centered on ownership band (displays "1 HOUSE", "HOTEL" when owned/upgraded)
-            TMP_Text upgradeLabel = CreateWorldText(
-                $"{cityName} Upgrade",
-                string.Empty,
+            // Price lettering in the ownership band underneath (default: ON)
+            string bandDisplayText = _italianShowPriceInBand ? priceText : string.Empty;
+            TMP_Text bandLabel = CreateWorldText(
+                $"{cityName} Band Price",
+                bandDisplayText,
                 bandPosition + new Vector3(0f, 0.035f, 0f),
                 rotation,
-                0.18f,
+                0.24f,
                 FontStyles.Bold,
-                Color.white,
+                _italianBandTextColor,
                 new Vector2(faceWidth - 0.08f, bandDepth - 0.04f),
                 parent);
 
-            tileView.SetOwnerBand(bandRenderer, neutralBandMaterial, upgradeLabel);
+            tileView.SetOwnerBand(bandRenderer, neutralBandMaterial, bandLabel, _italianShowPriceInBand ? priceText : null);
         }
 
         private Texture2D _proceduralItalianFlag;
 
-        private Texture GetItalianFlagTexture()
+        private Texture GetItalianFlagTexture(float blurLevel)
         {
+            string textureName;
+            if (blurLevel > 0.55f)
+            {
+                textureName = "CityTiles/ItalyFlagPanel_Blur";
+            }
+            else if (blurLevel > 0.20f)
+            {
+                textureName = "CityTiles/ItalyFlagPanel_Soft";
+            }
+            else
+            {
+                textureName = "CityTiles/ItalyFlagPanel";
+            }
+
             Texture texture = null;
 
 #if UNITY_EDITOR
             texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
-                "Assets/_Ropoly/Resources/CityTiles/MilanFlagPanel.png")
+                $"Assets/_Ropoly/Resources/{textureName}.png")
                 ?? UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
-                "Assets/_Ropoly/Resources/CityTiles/ItalyFlagPanel.png");
+                $"Assets/_Ropoly/Resources/{textureName.Replace("Italy", "Milan")}.png");
 #endif
 
             if (texture == null)
             {
-                texture = Resources.Load<Texture2D>("CityTiles/MilanFlagPanel")
-                       ?? Resources.Load<Texture2D>("CityTiles/ItalyFlagPanel");
+                texture = Resources.Load<Texture2D>(textureName)
+                       ?? Resources.Load<Texture2D>(textureName.Replace("Italy", "Milan"));
             }
 
             if (texture == null)
             {
-                Sprite sprite = Resources.Load<Sprite>("CityTiles/MilanFlagPanel")
-                             ?? Resources.Load<Sprite>("CityTiles/ItalyFlagPanel");
+                Sprite sprite = Resources.Load<Sprite>(textureName)
+                             ?? Resources.Load<Sprite>(textureName.Replace("Italy", "Milan"));
                 if (sprite != null)
                 {
                     texture = sprite.texture;
                 }
+            }
+
+            if (texture == null)
+            {
+                texture = Resources.Load<Texture2D>("CityTiles/MilanFlagPanel");
             }
 
             if (texture == null)
@@ -608,6 +679,79 @@ namespace Ropoly.Presentation.Board
             }
 
             return texture;
+        }
+
+        private Material GetFlagMaterial(Texture texture, float opacity, Color tint)
+        {
+            if (texture == null)
+            {
+                return GetMaterial(new Color(tint.r, tint.g, tint.b, opacity));
+            }
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Transparent");
+            }
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Texture");
+            }
+
+            Material material = new Material(shader)
+            {
+                name = $"Mat_Flag_{texture.name}_{opacity:F2}",
+                enableInstancing = true
+            };
+
+            if (material.HasProperty("_BaseMap"))
+            {
+                material.SetTexture("_BaseMap", texture);
+            }
+            else if (material.HasProperty("_MainTex"))
+            {
+                material.SetTexture("_MainTex", texture);
+            }
+
+            Color finalColor = new Color(tint.r, tint.g, tint.b, opacity);
+
+            if (material.HasProperty("_Surface"))
+            {
+                material.SetFloat("_Surface", 1f); // Transparent
+            }
+            if (material.HasProperty("_Blend"))
+            {
+                material.SetFloat("_Blend", 0f); // Alpha
+            }
+            if (material.HasProperty("_SrcBlend"))
+            {
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            }
+            if (material.HasProperty("_DstBlend"))
+            {
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            }
+            if (material.HasProperty("_ZWrite"))
+            {
+                material.SetInt("_ZWrite", 0);
+            }
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.SetOverrideTag("RenderType", "Transparent");
+
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", finalColor);
+            }
+            else if (material.HasProperty("_Color"))
+            {
+                material.SetColor("_Color", finalColor);
+            }
+
+            return material;
         }
 
         private GameObject CreateOwnerMarker(
@@ -1708,8 +1852,24 @@ namespace Ropoly.Presentation.Board
                 }
             }
 
+            foreach (Material material in _customFlagMaterials)
+            {
+                if (material != null)
+                {
+                    if (UnityEngine.Application.isPlaying)
+                    {
+                        Destroy(material);
+                    }
+                    else
+                    {
+                        DestroyImmediate(material);
+                    }
+                }
+            }
+
             _materials.Clear();
             _texturedMaterials.Clear();
+            _customFlagMaterials.Clear();
             _tileViews.Clear();
         }
     }

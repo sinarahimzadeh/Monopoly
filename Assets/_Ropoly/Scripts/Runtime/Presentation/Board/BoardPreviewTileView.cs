@@ -29,11 +29,13 @@ namespace Ropoly.Presentation.Board
         private MeshRenderer _ownerBandRenderer;
         private Material _neutralOwnerBandMaterial;
         private TMP_Text _ownerBandUpgradeText;
+        private string _bandPriceText;
         private bool _isOwned;
 
         public int Index => _index;
         public BoardTileKind Kind => _kind;
         public string ContentId => _contentId;
+        public bool IsOwned => _isOwned;
         public int UpgradeLevel { get; private set; }
         public PropertyStructureView StructureView => _structureView;
 
@@ -70,11 +72,13 @@ namespace Ropoly.Presentation.Board
         public void SetOwnerBand(
             MeshRenderer bandRenderer,
             Material neutralMaterial,
-            TMP_Text upgradeText)
+            TMP_Text upgradeText,
+            string priceText = null)
         {
             _ownerBandRenderer = bandRenderer;
             _neutralOwnerBandMaterial = neutralMaterial;
             _ownerBandUpgradeText = upgradeText;
+            _bandPriceText = priceText;
             if (_ownerBandRenderer != null)
             {
                 _ownerBandRenderer.sharedMaterial = neutralMaterial;
@@ -158,19 +162,22 @@ namespace Ropoly.Presentation.Board
                 return;
             }
 
-            if (!_isOwned || UpgradeLevel == 0)
-            {
-                _ownerBandUpgradeText.text = string.Empty;
-            }
-            else if (UpgradeLevel >= 5)
+            if (UpgradeLevel >= 5)
             {
                 _ownerBandUpgradeText.text = "HOTEL";
             }
-            else
+            else if (UpgradeLevel >= 1)
             {
                 _ownerBandUpgradeText.text = UpgradeLevel == 1
                     ? "1 HOUSE"
                     : $"{UpgradeLevel} HOUSES";
+            }
+            else
+            {
+                // At level 0 (base property, whether unowned or owned), show price if configured
+                _ownerBandUpgradeText.text = !string.IsNullOrEmpty(_bandPriceText)
+                    ? _bandPriceText
+                    : string.Empty;
             }
         }
     }
