@@ -3,6 +3,7 @@ using Ropoly.Core.Board;
 using Ropoly.Infrastructure.Content.Board;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Ropoly.Presentation.Board
 {
@@ -25,36 +26,51 @@ namespace Ropoly.Presentation.Board
         [Range(0f, 0.6f)]
         private float _tokenSlotOffset = 0.34f;
 
-        [Header("Italian City Tiles Styling")]
-        [Tooltip("Controls the opacity / transparency of the Italian flag texture over the dark tile base.")]
+        [Header("City Tiles Styling")]
+        [Tooltip("Controls the opacity / transparency of the national flag texture over the dark tile base.")]
         [SerializeField]
+        [FormerlySerializedAs("_italianFlagOpacity")]
         [Range(0.05f, 1f)]
-        private float _italianFlagOpacity = 0.45f;
+        private float _cityFlagOpacity = 0.45f;
 
-        [Tooltip("Controls the blur level of the Italian flag (0 = sharp fabric, 0.5 = soft blur, 1 = heavy blur).")]
+        [Tooltip("Controls the blur level of the national flag (0 = sharp fabric, 0.5 = soft blur, 1 = heavy blur).")]
         [SerializeField]
+        [FormerlySerializedAs("_italianFlagBlur")]
         [Range(0f, 1f)]
-        private float _italianFlagBlur = 0.65f;
+        private float _cityFlagBlur = 0.65f;
 
         [Tooltip("Optional color tint applied to the flag texture.")]
         [SerializeField]
-        private Color _italianFlagTint = Color.white;
+        [FormerlySerializedAs("_italianFlagTint")]
+        private Color _cityFlagTint = Color.white;
 
         [Tooltip("Display the city price in the ownership band underneath the flag.")]
         [SerializeField]
-        private bool _italianShowPriceInBand = true;
+        [FormerlySerializedAs("_italianShowPriceInBand")]
+        private bool _cityShowPriceInBand = true;
 
         [Tooltip("Display the city price at the top of the flag face.")]
         [SerializeField]
-        private bool _italianShowPriceOnFlag = false;
+        [FormerlySerializedAs("_italianShowPriceOnFlag")]
+        private bool _cityShowPriceOnFlag = false;
 
         [Tooltip("Neutral background color of the ownership band when the city is unowned.")]
         [SerializeField]
-        private Color _italianBandNeutralColor = new Color(0.18f, 0.17f, 0.25f);
+        [FormerlySerializedAs("_italianBandNeutralColor")]
+        private Color _cityBandNeutralColor = new Color(0.18f, 0.17f, 0.25f);
 
         [Tooltip("Text color of the price in the ownership band.")]
         [SerializeField]
-        private Color _italianBandTextColor = Color.white;
+        [FormerlySerializedAs("_italianBandTextColor")]
+        private Color _cityBandTextColor = Color.white;
+
+        public float CityFlagOpacity => _cityFlagOpacity;
+        public float CityFlagBlur => _cityFlagBlur;
+        public Color CityFlagTint => _cityFlagTint;
+        public bool CityShowPriceInBand => _cityShowPriceInBand;
+        public bool CityShowPriceOnFlag => _cityShowPriceOnFlag;
+        public Color CityBandNeutralColor => _cityBandNeutralColor;
+        public Color CityBandTextColor => _cityBandTextColor;
 
         private readonly Dictionary<Color32, Material> _materials = new Dictionary<Color32, Material>();
         private readonly Dictionary<Texture, Material> _texturedMaterials = new Dictionary<Texture, Material>();
@@ -359,14 +375,15 @@ namespace Ropoly.Presentation.Board
             {
                 CityDefinition cityDef = null;
                 CountryDefinition countryDef = null;
-                if (tile.Kind == BoardTileKind.City)
+                bool isCity = tile.Kind == BoardTileKind.City;
+                bool isAirport = tile.Kind == BoardTileKind.Airport;
+                bool isUtility = tile.Kind == BoardTileKind.Utility;
+                bool isProperty = isCity || isAirport || isUtility;
+                if (isCity)
                 {
                     cityDefinitions.TryGetValue(tile.ContentId, out cityDef);
                     countryDefinitions.TryGetValue(tile.ContentId, out countryDef);
                 }
-
-                bool isItalianCity = tile.Kind == BoardTileKind.City &&
-                    (tile.ContentId == "city-rome" || tile.ContentId == "city-milan");
 
                 GetTileLayout(tile.Index, out Vector3 center, out Vector2 size, out Vector3 inward, out Vector3 textUp);
                 // This is a screen-first board, so labels remain upright instead of
@@ -401,7 +418,7 @@ namespace Ropoly.Presentation.Board
                 PropertyStructureView structureView = null;
                 TMP_Text upgradeText = null;
 
-                if (!isItalianCity)
+                if (!isProperty)
                 {
                     CreateAccent(tile.Index, center, size, inward, accentColor, tileGroup.transform);
 
@@ -413,21 +430,6 @@ namespace Ropoly.Presentation.Board
                         tileGroup.transform);
 
                     structureView = CreateStructureLot(tile.Index, center, size, inward, tileGroup.transform);
-
-                    if (tile.Kind == BoardTileKind.City)
-                    {
-                        Quaternion textRotation = Quaternion.LookRotation(Vector3.down, textUp);
-                        upgradeText = CreateWorldText(
-                            "Upgrade Text",
-                            string.Empty,
-                            ownerMarker.transform.position + (Vector3.up * 0.08f),
-                            textRotation,
-                            0.45f,
-                            FontStyles.Bold,
-                            Color.white,
-                            new Vector2(1f, 0.5f),
-                            tileGroup.transform);
-                    }
                 }
 
                 BoardPreviewTileView tileView = tileObject.AddComponent<BoardPreviewTileView>();
@@ -441,14 +443,19 @@ namespace Ropoly.Presentation.Board
                     structureView);
                 _tileViews.Add(tile.Index, tileView);
 
-                if (isItalianCity)
+                if (isProperty)
                 {
-                    CreateItalianCityTileVisuals(
+                    CreatePropertyTileVisuals(
                         tile.Index,
+                        tile.Kind,
+                        tile.ContentId,
                         label,
                         detail,
                         center,
                         size,
+                        inward,
+                        cityDef,
+                        countryDef,
                         tileView,
                         tileGroup.transform);
                 }
@@ -470,68 +477,106 @@ namespace Ropoly.Presentation.Board
             }
         }
 
-        private void CreateItalianCityTileVisuals(
+        private void CreatePropertyTileVisuals(
             int tileIndex,
-            string cityName,
+            BoardTileKind kind,
+            string contentId,
+            string label,
             string priceText,
             Vector3 center,
             Vector2 tileSize,
+            Vector3 inward,
+            CityDefinition cityDef,
+            CountryDefinition countryDef,
             BoardPreviewTileView tileView,
             Transform parent)
         {
-            // Clean, modern Italian city square (Rome / Milan):
-            // Soft, blurred Italian flag on the card body with adjustable opacity and blur,
-            // prominent bold city name centered, and the price displayed in the bottom ownership band.
-            const float bandDepth = 0.36f;
-            float faceWidth = tileSize.x - _theme.TileGap - 0.08f;
-            float flagDepth = tileSize.y - _theme.TileGap - bandDepth - 0.10f;
+            // Clean, modern property card architecture across all 28 purchasable properties
+            // (22 Cities, 4 Airports, and 2 Utilities):
+            // Soft, blurred themed backdrop panel on the card body with adjustable opacity and blur,
+            // prominent bold property name, straight upright icons for non-city properties,
+            // and the purchase price displayed in the neutral ownership band that updates when purchased.
+            bool horizontalTile = tileSize.y > tileSize.x;
+            float dimInward = horizontalTile ? tileSize.y : tileSize.x;
+            float dimPerp = horizontalTile ? tileSize.x : tileSize.y;
 
-            // Bottom ownership band (-Z direction is towards the board center, underneath the card face)
-            Vector3 bandPosition = center + new Vector3(
-                0f,
-                0.36f,
-                -(tileSize.y * 0.5f) + (_theme.TileGap * 0.5f) + (bandDepth * 0.5f) + 0.02f);
+            float bandDepth = horizontalTile ? 0.36f : 0.40f;
+            float faceWidth = dimPerp - _theme.TileGap - 0.08f;
+            float flagDepth = dimInward - _theme.TileGap - bandDepth - 0.10f;
 
-            Material neutralBandMaterial = GetMaterial(_italianBandNeutralColor);
+            // Position of ownership band on the inner edge (facing board center along inward vector)
+            Vector3 bandPosition = center + (inward * ((dimInward * 0.5f) - (_theme.TileGap * 0.5f) - (bandDepth * 0.5f) - 0.02f));
+            bandPosition.y = 0.36f;
+
+            Vector3 bandScale = horizontalTile
+                ? new Vector3(faceWidth, 0.05f, bandDepth)
+                : new Vector3(bandDepth, 0.05f, faceWidth);
+
+            Material neutralBandMaterial = GetMaterial(_cityBandNeutralColor);
 
             GameObject band = CreateCube(
-                $"{cityName} Owner Band",
+                $"{label} Owner Band",
                 bandPosition,
-                new Vector3(faceWidth, 0.05f, bandDepth),
-                _italianBandNeutralColor,
+                bandScale,
+                _cityBandNeutralColor,
                 false,
                 parent);
 
             MeshRenderer bandRenderer = band.GetComponent<MeshRenderer>();
             bandRenderer.sharedMaterial = neutralBandMaterial;
 
-            // Elegant rule line dividing flag and ownership band
+            // Elegant rule line dividing flag/panel and ownership band
+            Vector3 rulePosition = bandPosition - (inward * ((bandDepth * 0.5f) + 0.008f));
+            rulePosition.y = bandPosition.y + 0.027f;
+            Vector3 ruleScale = horizontalTile
+                ? new Vector3(faceWidth, 0.005f, 0.016f)
+                : new Vector3(0.016f, 0.005f, faceWidth);
+
             CreateCube(
-                $"{cityName} Band Rule",
-                bandPosition + new Vector3(0f, 0.027f, bandDepth * 0.5f),
-                new Vector3(faceWidth, 0.005f, 0.016f),
+                $"{label} Band Rule",
+                rulePosition,
+                ruleScale,
                 new Color(0.88f, 0.84f, 0.74f, 0.75f),
                 false,
                 parent);
 
-            // Full woven Italian flag quad above the band
-            Vector3 flagPosition = center + new Vector3(
-                0f,
-                0.345f,
-                (bandPosition.z - center.z) + (bandDepth * 0.5f) + (flagDepth * 0.5f) + 0.02f);
+            // Backdrop panel quad on the outer portion of the tile
+            Vector3 flagPosition = center - (inward * ((dimInward * 0.5f) - (_theme.TileGap * 0.5f) - (flagDepth * 0.5f) - 0.02f));
+            flagPosition.y = 0.345f;
 
-            Texture flagTexture = GetItalianFlagTexture(_italianFlagBlur);
-            if (flagTexture != null)
+            bool isWide = !horizontalTile;
+            Texture panelTexture = null;
+
+            if (kind == BoardTileKind.City)
             {
-                Material flagMaterial = GetFlagMaterial(flagTexture, _italianFlagOpacity, _italianFlagTint);
+                string countryId = countryDef != null ? countryDef.CountryId : string.Empty;
+                panelTexture = GetCountryFlagTexture(countryId, _cityFlagBlur, countryDef, isWide);
+            }
+            else if (kind == BoardTileKind.Airport)
+            {
+                panelTexture = GetUtilityPanelTexture("Airport", _cityFlagBlur, isWide);
+            }
+            else if (kind == BoardTileKind.Utility)
+            {
+                string utilPrefix = contentId.Contains("water") ? "Water" : "Electric";
+                panelTexture = GetUtilityPanelTexture(utilPrefix, _cityFlagBlur, isWide);
+            }
+
+            if (panelTexture != null)
+            {
+                Material flagMaterial = GetFlagMaterial(panelTexture, _cityFlagOpacity, _cityFlagTint);
                 _customFlagMaterials.Add(flagMaterial);
 
                 GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                quad.name = $"{cityName} Italian Flag";
+                quad.name = $"{label} Panel Face";
                 quad.transform.SetParent(parent, false);
                 quad.transform.position = flagPosition;
+                // Panel is always straight upright from the camera/player view; never rotated based on tile position
                 quad.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-                quad.transform.localScale = new Vector3(faceWidth, flagDepth, 1f);
+
+                quad.transform.localScale = horizontalTile
+                    ? new Vector3(faceWidth, flagDepth, 1f)
+                    : new Vector3(flagDepth, faceWidth, 1f);
 
                 MeshCollider collider = quad.GetComponent<MeshCollider>();
                 if (collider != null)
@@ -551,134 +596,366 @@ namespace Ropoly.Presentation.Board
 
             Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
 
-            // Bold, clear City Name centered across the Italian flag
-            Vector3 namePosition = center + new Vector3(0f, 0.38f, 0.12f);
-            CreateWorldText(
-                $"{cityName} Name Shadow",
-                cityName.ToUpperInvariant(),
-                namePosition + new Vector3(0.02f, -0.005f, -0.02f),
-                rotation,
-                0.46f,
-                FontStyles.Bold,
-                new Color(0.04f, 0.04f, 0.08f, 0.95f),
-                new Vector2(faceWidth - 0.06f, 0.55f),
-                parent);
-            CreateWorldText(
-                $"{cityName} Name",
-                cityName.ToUpperInvariant(),
-                namePosition,
-                rotation,
-                0.46f,
-                FontStyles.Bold,
-                Color.white,
-                new Vector2(faceWidth - 0.06f, 0.55f),
-                parent);
-
-            // Optional price lettering near top of the flag (if enabled in inspector)
-            if (_italianShowPriceOnFlag)
+            if (kind == BoardTileKind.City)
             {
-                Vector3 pricePosition = center + new Vector3(0f, 0.38f, 0.86f);
-                CreateWorldText(
-                    $"{cityName} Price Shadow",
-                    priceText,
-                    pricePosition + new Vector3(0.015f, -0.005f, -0.012f),
+                // Bold, clear City Name centered across the national flag
+                Vector3 namePosition = flagPosition + new Vector3(0f, 0.035f, 0f);
+                Vector2 nameBounds = horizontalTile
+                    ? new Vector2(faceWidth - 0.06f, 0.55f)
+                    : new Vector2(flagDepth - 0.10f, faceWidth - 0.10f);
+
+                float nameFontSize = horizontalTile ? 0.46f : 0.44f;
+
+                TextMeshPro shadowText = CreateWorldText(
+                    $"{label} Name Shadow",
+                    label.ToUpperInvariant(),
+                    namePosition + new Vector3(0.02f, -0.005f, -0.02f),
                     rotation,
-                    0.28f,
+                    nameFontSize,
                     FontStyles.Bold,
                     new Color(0.04f, 0.04f, 0.08f, 0.95f),
-                    new Vector2(faceWidth - 0.14f, 0.30f),
+                    nameBounds,
                     parent);
-                CreateWorldText(
-                    $"{cityName} Price",
-                    priceText,
-                    pricePosition,
+                shadowText.lineSpacing = -12f;
+                shadowText.textWrappingMode = TextWrappingModes.Normal;
+                shadowText.overflowMode = TextOverflowModes.Truncate;
+                shadowText.enableAutoSizing = true;
+                shadowText.fontSizeMin = 0.18f;
+                shadowText.fontSizeMax = nameFontSize;
+
+                TextMeshPro nameText = CreateWorldText(
+                    $"{label} Name",
+                    label.ToUpperInvariant(),
+                    namePosition,
                     rotation,
-                    0.28f,
+                    nameFontSize,
                     FontStyles.Bold,
                     Color.white,
-                    new Vector2(faceWidth - 0.14f, 0.30f),
+                    nameBounds,
                     parent);
-            }
+                nameText.lineSpacing = -12f;
+                nameText.textWrappingMode = TextWrappingModes.Normal;
+                nameText.overflowMode = TextOverflowModes.Truncate;
+                nameText.enableAutoSizing = true;
+                nameText.fontSizeMin = 0.18f;
+                nameText.fontSizeMax = nameFontSize;
 
-            // Price lettering in the ownership band underneath (default: ON)
-            string bandDisplayText = _italianShowPriceInBand ? priceText : string.Empty;
-            TMP_Text bandLabel = CreateWorldText(
-                $"{cityName} Band Price",
-                bandDisplayText,
-                bandPosition + new Vector3(0f, 0.035f, 0f),
-                rotation,
-                0.24f,
-                FontStyles.Bold,
-                _italianBandTextColor,
-                new Vector2(faceWidth - 0.08f, bandDepth - 0.04f),
-                parent);
+                // Optional price lettering on the flag face (if enabled in inspector)
+                if (_cityShowPriceOnFlag)
+                {
+                    Vector3 priceFlagOffset = horizontalTile
+                        ? (inward * (flagDepth * 0.38f))
+                        : (inward * (flagDepth * 0.32f));
+                    Vector3 pricePosition = flagPosition - priceFlagOffset + new Vector3(0f, 0.035f, 0f);
 
-            tileView.SetOwnerBand(bandRenderer, neutralBandMaterial, bandLabel, _italianShowPriceInBand ? priceText : null);
-        }
-
-        private Texture2D _proceduralItalianFlag;
-
-        private Texture GetItalianFlagTexture(float blurLevel)
-        {
-            string textureName;
-            if (blurLevel > 0.55f)
-            {
-                textureName = "CityTiles/ItalyFlagPanel_Blur";
-            }
-            else if (blurLevel > 0.20f)
-            {
-                textureName = "CityTiles/ItalyFlagPanel_Soft";
+                    CreateWorldText(
+                        $"{label} Flag Price Shadow",
+                        priceText,
+                        pricePosition + new Vector3(0.015f, -0.005f, -0.012f),
+                        rotation,
+                        0.28f,
+                        FontStyles.Bold,
+                        new Color(0.04f, 0.04f, 0.08f, 0.95f),
+                        new Vector2(faceWidth - 0.14f, 0.30f),
+                        parent);
+                    CreateWorldText(
+                        $"{label} Flag Price",
+                        priceText,
+                        pricePosition,
+                        rotation,
+                        0.28f,
+                        FontStyles.Bold,
+                        Color.white,
+                        new Vector2(faceWidth - 0.14f, 0.30f),
+                        parent);
+                }
             }
             else
             {
-                textureName = "CityTiles/ItalyFlagPanel";
+                // Airport & Utility Tiles: Straight upright icon placed above bold property name
+                Texture iconTexture = ResolvePropertyIconTexture(kind, contentId);
+                if (iconTexture != null)
+                {
+                    Vector3 iconPosition = horizontalTile
+                        ? flagPosition + new Vector3(0f, 0.030f, 0.30f)
+                        : flagPosition + new Vector3(0f, 0.030f, 0.28f);
+
+                    Vector2 iconSize = horizontalTile
+                        ? new Vector2(0.58f, 0.58f)
+                        : new Vector2(0.52f, 0.52f);
+
+                    GameObject iconQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    iconQuad.name = $"{label} Icon";
+                    iconQuad.transform.SetParent(parent, false);
+                    iconQuad.transform.position = iconPosition;
+                    iconQuad.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                    iconQuad.transform.localScale = new Vector3(iconSize.x, iconSize.y, 1f);
+
+                    MeshCollider iconCol = iconQuad.GetComponent<MeshCollider>();
+                    if (iconCol != null)
+                    {
+                        if (UnityEngine.Application.isPlaying)
+                        {
+                            Destroy(iconCol);
+                        }
+                        else
+                        {
+                            DestroyImmediate(iconCol);
+                        }
+                    }
+
+                    Material iconMat = GetFlagMaterial(iconTexture, 1f, Color.white);
+                    _customFlagMaterials.Add(iconMat);
+                    iconQuad.GetComponent<MeshRenderer>().sharedMaterial = iconMat;
+                }
+
+                Vector3 propNamePosition = horizontalTile
+                    ? flagPosition + new Vector3(0f, 0.035f, -0.32f)
+                    : flagPosition + new Vector3(0f, 0.035f, -0.28f);
+
+                Vector2 propNameBounds = horizontalTile
+                    ? new Vector2(faceWidth - 0.08f, 0.56f)
+                    : new Vector2(flagDepth - 0.10f, 0.54f);
+
+                float propNameFontSize = horizontalTile ? 0.38f : 0.36f;
+
+                TextMeshPro propShadowText = CreateWorldText(
+                    $"{label} Name Shadow",
+                    label.ToUpperInvariant(),
+                    propNamePosition + new Vector3(0.02f, -0.005f, -0.02f),
+                    rotation,
+                    propNameFontSize,
+                    FontStyles.Bold,
+                    new Color(0.04f, 0.04f, 0.08f, 0.95f),
+                    propNameBounds,
+                    parent);
+                propShadowText.lineSpacing = -12f;
+                propShadowText.textWrappingMode = TextWrappingModes.Normal;
+                propShadowText.overflowMode = TextOverflowModes.Truncate;
+                propShadowText.enableAutoSizing = true;
+                propShadowText.fontSizeMin = 0.18f;
+                propShadowText.fontSizeMax = propNameFontSize;
+
+                TextMeshPro propNameText = CreateWorldText(
+                    $"{label} Name",
+                    label.ToUpperInvariant(),
+                    propNamePosition,
+                    rotation,
+                    propNameFontSize,
+                    FontStyles.Bold,
+                    Color.white,
+                    propNameBounds,
+                    parent);
+                propNameText.lineSpacing = -12f;
+                propNameText.textWrappingMode = TextWrappingModes.Normal;
+                propNameText.overflowMode = TextOverflowModes.Truncate;
+                propNameText.enableAutoSizing = true;
+                propNameText.fontSizeMin = 0.18f;
+                propNameText.fontSizeMax = propNameFontSize;
             }
+
+            // Price lettering in the ownership band (default: ON)
+            string bandDisplayText = _cityShowPriceInBand ? priceText : string.Empty;
+            Vector2 bandTextBounds = horizontalTile
+                ? new Vector2(faceWidth - 0.08f, bandDepth - 0.04f)
+                : new Vector2(bandDepth - 0.04f, faceWidth - 0.08f);
+
+            float bandFontSize = horizontalTile ? 0.24f : 0.22f;
+
+            TMP_Text bandLabel = CreateWorldText(
+                $"{label} Band Price",
+                bandDisplayText,
+                bandPosition + new Vector3(0f, 0.035f, 0f),
+                rotation,
+                bandFontSize,
+                FontStyles.Bold,
+                _cityBandTextColor,
+                bandTextBounds,
+                parent);
+            bandLabel.enableAutoSizing = true;
+            bandLabel.fontSizeMin = 0.14f;
+            bandLabel.fontSizeMax = bandFontSize;
+
+            tileView.SetOwnerBand(bandRenderer, neutralBandMaterial, bandLabel, _cityShowPriceInBand ? priceText : null);
+        }
+
+        private static string GetCountryFilePrefix(string countryId)
+        {
+            return countryId switch
+            {
+                "country-india" => "India",
+                "country-brazil" => "Brazil",
+                "country-china" => "China",
+                "country-russia" => "Russia",
+                "country-italy" => "Italy",
+                "country-france" => "France",
+                "country-united-kingdom" => "UnitedKingdom",
+                "country-united-states" => "UnitedStates",
+                _ => null,
+            };
+        }
+
+        private Texture2D _proceduralFlag;
+
+        private Texture GetCountryFlagTexture(string countryId, float blurLevel, CountryDefinition countryDef, bool isWide = false)
+        {
+            string prefix = GetCountryFilePrefix(countryId);
+            if (string.IsNullOrEmpty(prefix) && countryDef != null)
+            {
+                prefix = countryDef.DisplayName.Replace(" ", "");
+            }
+
+            if (string.IsNullOrEmpty(prefix))
+            {
+                prefix = "Italy";
+            }
+
+            string wideSuffix = isWide ? "_Wide" : string.Empty;
+            string blurSuffix = blurLevel > 0.55f ? "_Blur" : blurLevel > 0.20f ? "_Soft" : string.Empty;
+            string textureName = $"CityTiles/{prefix}FlagPanel{wideSuffix}{blurSuffix}";
 
             Texture texture = null;
 
 #if UNITY_EDITOR
             texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
-                $"Assets/_Ropoly/Resources/{textureName}.png")
-                ?? UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
-                $"Assets/_Ropoly/Resources/{textureName.Replace("Italy", "Milan")}.png");
+                $"Assets/_Ropoly/Resources/{textureName}.png");
+            if (texture == null && isWide)
+            {
+                texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    $"Assets/_Ropoly/Resources/CityTiles/{prefix}FlagPanel{blurSuffix}.png");
+            }
+            if (texture == null && prefix == "Italy")
+            {
+                texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    $"Assets/_Ropoly/Resources/CityTiles/MilanFlagPanel{blurSuffix}.png");
+            }
 #endif
 
             if (texture == null)
             {
-                texture = Resources.Load<Texture2D>(textureName)
-                       ?? Resources.Load<Texture2D>(textureName.Replace("Italy", "Milan"));
+                texture = Resources.Load<Texture2D>(textureName);
+                if (texture == null && isWide)
+                {
+                    texture = Resources.Load<Texture2D>($"CityTiles/{prefix}FlagPanel{blurSuffix}");
+                }
+                if (texture == null && prefix == "Italy")
+                {
+                    texture = Resources.Load<Texture2D>($"CityTiles/MilanFlagPanel{blurSuffix}");
+                }
             }
 
             if (texture == null)
             {
                 Sprite sprite = Resources.Load<Sprite>(textureName)
-                             ?? Resources.Load<Sprite>(textureName.Replace("Italy", "Milan"));
+                             ?? (isWide ? Resources.Load<Sprite>($"CityTiles/{prefix}FlagPanel{blurSuffix}") : null);
+                if (sprite == null && prefix == "Italy")
+                {
+                    sprite = Resources.Load<Sprite>($"CityTiles/MilanFlagPanel{blurSuffix}");
+                }
+
                 if (sprite != null)
                 {
                     texture = sprite.texture;
                 }
             }
 
-            if (texture == null)
+            if (texture == null && prefix == "Italy")
             {
                 texture = Resources.Load<Texture2D>("CityTiles/MilanFlagPanel");
             }
 
+            if (texture == null && countryDef != null && countryDef.Flag != null)
+            {
+                texture = countryDef.Flag.texture;
+            }
+
             if (texture == null)
             {
-                if (_proceduralItalianFlag == null)
+                if (_proceduralFlag == null)
                 {
-                    _proceduralItalianFlag = new Texture2D(3, 1, TextureFormat.RGB24, false);
-                    _proceduralItalianFlag.name = "Procedural_Italy_Flag";
-                    _proceduralItalianFlag.SetPixel(0, 0, new Color(0.09f, 0.56f, 0.37f));
-                    _proceduralItalianFlag.SetPixel(1, 0, new Color(0.96f, 0.94f, 0.88f));
-                    _proceduralItalianFlag.SetPixel(2, 0, new Color(0.80f, 0.18f, 0.22f));
-                    _proceduralItalianFlag.Apply();
+                    _proceduralFlag = new Texture2D(3, 1, TextureFormat.RGB24, false);
+                    _proceduralFlag.name = "Procedural_Fallback_Flag";
+                    _proceduralFlag.SetPixel(0, 0, new Color(0.15f, 0.15f, 0.25f));
+                    _proceduralFlag.SetPixel(1, 0, new Color(0.85f, 0.85f, 0.90f));
+                    _proceduralFlag.SetPixel(2, 0, new Color(0.25f, 0.15f, 0.35f));
+                    _proceduralFlag.Apply();
                 }
-                texture = _proceduralItalianFlag;
+
+                texture = _proceduralFlag;
             }
 
             return texture;
+        }
+
+        public Texture GetItalianFlagTexture(float blurLevel)
+        {
+            return GetCountryFlagTexture("country-italy", blurLevel, null);
+        }
+
+        private Texture GetUtilityPanelTexture(string utilityPrefix, float blurLevel, bool isWide = false)
+        {
+            string wideSuffix = isWide ? "_Wide" : string.Empty;
+            string blurSuffix = blurLevel > 0.55f ? "_Blur" : blurLevel > 0.20f ? "_Soft" : string.Empty;
+            string textureName = $"CityTiles/{utilityPrefix}Panel{wideSuffix}{blurSuffix}";
+
+            Texture texture = null;
+
+#if UNITY_EDITOR
+            texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+                $"Assets/_Ropoly/Resources/{textureName}.png");
+            if (texture == null && isWide)
+            {
+                texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    $"Assets/_Ropoly/Resources/CityTiles/{utilityPrefix}Panel{blurSuffix}.png");
+            }
+#endif
+
+            if (texture == null)
+            {
+                texture = Resources.Load<Texture2D>(textureName);
+                if (texture == null && isWide)
+                {
+                    texture = Resources.Load<Texture2D>($"CityTiles/{utilityPrefix}Panel{blurSuffix}");
+                }
+            }
+
+            return texture;
+        }
+
+        private static Texture LoadTileIconTexture(string iconName)
+        {
+            Texture texture = null;
+
+#if UNITY_EDITOR
+            texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/_Ropoly/Resources/Icons/{iconName}.png");
+            if (texture == null)
+            {
+                texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/_Ropoly/Art/Icons/{iconName}.png");
+            }
+#endif
+
+            if (texture == null)
+            {
+                texture = Resources.Load<Texture2D>($"Icons/{iconName}");
+            }
+
+            return texture;
+        }
+
+        private static Texture ResolvePropertyIconTexture(BoardTileKind kind, string contentId)
+        {
+            if (kind == BoardTileKind.Airport)
+            {
+                return LoadTileIconTexture("Airport_White") ?? LoadTileIconTexture("Airport");
+            }
+
+            if (kind == BoardTileKind.Utility)
+            {
+                string iconName = contentId.Contains("water") ? "Water" : "Electric";
+                return LoadTileIconTexture($"{iconName}_White") ?? LoadTileIconTexture(iconName);
+            }
+
+            return null;
         }
 
         private Material GetFlagMaterial(Texture texture, float opacity, Color tint)
@@ -1745,6 +2022,8 @@ namespace Ropoly.Presentation.Board
                     return "RIO DE\nJANEIRO";
                 case "ELECTRIC COMPANY":
                     return "ELECTRIC\nCOMPANY";
+                case "ELECTRIC NETWORK":
+                    return "ELECTRIC\nNETWORK";
                 case "WATER SERVICE":
                     return "WATER\nSERVICE";
                 case "LOCAL OPPORTUNITY":
