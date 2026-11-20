@@ -95,7 +95,7 @@ namespace Ropoly.Presentation.Dice
         [Tooltip("Bounce strength applied to each intermediate house passed over.")]
         [SerializeField]
         [Range(0.1f, 2f)]
-        private float _movePassBounceStrength = 0.55f;
+        private float _movePassBounceStrength = 0.92f;
 
         [Tooltip("Bounce strength applied to the final destination house when landing.")]
         [SerializeField]
@@ -872,6 +872,8 @@ namespace Ropoly.Presentation.Dice
                 }
 
                 token.transform.position = targetPos;
+                _boardPreview.SetPlayerTile(playerIndex, detentionTileIndex);
+                _lobby.RefreshRestingTokenPositions();
                 _boardPreview.BounceTile(detentionTileIndex, _moveLandingBounceStrength);
                 if (_moveLandingSettleDuration > 0f)
                 {
@@ -932,11 +934,27 @@ namespace Ropoly.Presentation.Dice
             {
                 int tileIdx = (movement.FromIndex + i) % tileCount;
                 tileIndices[i] = tileIdx;
-                if (!_boardPreview.TryGetTokenPosition(tileIdx, movement.PlayerIndex, out waypoints[i]))
+                if (i == 0)
                 {
-                    Debug.LogError("The board could not provide a token movement path.", _boardPreview);
-                    CompleteMovement(movement);
-                    yield break;
+                    waypoints[i] = token.transform.position;
+                }
+                else if (i < totalSpaces)
+                {
+                    // Intermediate tiles: always sprint directly down the CENTER of the house!
+                    if (!_boardPreview.TryGetTokenCenterPosition(tileIdx, out waypoints[i]))
+                    {
+                        waypoints[i] = token.transform.position;
+                    }
+                }
+                else
+                {
+                    // Destination tile: landing position (center if alone, or sliced if sharing)
+                    if (!_boardPreview.TryGetTokenPosition(tileIdx, movement.PlayerIndex, out waypoints[i]))
+                    {
+                        Debug.LogError("The board could not provide a token movement path.", _boardPreview);
+                        CompleteMovement(movement);
+                        yield break;
+                    }
                 }
             }
 
@@ -1017,6 +1035,8 @@ namespace Ropoly.Presentation.Dice
             _lobby.RefreshMatchHud();
             PlayerState player = _lobby.Session.State.Players[movement.PlayerIndex];
             int currentTile = player.BoardPosition;
+            _boardPreview.SetPlayerTile(movement.PlayerIndex, currentTile);
+            _lobby.RefreshRestingTokenPositions();
             int initialDestination = movement.DestinationIndex;
             if (currentTile != initialDestination)
             {
@@ -1076,6 +1096,8 @@ namespace Ropoly.Presentation.Dice
                     }
 
                     token.transform.position = targetPos;
+                    _boardPreview.SetPlayerTile(originalMovement.PlayerIndex, targetTile);
+                    _lobby.RefreshRestingTokenPositions();
                     _boardPreview.BounceTile(targetTile, _moveLandingBounceStrength);
                     if (_moveLandingSettleDuration > 0f)
                     {
@@ -1094,10 +1116,25 @@ namespace Ropoly.Presentation.Dice
                 {
                     int tileIdx = (initialTile - i + tileCount) % tileCount;
                     tileIndices[i] = tileIdx;
-                    if (!_boardPreview.TryGetTokenPosition(tileIdx, originalMovement.PlayerIndex, out waypoints[i]))
+                    if (i == 0)
                     {
-                        pathValid = false;
-                        break;
+                        waypoints[i] = token.transform.position;
+                    }
+                    else if (i < stepsBack)
+                    {
+                        if (!_boardPreview.TryGetTokenCenterPosition(tileIdx, out waypoints[i]))
+                        {
+                            pathValid = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (!_boardPreview.TryGetTokenPosition(tileIdx, originalMovement.PlayerIndex, out waypoints[i]))
+                        {
+                            pathValid = false;
+                            break;
+                        }
                     }
                 }
 
@@ -1144,6 +1181,8 @@ namespace Ropoly.Presentation.Dice
                     }
 
                     token.transform.position = waypoints[stepsBack];
+                    _boardPreview.SetPlayerTile(originalMovement.PlayerIndex, targetTile);
+                    _lobby.RefreshRestingTokenPositions();
                     while (lastBouncedStep < stepsBack)
                     {
                         lastBouncedStep++;
@@ -1175,10 +1214,25 @@ namespace Ropoly.Presentation.Dice
                 {
                     int tileIdx = (initialTile + i) % tileCount;
                     tileIndices[i] = tileIdx;
-                    if (!_boardPreview.TryGetTokenPosition(tileIdx, originalMovement.PlayerIndex, out waypoints[i]))
+                    if (i == 0)
                     {
-                        pathValid = false;
-                        break;
+                        waypoints[i] = token.transform.position;
+                    }
+                    else if (i < forwardSteps)
+                    {
+                        if (!_boardPreview.TryGetTokenCenterPosition(tileIdx, out waypoints[i]))
+                        {
+                            pathValid = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (!_boardPreview.TryGetTokenPosition(tileIdx, originalMovement.PlayerIndex, out waypoints[i]))
+                        {
+                            pathValid = false;
+                            break;
+                        }
                     }
                 }
 
@@ -1225,6 +1279,8 @@ namespace Ropoly.Presentation.Dice
                     }
 
                     token.transform.position = waypoints[forwardSteps];
+                    _boardPreview.SetPlayerTile(originalMovement.PlayerIndex, targetTile);
+                    _lobby.RefreshRestingTokenPositions();
                     while (lastBouncedStep < forwardSteps)
                     {
                         lastBouncedStep++;

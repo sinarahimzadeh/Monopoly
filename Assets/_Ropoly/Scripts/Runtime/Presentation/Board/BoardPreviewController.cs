@@ -26,6 +26,16 @@ namespace Ropoly.Presentation.Board
         [Range(0f, 0.6f)]
         private float _tokenSlotOffset = 0.34f;
 
+        [Tooltip("Lateral offset step between overlapping slices on the same tile (meters).")]
+        [SerializeField]
+        [Range(0.05f, 0.40f)]
+        private float _tokenSliceOffset = 0.18f;
+
+        [Tooltip("Elevation step between overlapping slices so higher slices sit cleanly on top (meters).")]
+        [SerializeField]
+        [Range(0.02f, 0.20f)]
+        private float _tokenSliceElevation = 0.08f;
+
         [Header("City Tiles Styling")]
         [Tooltip("Controls the opacity / transparency of the national flag texture over the dark tile base.")]
         [SerializeField]
@@ -101,6 +111,9 @@ namespace Ropoly.Presentation.Board
         public float TileShakeFrequency => _tileShakeFrequency;
         public float TileShakeDecay => _tileShakeDecay;
         public float TileVerticalDip => _tileVerticalDip;
+        public float TokenSlotOffset => _tokenSlotOffset;
+        public float TokenSliceOffset => _tokenSliceOffset;
+        public float TokenSliceElevation => _tokenSliceElevation;
 
         private readonly Dictionary<Color32, Material> _materials = new Dictionary<Color32, Material>();
         private readonly Dictionary<Texture, Material> _texturedMaterials = new Dictionary<Texture, Material>();
@@ -174,6 +187,50 @@ namespace Ropoly.Presentation.Board
             return true;
         }
 
+        private readonly int[] _playerTiles = new int[] { 0, 0, 0, 0 };
+
+        public void SetPlayerTile(int playerIndex, int tileIndex)
+        {
+            if (playerIndex >= 0 && playerIndex < _playerTiles.Length)
+            {
+                _playerTiles[playerIndex] = tileIndex;
+            }
+        }
+
+        public bool TryGetTokenCenterPosition(int tileIndex, out Vector3 position)
+        {
+            position = default;
+            if (_boardDefinition == null ||
+                tileIndex < 0 ||
+                tileIndex >= TileCount)
+            {
+                return false;
+            }
+
+            GetTileLayout(tileIndex, out Vector3 center, out _, out _, out _);
+            position = center + new Vector3(0f, _tokenElevation, 0f);
+            return true;
+        }
+
+        public int GetPlayerStackRank(int tileIndex, int playerIndex)
+        {
+            List<int> playersOnTile = new List<int>(4);
+            for (int p = 0; p < 4; p++)
+            {
+                if (_playerTiles[p] == tileIndex)
+                {
+                    playersOnTile.Add(p);
+                }
+            }
+
+            if (!playersOnTile.Contains(playerIndex))
+            {
+                playersOnTile.Add(playerIndex);
+            }
+            playersOnTile.Sort();
+            return playersOnTile.IndexOf(playerIndex);
+        }
+
         public bool TryGetTokenPosition(int tileIndex, int playerIndex, out Vector3 position)
         {
             position = default;
@@ -187,9 +244,44 @@ namespace Ropoly.Presentation.Board
             }
 
             GetTileLayout(tileIndex, out Vector3 center, out _, out _, out _);
-            float x = playerIndex % 2 == 0 ? -_tokenSlotOffset : _tokenSlotOffset;
-            float z = playerIndex < 2 ? _tokenSlotOffset : -_tokenSlotOffset;
-            position = center + new Vector3(x, _tokenElevation, z);
+
+            // Find all players currently sharing this tile
+            List<int> playersOnTile = new List<int>(4);
+            for (int p = 0; p < 4; p++)
+            {
+                if (_playerTiles[p] == tileIndex)
+                {
+                    playersOnTile.Add(p);
+                }
+            }
+
+            if (!playersOnTile.Contains(playerIndex))
+            {
+                playersOnTile.Add(playerIndex);
+            }
+            playersOnTile.Sort();
+
+            int count = playersOnTile.Count;
+            int rank = playersOnTile.IndexOf(playerIndex);
+
+            if (count <= 1)
+            {
+                // Single player on this house: placed directly in the CENTER!
+                position = center + new Vector3(0f, _tokenElevation, 0f);
+            }
+            else
+            {
+                // Multiple players on this house: layered like overlapping slices!
+                // Slices are fanned along the screen diagonal (X and Z) so all portraits remain visible,
+                // and stepped in elevation (Y) so they stack neatly on top of each other.
+                float step = rank - ((count - 1) * 0.5f);
+                float offsetX = step * _tokenSliceOffset;
+                float offsetZ = step * (_tokenSliceOffset * 0.85f);
+                float offsetY = _tokenElevation + (rank * _tokenSliceElevation);
+
+                position = center + new Vector3(offsetX, offsetY, offsetZ);
+            }
+
             return true;
         }
 
@@ -442,7 +534,12 @@ namespace Ropoly.Presentation.Board
                 bool isAirport = tile.Kind == BoardTileKind.Airport;
                 bool isUtility = tile.Kind == BoardTileKind.Utility;
                 bool isWorldEvent = tile.Kind == BoardTileKind.Special && tile.ContentId == "space-world-event";
-                bool isCardVisual = isCity || isAirport || isUtility || isWorldEvent;
+                bool isCornerSpecial = tile.Kind == BoardTileKind.Special && (
+                    tile.ContentId == "space-start" ||
+                    tile.ContentId == "space-detention" ||
+                    tile.ContentId == "space-vacation" ||
+                    tile.ContentId == "space-go-to-detention");
+                bool isCardVisual = isCity || isAirport || isUtility || isWorldEvent || isCornerSpecial;
                 bool isProperty = isCity || isAirport || isUtility;
                 if (isCity)
                 {
@@ -564,21 +661,61 @@ namespace Ropoly.Presentation.Board
             // Soft, blurred themed backdrop panel on the card body with adjustable opacity and blur,
             // prominent bold property name, straight upright icons for non-city properties,
             // and the purchase price displayed in the neutral ownership band that updates when purchased.
-            bool horizontalTile = tileSize.y > tileSize.x;
+            bool isCorner = tileIndex == 0 || tileIndex == 10 || tileIndex == 20 || tileIndex == 30;
+            bool horizontalTile = !isCorner && (tileSize.y > tileSize.x);
             float dimInward = horizontalTile ? tileSize.y : tileSize.x;
             float dimPerp = horizontalTile ? tileSize.x : tileSize.y;
 
-            float bandDepth = horizontalTile ? 0.36f : 0.40f;
-            float faceWidth = dimPerp - _theme.TileGap - 0.08f;
-            float flagDepth = dimInward - _theme.TileGap - bandDepth - 0.10f;
+            float bandDepth = isCorner ? 0.44f : (horizontalTile ? 0.36f : 0.40f);
+            float faceWidth = isCorner ? (tileSize.x - _theme.TileGap - 0.10f) : (dimPerp - _theme.TileGap - 0.08f);
+            float flagDepth = isCorner ? (tileSize.y - _theme.TileGap - bandDepth - 0.04f) : (dimInward - _theme.TileGap - bandDepth - 0.10f);
 
-            // Position of ownership band on the inner edge (facing board center along inward vector)
-            Vector3 bandPosition = center + (inward * ((dimInward * 0.5f) - (_theme.TileGap * 0.5f) - (bandDepth * 0.5f) - 0.02f));
-            bandPosition.y = 0.36f;
+            Vector3 bandPosition;
+            Vector3 bandScale;
+            Vector3 rulePosition;
+            Vector3 ruleScale;
+            Vector3 flagPosition;
+            Vector3 flagScale;
 
-            Vector3 bandScale = horizontalTile
-                ? new Vector3(faceWidth, 0.05f, bandDepth)
-                : new Vector3(bandDepth, 0.05f, faceWidth);
+            if (isCorner)
+            {
+                float totalDepth = tileSize.y - _theme.TileGap - 0.08f;
+                // Bottom band placed along -Z (facing player/screen)
+                bandPosition = center + new Vector3(0f, 0.36f, -(totalDepth * 0.5f) + (bandDepth * 0.5f));
+                bandScale = new Vector3(faceWidth, 0.05f, bandDepth);
+
+                // Rule line directly above the band
+                rulePosition = bandPosition + new Vector3(0f, 0.027f, (bandDepth * 0.5f) + 0.008f);
+                ruleScale = new Vector3(faceWidth, 0.005f, 0.016f);
+
+                // Card backdrop panel on the upper portion (+Z)
+                flagPosition = center + new Vector3(0f, 0.345f, (totalDepth * 0.5f) - (flagDepth * 0.5f));
+                flagScale = new Vector3(faceWidth, flagDepth, 1f);
+            }
+            else
+            {
+                // Position of ownership band on the inner edge (facing board center along inward vector)
+                bandPosition = center + (inward * ((dimInward * 0.5f) - (_theme.TileGap * 0.5f) - (bandDepth * 0.5f) - 0.02f));
+                bandPosition.y = 0.36f;
+
+                bandScale = horizontalTile
+                    ? new Vector3(faceWidth, 0.05f, bandDepth)
+                    : new Vector3(bandDepth, 0.05f, faceWidth);
+
+                // Elegant rule line dividing flag/panel and ownership band
+                rulePosition = bandPosition - (inward * ((bandDepth * 0.5f) + 0.008f));
+                rulePosition.y = bandPosition.y + 0.027f;
+                ruleScale = horizontalTile
+                    ? new Vector3(faceWidth, 0.005f, 0.016f)
+                    : new Vector3(0.016f, 0.005f, faceWidth);
+
+                // Backdrop panel quad on the outer portion of the tile
+                flagPosition = center - (inward * ((dimInward * 0.5f) - (_theme.TileGap * 0.5f) - (flagDepth * 0.5f) - 0.02f));
+                flagPosition.y = 0.345f;
+                flagScale = horizontalTile
+                    ? new Vector3(faceWidth, flagDepth, 1f)
+                    : new Vector3(flagDepth, faceWidth, 1f);
+            }
 
             Material neutralBandMaterial = GetMaterial(_cityBandNeutralColor);
 
@@ -593,13 +730,6 @@ namespace Ropoly.Presentation.Board
             MeshRenderer bandRenderer = band.GetComponent<MeshRenderer>();
             bandRenderer.sharedMaterial = neutralBandMaterial;
 
-            // Elegant rule line dividing flag/panel and ownership band
-            Vector3 rulePosition = bandPosition - (inward * ((bandDepth * 0.5f) + 0.008f));
-            rulePosition.y = bandPosition.y + 0.027f;
-            Vector3 ruleScale = horizontalTile
-                ? new Vector3(faceWidth, 0.005f, 0.016f)
-                : new Vector3(0.016f, 0.005f, faceWidth);
-
             CreateCube(
                 $"{label} Band Rule",
                 rulePosition,
@@ -608,11 +738,7 @@ namespace Ropoly.Presentation.Board
                 false,
                 parent);
 
-            // Backdrop panel quad on the outer portion of the tile
-            Vector3 flagPosition = center - (inward * ((dimInward * 0.5f) - (_theme.TileGap * 0.5f) - (flagDepth * 0.5f) - 0.02f));
-            flagPosition.y = 0.345f;
-
-            bool isWide = !horizontalTile;
+            bool isWide = !horizontalTile && !isCorner;
             Texture panelTexture = null;
 
             if (kind == BoardTileKind.City)
@@ -633,6 +759,18 @@ namespace Ropoly.Presentation.Board
             {
                 panelTexture = GetUtilityPanelTexture("WorldEvent", _cityFlagBlur, isWide);
             }
+            else if (isCorner)
+            {
+                string cornerPrefix = tileIndex switch
+                {
+                    0 => "Start",
+                    10 => "Detention",
+                    20 => "Vacation",
+                    30 => "GoToDetention",
+                    _ => "Start",
+                };
+                panelTexture = GetUtilityPanelTexture(cornerPrefix, _cityFlagBlur, false);
+            }
 
             if (panelTexture != null)
             {
@@ -646,9 +784,7 @@ namespace Ropoly.Presentation.Board
                 // Panel is always straight upright from the camera/player view; never rotated based on tile position
                 quad.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
 
-                quad.transform.localScale = horizontalTile
-                    ? new Vector3(faceWidth, flagDepth, 1f)
-                    : new Vector3(flagDepth, faceWidth, 1f);
+                quad.transform.localScale = flagScale;
 
                 MeshCollider collider = quad.GetComponent<MeshCollider>();
                 if (collider != null)
@@ -776,6 +912,80 @@ namespace Ropoly.Presentation.Board
                     parent);
                 markText.alignment = TextAlignmentOptions.Center;
             }
+            else if (isCorner)
+            {
+                // Corner Cards (Start, Prison, Vacation, Go To Prison):
+                // Bold upright Title at top, centered graphic/icon in middle, metallic divider, action band at bottom
+                Vector3 titlePosition = flagPosition + new Vector3(0f, 0.035f, (flagDepth * 0.5f) - 0.26f);
+                Vector2 titleBounds = new Vector2(faceWidth - 0.12f, 0.50f);
+                float titleFontSize = label.Length > 10 ? 0.40f : 0.46f;
+
+                TextMeshPro titleShadow = CreateWorldText(
+                    $"{label} Name Shadow",
+                    label.ToUpperInvariant(),
+                    titlePosition + new Vector3(0.02f, -0.005f, -0.02f),
+                    rotation,
+                    titleFontSize,
+                    FontStyles.Bold,
+                    new Color(0.04f, 0.04f, 0.08f, 0.95f),
+                    titleBounds,
+                    parent);
+                titleShadow.lineSpacing = -12f;
+                titleShadow.textWrappingMode = TextWrappingModes.Normal;
+                titleShadow.overflowMode = TextOverflowModes.Truncate;
+                titleShadow.enableAutoSizing = true;
+                titleShadow.fontSizeMin = 0.20f;
+                titleShadow.fontSizeMax = titleFontSize;
+
+                TextMeshPro titleText = CreateWorldText(
+                    $"{label} Name",
+                    label.ToUpperInvariant(),
+                    titlePosition,
+                    rotation,
+                    titleFontSize,
+                    FontStyles.Bold,
+                    Color.white,
+                    titleBounds,
+                    parent);
+                titleText.lineSpacing = -12f;
+                titleText.textWrappingMode = TextWrappingModes.Normal;
+                titleText.overflowMode = TextOverflowModes.Truncate;
+                titleText.enableAutoSizing = true;
+                titleText.fontSizeMin = 0.20f;
+                titleText.fontSizeMax = titleFontSize;
+
+                // Upright center icon
+                Texture iconTexture = ResolvePropertyIconTexture(kind, contentId);
+                if (iconTexture != null)
+                {
+                    Vector3 iconPosition = flagPosition + new Vector3(0f, 0.030f, -0.10f);
+                    Vector2 iconSize = new Vector2(0.92f, 0.92f);
+
+                    GameObject iconQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    iconQuad.name = $"{label} Icon";
+                    iconQuad.transform.SetParent(parent, false);
+                    iconQuad.transform.position = iconPosition;
+                    iconQuad.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                    iconQuad.transform.localScale = new Vector3(iconSize.x, iconSize.y, 1f);
+
+                    MeshCollider iconCol = iconQuad.GetComponent<MeshCollider>();
+                    if (iconCol != null)
+                    {
+                        if (UnityEngine.Application.isPlaying)
+                        {
+                            Destroy(iconCol);
+                        }
+                        else
+                        {
+                            DestroyImmediate(iconCol);
+                        }
+                    }
+
+                    Material iconMat = GetFlagMaterial(iconTexture, 1f, Color.white);
+                    _customFlagMaterials.Add(iconMat);
+                    iconQuad.GetComponent<MeshRenderer>().sharedMaterial = iconMat;
+                }
+            }
             else
             {
                 // Airport & Utility Tiles: Straight upright icon placed above bold property name
@@ -861,12 +1071,14 @@ namespace Ropoly.Presentation.Board
             }
 
             // Price lettering in the ownership band (default: ON)
-            string bandDisplayText = _cityShowPriceInBand ? priceText : string.Empty;
-            Vector2 bandTextBounds = horizontalTile
-                ? new Vector2(faceWidth - 0.08f, bandDepth - 0.04f)
-                : new Vector2(bandDepth - 0.04f, faceWidth - 0.08f);
+            string bandDisplayText = isCorner ? priceText : (_cityShowPriceInBand ? priceText : string.Empty);
+            Vector2 bandTextBounds = isCorner
+                ? new Vector2(faceWidth - 0.10f, bandDepth - 0.04f)
+                : (horizontalTile
+                    ? new Vector2(faceWidth - 0.08f, bandDepth - 0.04f)
+                    : new Vector2(bandDepth - 0.04f, faceWidth - 0.08f));
 
-            float bandFontSize = horizontalTile ? 0.24f : 0.22f;
+            float bandFontSize = isCorner ? 0.26f : (horizontalTile ? 0.24f : 0.22f);
 
             TMP_Text bandLabel = CreateWorldText(
                 $"{label} Band Price",
@@ -882,7 +1094,7 @@ namespace Ropoly.Presentation.Board
             bandLabel.fontSizeMin = 0.14f;
             bandLabel.fontSizeMax = bandFontSize;
 
-            tileView.SetOwnerBand(bandRenderer, neutralBandMaterial, bandLabel, _cityShowPriceInBand ? priceText : null);
+            tileView.SetOwnerBand(bandRenderer, neutralBandMaterial, bandLabel, isCorner ? priceText : (_cityShowPriceInBand ? priceText : null));
         }
 
         private static string GetCountryFilePrefix(string countryId)
@@ -1064,6 +1276,26 @@ namespace Ropoly.Presentation.Board
             if (contentId == "space-world-event")
             {
                 return LoadTileIconTexture("WorldEvent_White") ?? LoadTileIconTexture("WorldEvent");
+            }
+
+            if (contentId == "space-start")
+            {
+                return LoadTileIconTexture("Start") ?? LoadTileIconTexture("Start_White");
+            }
+
+            if (contentId == "space-detention")
+            {
+                return LoadTileIconTexture("Detention") ?? LoadTileIconTexture("Detention_White");
+            }
+
+            if (contentId == "space-vacation")
+            {
+                return LoadTileIconTexture("Vacation") ?? LoadTileIconTexture("Vacation_White");
+            }
+
+            if (contentId == "space-go-to-detention")
+            {
+                return LoadTileIconTexture("GoToDetention") ?? LoadTileIconTexture("GoToDetention_White");
             }
 
             return null;
@@ -2101,12 +2333,12 @@ namespace Ropoly.Presentation.Board
         {
             return special.SpecialKind switch
             {
-                SpecialSpaceKind.Start => "BEGIN",
+                SpecialSpaceKind.Start => "COLLECT $200",
                 SpecialSpaceKind.Event => "DRAW CARD",
                 SpecialSpaceKind.Fee => $"PAY ${special.FeeAmount}",
-                SpecialSpaceKind.Detention => "VISITING",
-                SpecialSpaceKind.Vacation => "REST",
-                SpecialSpaceKind.GoToDetention => "MOVE NOW",
+                SpecialSpaceKind.Detention => "JUST VISITING",
+                SpecialSpaceKind.Vacation => "FREE REST",
+                SpecialSpaceKind.GoToDetention => "LOCK UP",
                 _ => string.Empty,
             };
         }
@@ -2146,9 +2378,9 @@ namespace Ropoly.Presentation.Board
                 case "PREMIUM FEE":
                     return "PREMIUM\nFEE";
                 case "DETENTION / VISITING":
-                    return "DETENTION /\nVISITING";
+                    return "PRISON";
                 case "GO TO DETENTION":
-                    return "GO TO\nDETENTION";
+                    return "GO TO PRISON";
                 case "BEIJING CAPITAL AIRPORT":
                     return "BEIJING\nAIRPORT";
                 case "CHARLES DE GAULLE AIRPORT":

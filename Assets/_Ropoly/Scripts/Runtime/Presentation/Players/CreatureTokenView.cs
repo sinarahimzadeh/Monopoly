@@ -173,6 +173,31 @@ namespace Ropoly.Presentation.Players
             gameObject.name = $"Player {playerIndex + 1} - {definition.DisplayName}";
         }
 
+        private SpriteRenderer[] _allRenderers;
+        private int[] _initialSortingOrders;
+
+        public void SetStackOrder(int rank)
+        {
+            if (_allRenderers == null)
+            {
+                _allRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+                _initialSortingOrders = new int[_allRenderers.Length];
+                for (int i = 0; i < _allRenderers.Length; i++)
+                {
+                    _initialSortingOrders[i] = _allRenderers[i].sortingOrder;
+                }
+            }
+
+            int orderOffset = Mathf.Max(0, rank) * 10;
+            for (int i = 0; i < _allRenderers.Length; i++)
+            {
+                if (_allRenderers[i] != null)
+                {
+                    _allRenderers[i].sortingOrder = _initialSortingOrders[i] + orderOffset;
+                }
+            }
+        }
+
         private void CacheRestPose()
         {
             if (_visualRoot == null)

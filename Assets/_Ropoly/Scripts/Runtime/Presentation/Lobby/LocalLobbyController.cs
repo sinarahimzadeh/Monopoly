@@ -510,6 +510,11 @@ namespace Ropoly.Presentation.Lobby
             IReadOnlyList<PlayerState> players = _session.State.Players;
             for (int index = 0; index < players.Count; index++)
             {
+                _boardPreview.SetPlayerTile(index, 0);
+            }
+
+            for (int index = 0; index < players.Count; index++)
+            {
                 CreatureDefinition creature = FindCreature(players[index].CreatureId);
                 _boardPreview.TryGetTokenPosition(0, index, out Vector3 spawnPosition);
                 GameObject tokenObject = Instantiate(
@@ -526,7 +531,33 @@ namespace Ropoly.Presentation.Lobby
                 }
 
                 token.Configure(creature, index);
+                token.SetStackOrder(index);
                 _spawnedTokens[index] = token;
+            }
+        }
+
+        public void RefreshRestingTokenPositions(int excludePlayerIndex = -1)
+        {
+            if (_session == null || _boardPreview == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<PlayerState> players = _session.State.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (i == excludePlayerIndex)
+                {
+                    continue;
+                }
+
+                CreatureTokenView token = _spawnedTokens[i];
+                if (token != null && _boardPreview.TryGetTokenPosition(players[i].BoardPosition, i, out Vector3 targetPos))
+                {
+                    token.transform.position = targetPos;
+                    int stackOrder = _boardPreview.GetPlayerStackRank(players[i].BoardPosition, i);
+                    token.SetStackOrder(stackOrder);
+                }
             }
         }
 
