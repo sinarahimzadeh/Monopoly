@@ -1,6 +1,21 @@
 import os
 from PIL import Image, ImageDraw, ImageFont
 
+def draw_stretched_text(img, text, font, color, center_pos, v_stretch=1.45):
+    bbox = font.getbbox(text)
+    tw = max(1, bbox[2] - bbox[0] + 8)
+    th = max(1, bbox[3] - bbox[1] + 8)
+    temp = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
+    tdraw = ImageDraw.Draw(temp)
+    # Draw text shadow first for extra legibility
+    tdraw.text((tw // 2 + 1, th // 2 + 1), text, font=font, fill=(10, 8, 16, 230), anchor="mm")
+    tdraw.text((tw // 2, th // 2), text, font=font, fill=color, anchor="mm")
+    scaled_h = int(th * v_stretch)
+    stretched = temp.resize((tw, scaled_h), Image.Resampling.BILINEAR)
+    px = int(center_pos[0] - tw // 2)
+    py = int(center_pos[1] - scaled_h // 2)
+    img.paste(stretched, (px, py), stretched)
+
 def render_showcase():
     output_path = r"C:\Users\Admin\.gemini\antigravity\brain\1ede9fe0-845a-447d-89c1-c412754fe314\RotatedUniformTilesJapanShowcase.png"
     w, h = 1600, 1600
@@ -11,7 +26,7 @@ def render_showcase():
         font_large = ImageFont.truetype("arialbd.ttf", 36)
         font_med = ImageFont.truetype("arialbd.ttf", 22)
         font_small = ImageFont.truetype("arial.ttf", 16)
-        font_bold_small = ImageFont.truetype("arialbd.ttf", 16)
+        font_bold_small = ImageFont.truetype("arialbd.ttf", 15)
         font_price = ImageFont.truetype("arialbd.ttf", 15)
     except:
         font_large = ImageFont.load_default()
@@ -38,7 +53,7 @@ def render_showcase():
     draw.text((cx, cy - 65), "ROPOLY", font=font_large, fill=(255, 255, 255, 240), anchor="mm")
     draw.text((cx, cy - 20), "CLASSIC WORLD", font=font_med, fill=(80, 230, 210, 230), anchor="mm")
     draw.text((cx, cy + 18), "22 CITIES  •  8 COUNTRY SETS  •  ZERO SPLIT COUNTRIES", font=font_small, fill=(180, 175, 205, 200), anchor="mm")
-    draw.text((cx, cy + 42), "UPPER SIDE FACES PLAYER  •  LEFT PRICE ROTATED 180°", font=font_small, fill=(240, 180, 80, 220), anchor="mm")
+    draw.text((cx, cy + 42), "UPPER SIDE FACES PLAYER  •  PURE WHITE JAPAN FLAG  •  VERTICALLY STRETCHED NAMES", font=font_small, fill=(240, 180, 80, 220), anchor="mm")
 
     jp_blue = (52, 152, 219, 255)
     it_orange = (243, 156, 18, 255)
@@ -55,7 +70,7 @@ def render_showcase():
         draw.rectangle([x + 6, y + size - 6 - band_h, x + size - 6, y + size - 6], fill=(45, 42, 62, 255))
         draw.text((x + size // 2, y + size - 6 - band_h // 2), band_text, font=font_bold_small, fill=(240, 240, 240, 255), anchor="mm")
         draw.line([x + 6, y + size - 6 - band_h, x + size - 6, y + size - 6 - band_h], fill=(220, 210, 180, 180), width=1)
-        draw.text((x + size // 2, y + 26), title, font=font_med, fill=(255, 255, 255, 255), anchor="mm")
+        draw_stretched_text(im, title, font_med, (255, 255, 255, 255), (x + size // 2, y + 28), v_stretch=1.35)
         draw.text((x + size // 2, y + 80), icon_symbol, font=font_large, fill=(240, 240, 255, 240), anchor="mm")
 
     # Corner 0: Start (Bottom-Right)
@@ -87,9 +102,9 @@ def render_showcase():
 
             if icon_symbol:
                 cdraw.text((int(card_w) // 2, flag_y0 + 35), icon_symbol, font=font_large, fill=(255, 255, 255, 230), anchor="mm")
-                cdraw.text((int(card_w) // 2, flag_y0 + 82), name, font=font_bold_small, fill=(255, 255, 255, 255), anchor="mm")
+                draw_stretched_text(card_im, name, font_bold_small, (255, 255, 255, 255), (int(card_w) // 2, flag_y0 + 82), v_stretch=1.45)
             else:
-                cdraw.text((int(card_w) // 2, (flag_y0 + flag_y1) // 2), name, font=font_bold_small, fill=(255, 255, 255, 255), anchor="mm")
+                draw_stretched_text(card_im, name, font_bold_small, (255, 255, 255, 255), (int(card_w) // 2, (flag_y0 + flag_y1) // 2), v_stretch=1.45)
 
             rule_y = flag_y1 + 1
             cdraw.line([2, rule_y, int(card_w) - 3, rule_y], fill=(220, 210, 180, 180), width=1)
@@ -110,11 +125,12 @@ def render_showcase():
         cdraw.rectangle([2, flag_y0, int(card_w) - 3, flag_y1], fill=(18, 14, 30, 255))
 
         if is_japan:
-            cdraw.rectangle([4, flag_y0 + 2, int(card_w) - 5, flag_y1 - 2], fill=(235, 235, 240, 180))
+            # 100% Solid Pure Brilliant White Field (#FFFFFF) with Crimson Sun (#BC002D)
+            cdraw.rectangle([4, flag_y0 + 2, int(card_w) - 5, flag_y1 - 2], fill=(255, 255, 255, 255))
             fcx = int(card_w) // 2
             fcy = (flag_y0 + flag_y1) // 2 - 12
-            r = 22
-            cdraw.ellipse([fcx - r, fcy - r, fcx + r, fcy + r], fill=(188, 0, 45, 230))
+            r = 23
+            cdraw.ellipse([fcx - r, fcy - r, fcx + r, fcy + r], fill=(188, 0, 45, 255))
         elif set_color:
             cdraw.rectangle([4, flag_y0 + 2, int(card_w) - 5, flag_y1 - 2], fill=(set_color[0]//3, set_color[1]//3, set_color[2]//3, 160))
 
@@ -122,7 +138,7 @@ def render_showcase():
             cdraw.text((int(card_w) // 2, (flag_y0 + flag_y1) // 2 - 14), icon_symbol, font=font_large, fill=(255, 255, 255, 230), anchor="mm")
 
         ny = (flag_y0 + flag_y1) // 2 + 20 if (is_japan or icon_symbol) else (flag_y0 + flag_y1) // 2
-        cdraw.text((int(card_w) // 2, ny), name, font=font_bold_small, fill=(255, 255, 255, 255), anchor="mm")
+        draw_stretched_text(card_im, name, font_bold_small, (255, 255, 255, 255), (int(card_w) // 2, ny), v_stretch=1.45)
 
         rule_y = flag_y1 + 1
         cdraw.line([2, rule_y, int(card_w) - 3, rule_y], fill=(220, 210, 180, 180), width=1)
@@ -163,11 +179,11 @@ def render_showcase():
     draw_edge_card(0, 0, "DELHI", "$60", in_amber)
     draw_edge_card(0, 1, "EVENT", "DRAW", None, icon_symbol="?")
     draw_edge_card(0, 2, "BENGALURU", "$70", in_amber)
-    draw_edge_card(0, 3, "TAX", "$200", None, icon_symbol="⚙")
+    draw_edge_card(0, 3, "MUMBAI", "$80", in_amber)
     draw_edge_card(0, 4, "JFK AIRPORT", "$200", None, icon_symbol="✈")
-    draw_edge_card(0, 5, "MUMBAI", "$80", in_amber)
-    draw_edge_card(0, 6, "OPPORTUNITY", "DRAW", None, icon_symbol="★")
-    draw_edge_card(0, 7, "BRASÍLIA", "$100", br_gold)
+    draw_edge_card(0, 5, "INCOME FEE", "$200", None, icon_symbol="⚙")
+    draw_edge_card(0, 6, "BRASÍLIA", "$100", br_gold)
+    draw_edge_card(0, 7, "OPPORTUNITY", "DRAW", None, icon_symbol="★")
     draw_edge_card(0, 8, "RIO", "$110", br_gold)
 
     # 2. Left edge (Water Service, China 3 cities, Airport, Japan 3 cities)
@@ -176,19 +192,19 @@ def render_showcase():
     draw_edge_card(1, 2, "SHENZHEN", "$150", cn_red)
     draw_edge_card(1, 3, "HEATHROW", "$200", None, icon_symbol="✈")
     draw_edge_card(1, 4, "SHANGHAI", "$160", cn_red)
-    draw_edge_card(1, 5, "EVENT", "DRAW", None, icon_symbol="?")
-    draw_edge_card(1, 6, "KYOTO", "$180", jp_blue, is_japan=True)
+    draw_edge_card(1, 5, "KYOTO", "$180", jp_blue, is_japan=True)
+    draw_edge_card(1, 6, "EVENT", "DRAW", None, icon_symbol="?")
     draw_edge_card(1, 7, "OSAKA", "$190", jp_blue, is_japan=True)
     draw_edge_card(1, 8, "TOKYO", "$200", jp_blue, is_japan=True)
 
     # 3. Top edge (Italy 3 cities, France 2 cities) - Facing player upright!
-    draw_edge_card(2, 0, "OPPORTUNITY", "DRAW", None, icon_symbol="★")
+    draw_edge_card(2, 0, "MILAN", "$230", it_orange)
     draw_edge_card(2, 1, "ROME", "$220", it_orange)
-    draw_edge_card(2, 2, "MILAN", "$230", it_orange)
+    draw_edge_card(2, 2, "OPPORTUNITY", "DRAW", None, icon_symbol="★")
     draw_edge_card(2, 3, "VENICE", "$240", it_orange)
     draw_edge_card(2, 4, "CDG AIRPORT", "$200", None, icon_symbol="✈")
-    draw_edge_card(2, 5, "ELECTRIC", "$150", None, icon_symbol="⚡")
-    draw_edge_card(2, 6, "MARSEILLE", "$250", fr_pink)
+    draw_edge_card(2, 5, "MARSEILLE", "$250", fr_pink)
+    draw_edge_card(2, 6, "ELECTRIC", "$150", None, icon_symbol="⚡")
     draw_edge_card(2, 7, "PARIS", "$260", fr_pink)
     draw_edge_card(2, 8, "EVENT", "DRAW", None, icon_symbol="?")
 
@@ -198,9 +214,9 @@ def render_showcase():
     draw_edge_card(3, 2, "OPPORTUNITY", "DRAW", None, icon_symbol="★")
     draw_edge_card(3, 3, "LONDON", "$310", uk_purple)
     draw_edge_card(3, 4, "PEK AIRPORT", "$200", None, icon_symbol="✈")
-    draw_edge_card(3, 5, "TAX", "$100", None, icon_symbol="⚙")
+    draw_edge_card(3, 5, "LOS ANGELES", "$360", us_blue)
     draw_edge_card(3, 6, "SAN FRANCISCO", "$330", us_blue)
-    draw_edge_card(3, 7, "LOS ANGELES", "$380", us_blue)
+    draw_edge_card(3, 7, "PREMIUM FEE", "$100", None, icon_symbol="⚙")
     draw_edge_card(3, 8, "NEW YORK", "$400", us_blue)
 
     im.save(output_path, "PNG")

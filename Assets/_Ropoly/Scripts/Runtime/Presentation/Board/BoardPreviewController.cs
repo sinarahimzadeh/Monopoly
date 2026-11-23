@@ -795,7 +795,35 @@ namespace Ropoly.Presentation.Board
 
             if (panelTexture != null)
             {
-                Material flagMaterial = GetFlagMaterial(panelTexture, _cityFlagOpacity, _cityFlagTint);
+                float flagOpacity = _cityFlagOpacity;
+                if (countryDef != null && countryDef.CountryId == "country-japan")
+                {
+                    flagOpacity = 1.0f;
+
+                    GameObject whiteBacking = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    whiteBacking.name = $"{label} White Backing";
+                    whiteBacking.transform.SetParent(parent, false);
+                    whiteBacking.transform.position = flagPosition - new Vector3(0f, 0.005f, 0f);
+                    whiteBacking.transform.rotation = rotation;
+                    whiteBacking.transform.localScale = flagScale;
+
+                    MeshCollider col = whiteBacking.GetComponent<MeshCollider>();
+                    if (col != null)
+                    {
+                        if (UnityEngine.Application.isPlaying)
+                        {
+                            Destroy(col);
+                        }
+                        else
+                        {
+                            DestroyImmediate(col);
+                        }
+                    }
+
+                    whiteBacking.GetComponent<MeshRenderer>().sharedMaterial = GetMaterial(Color.white);
+                }
+
+                Material flagMaterial = GetFlagMaterial(panelTexture, flagOpacity, _cityFlagTint);
                 _customFlagMaterials.Add(flagMaterial);
 
                 GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -827,8 +855,8 @@ namespace Ropoly.Presentation.Board
             {
                 // Bold, clear City Name centered across the national flag
                 Vector3 namePosition = flagPosition + new Vector3(0f, 0.035f, 0f);
-                Vector2 nameBounds = new Vector2(faceWidth - 0.06f, 0.65f);
-                float nameFontSize = 0.46f;
+                Vector2 nameBounds = new Vector2(faceWidth - 0.04f, 0.85f);
+                float nameFontSize = 0.54f;
 
                 TextMeshPro shadowText = CreateWorldText(
                     $"{label} Name Shadow",
@@ -844,8 +872,9 @@ namespace Ropoly.Presentation.Board
                 shadowText.textWrappingMode = TextWrappingModes.Normal;
                 shadowText.overflowMode = TextOverflowModes.Truncate;
                 shadowText.enableAutoSizing = true;
-                shadowText.fontSizeMin = 0.18f;
+                shadowText.fontSizeMin = 0.20f;
                 shadowText.fontSizeMax = nameFontSize;
+                shadowText.rectTransform.localScale = new Vector3(1f, 1.45f, 1f);
 
                 TextMeshPro nameText = CreateWorldText(
                     $"{label} Name",
@@ -861,8 +890,9 @@ namespace Ropoly.Presentation.Board
                 nameText.textWrappingMode = TextWrappingModes.Normal;
                 nameText.overflowMode = TextOverflowModes.Truncate;
                 nameText.enableAutoSizing = true;
-                nameText.fontSizeMin = 0.18f;
+                nameText.fontSizeMin = 0.20f;
                 nameText.fontSizeMax = nameFontSize;
+                nameText.rectTransform.localScale = new Vector3(1f, 1.45f, 1f);
 
                 // Optional price lettering on the flag face (if enabled in inspector)
                 if (_cityShowPriceOnFlag)
@@ -927,8 +957,8 @@ namespace Ropoly.Presentation.Board
                 // Corner Cards (Start, Prison, Vacation, Go To Prison):
                 // Bold upright Title at top, centered graphic/icon in middle, metallic divider, action band at bottom
                 Vector3 titlePosition = flagPosition + new Vector3(0f, 0.035f, (flagDepth * 0.5f) - 0.26f);
-                Vector2 titleBounds = new Vector2(faceWidth - 0.12f, 0.50f);
-                float titleFontSize = label.Length > 10 ? 0.40f : 0.46f;
+                Vector2 titleBounds = new Vector2(faceWidth - 0.08f, 0.65f);
+                float titleFontSize = label.Length > 10 ? 0.44f : 0.50f;
 
                 TextMeshPro titleShadow = CreateWorldText(
                     $"{label} Name Shadow",
@@ -946,6 +976,7 @@ namespace Ropoly.Presentation.Board
                 titleShadow.enableAutoSizing = true;
                 titleShadow.fontSizeMin = 0.20f;
                 titleShadow.fontSizeMax = titleFontSize;
+                titleShadow.rectTransform.localScale = new Vector3(1f, 1.45f, 1f);
 
                 TextMeshPro titleText = CreateWorldText(
                     $"{label} Name",
@@ -963,6 +994,7 @@ namespace Ropoly.Presentation.Board
                 titleText.enableAutoSizing = true;
                 titleText.fontSizeMin = 0.20f;
                 titleText.fontSizeMax = titleFontSize;
+                titleText.rectTransform.localScale = new Vector3(1f, 1.45f, 1f);
 
                 // Upright center icon
                 Texture iconTexture = ResolvePropertyIconTexture(kind, contentId);
@@ -1034,8 +1066,8 @@ namespace Ropoly.Presentation.Board
                 }
 
                 Vector3 propNamePosition = flagPosition - (iconDir * (flagDepth * 0.22f)) + new Vector3(0f, 0.035f, 0f);
-                Vector2 propNameBounds = new Vector2(faceWidth - 0.08f, 0.52f);
-                float propNameFontSize = 0.38f;
+                Vector2 propNameBounds = new Vector2(faceWidth - 0.06f, 0.65f);
+                float propNameFontSize = 0.44f;
 
                 TextMeshPro propShadowText = CreateWorldText(
                     $"{label} Name Shadow",
@@ -1051,8 +1083,9 @@ namespace Ropoly.Presentation.Board
                 propShadowText.textWrappingMode = TextWrappingModes.Normal;
                 propShadowText.overflowMode = TextOverflowModes.Truncate;
                 propShadowText.enableAutoSizing = true;
-                propShadowText.fontSizeMin = 0.18f;
+                propShadowText.fontSizeMin = 0.20f;
                 propShadowText.fontSizeMax = propNameFontSize;
+                propShadowText.rectTransform.localScale = new Vector3(1f, 1.45f, 1f);
 
                 TextMeshPro propNameText = CreateWorldText(
                     $"{label} Name",
@@ -1068,8 +1101,9 @@ namespace Ropoly.Presentation.Board
                 propNameText.textWrappingMode = TextWrappingModes.Normal;
                 propNameText.overflowMode = TextOverflowModes.Truncate;
                 propNameText.enableAutoSizing = true;
-                propNameText.fontSizeMin = 0.18f;
+                propNameText.fontSizeMin = 0.20f;
                 propNameText.fontSizeMax = propNameFontSize;
+                propNameText.rectTransform.localScale = new Vector3(1f, 1.45f, 1f);
             }
 
             // Price / detail lettering in the ownership band
