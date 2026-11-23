@@ -80,13 +80,13 @@ namespace Ropoly.Tests.EditMode
         }
 
         [Test]
-        public void DefaultWorldBoard_UsesTwoCitiesForItalyAndFranceAndThreeForOthers()
+        public void DefaultWorldBoard_UsesTwoCitiesForBrazilAndFranceAndThreeForOthers()
         {
             BoardSnapshot board = LoadSnapshot();
             foreach (CountrySnapshot country in board.Countries)
             {
                 int expectedCount =
-                    country.CountryId == "country-italy" || country.CountryId == "country-france" ? 2 : 3;
+                    country.CountryId == "country-brazil" || country.CountryId == "country-france" ? 2 : 3;
                 Assert.That(country.ExpectedCityCount, Is.EqualTo(expectedCount), country.CountryId);
                 Assert.That(country.CityIds.Count, Is.EqualTo(expectedCount), country.CountryId);
             }

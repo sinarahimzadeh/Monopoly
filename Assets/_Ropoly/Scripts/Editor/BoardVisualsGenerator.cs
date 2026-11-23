@@ -189,6 +189,7 @@ namespace Ropoly.Editor
             // Italy
             new() { Id = "city-rome", DisplayName = "Rome", CountryId = "country-italy", NormalizedCityCoord = new Vector2(0.48f, 0.50f), LandmarkName = "Colosseum", AssetFile = "Rome" },
             new() { Id = "city-milan", DisplayName = "Milan", CountryId = "country-italy", NormalizedCityCoord = new Vector2(0.30f, 0.84f), LandmarkName = "Duomo di Milano", AssetFile = "Milan" },
+            new() { Id = "city-venice", DisplayName = "Venice", CountryId = "country-italy", NormalizedCityCoord = new Vector2(0.65f, 0.78f), LandmarkName = "St. Mark's Campanile", AssetFile = "Venice" },
 
             // China
             new() { Id = "city-beijing", DisplayName = "Beijing", CountryId = "country-china", NormalizedCityCoord = new Vector2(0.68f, 0.74f), LandmarkName = "Temple of Heaven", AssetFile = "Beijing" },
@@ -198,7 +199,6 @@ namespace Ropoly.Editor
             // Brazil
             new() { Id = "city-brasilia", DisplayName = "Brasilia", CountryId = "country-brazil", NormalizedCityCoord = new Vector2(0.58f, 0.52f), LandmarkName = "Cathedral of Brasilia", AssetFile = "Brasilia" },
             new() { Id = "city-rio-de-janeiro", DisplayName = "Rio de Janeiro", CountryId = "country-brazil", NormalizedCityCoord = new Vector2(0.68f, 0.34f), LandmarkName = "Christ the Redeemer", AssetFile = "RioDeJaneiro" },
-            new() { Id = "city-sao-paulo", DisplayName = "Sao Paulo", CountryId = "country-brazil", NormalizedCityCoord = new Vector2(0.60f, 0.30f), LandmarkName = "Octavio Frias Bridge", AssetFile = "SaoPaulo" },
 
             // Japan
             new() { Id = "city-tokyo", DisplayName = "Tokyo", CountryId = "country-japan", NormalizedCityCoord = new Vector2(0.55f, 0.45f), LandmarkName = "Tokyo Tower", AssetFile = "Tokyo" },

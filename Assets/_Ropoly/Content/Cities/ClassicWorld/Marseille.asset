@@ -15,8 +15,8 @@ MonoBehaviour:
   _contentId: city-marseille
   _displayName: Marseille
   _artwork: {fileID: 21300000, guid: 4ea8f081110c6214aa41f88993adb1a4, type: 3}
-  _purchasePrice: 240
-  _mortgageValue: 120
+  _purchasePrice: 250
+  _mortgageValue: 125
   _upgradeCost: 150
   _rentByUpgradeLevel: 14000000780000006801000002030000380400006e050000
   _countryMap: {fileID: 21300000, guid: 99b4ec47cf84b4a4da9878db38f0a9e8, type: 3}

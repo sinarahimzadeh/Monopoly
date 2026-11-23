@@ -67,8 +67,9 @@ namespace Ropoly.Editor
 
             CityDefinition rome = CreateCity("Rome", "city-rome", "Rome", 220, 150);
             CityDefinition milan = CreateCity("Milan", "city-milan", "Milan", 230, 150);
+            CityDefinition venice = CreateCity("Venice", "city-venice", "Venice", 240, 150);
 
-            CityDefinition marseille = CreateCity("Marseille", "city-marseille", "Marseille", 240, 150);
+            CityDefinition marseille = CreateCity("Marseille", "city-marseille", "Marseille", 250, 150);
             CityDefinition paris = CreateCity("Paris", "city-paris", "Paris", 260, 150);
 
             CityDefinition liverpool = CreateCity("Liverpool", "city-liverpool", "Liverpool", 280, 200);
@@ -105,8 +106,7 @@ namespace Ropoly.Editor
                 10_311,
                 "#16A085",
                 brasilia,
-                rioDeJaneiro,
-                saoPaulo);
+                rioDeJaneiro);
             CountryDefinition china = CreateCountry(
                 "China",
                 "country-china",
@@ -132,7 +132,8 @@ namespace Ropoly.Editor
                 40_430,
                 "#F39C12",
                 rome,
-                milan);
+                milan,
+                venice);
             CountryDefinition france = CreateCountry(
                 "France",
                 "country-france",
@@ -256,7 +257,6 @@ namespace Ropoly.Editor
                 brasilia,
                 rioDeJaneiro,
                 detention,
-                saoPaulo,
                 waterService,
                 beijing,
                 shenzhen,
@@ -265,15 +265,16 @@ namespace Ropoly.Editor
                 worldEvent,
                 kyoto,
                 osaka,
-                vacation,
                 tokyo,
+                vacation,
                 localOpportunity,
                 rome,
                 milan,
+                venice,
                 charlesDeGaulleAirport,
+                electricNetwork,
                 marseille,
                 paris,
-                electricNetwork,
                 worldEvent,
                 goToDetention,
                 liverpool,

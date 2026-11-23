@@ -690,8 +690,13 @@ namespace Ropoly.Presentation.Board
                 faceWidth = cardWidth - 0.08f;
                 flagDepth = cardLength - bandDepth - 0.06f;
 
-                // Rotate card so it faces inward towards the board center
-                rotation = Quaternion.LookRotation(Vector3.down, inward);
+                bool isTopEdge = tileIndex > 20 && tileIndex < 30;
+
+                // Rotate card so it faces inward towards the board center;
+                // for the upper side (Top edge), face the player directly (upright)
+                rotation = isTopEdge
+                    ? Quaternion.LookRotation(Vector3.down, Vector3.forward)
+                    : Quaternion.LookRotation(Vector3.down, inward);
 
                 // Ownership / action band sits on the inner edge (towards board center)
                 float bandOffset = (cardLength * 0.5f) - (bandDepth * 0.5f) - 0.02f;
@@ -993,11 +998,14 @@ namespace Ropoly.Presentation.Board
             }
             else
             {
+                bool isTopEdge = tileIndex > 20 && tileIndex < 30;
+                Vector3 iconDir = isTopEdge ? Vector3.forward : inward;
+
                 // Airport, Utility, Opportunity & Fee Tiles: Straight upright icon placed above bold property name
                 Texture iconTexture = ResolvePropertyIconTexture(kind, contentId);
                 if (iconTexture != null)
                 {
-                    Vector3 iconPosition = flagPosition + (inward * (flagDepth * 0.22f)) + new Vector3(0f, 0.030f, 0f);
+                    Vector3 iconPosition = flagPosition + (iconDir * (flagDepth * 0.22f)) + new Vector3(0f, 0.030f, 0f);
                     Vector2 iconSize = new Vector2(0.55f, 0.55f);
 
                     GameObject iconQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -1025,7 +1033,7 @@ namespace Ropoly.Presentation.Board
                     iconQuad.GetComponent<MeshRenderer>().sharedMaterial = iconMat;
                 }
 
-                Vector3 propNamePosition = flagPosition - (inward * (flagDepth * 0.22f)) + new Vector3(0f, 0.035f, 0f);
+                Vector3 propNamePosition = flagPosition - (iconDir * (flagDepth * 0.22f)) + new Vector3(0f, 0.035f, 0f);
                 Vector2 propNameBounds = new Vector2(faceWidth - 0.08f, 0.52f);
                 float propNameFontSize = 0.38f;
 
@@ -1070,11 +1078,14 @@ namespace Ropoly.Presentation.Board
             Vector2 bandTextBounds = new Vector2(faceWidth - 0.08f, bandDepth - 0.04f);
             float bandFontSize = isCorner ? 0.26f : 0.24f;
 
+            bool isLeftEdge = tileIndex > 10 && tileIndex < 20;
+            Quaternion bandRotation = isLeftEdge ? (rotation * Quaternion.Euler(0f, 0f, 180f)) : rotation;
+
             TMP_Text bandLabel = CreateWorldText(
                 $"{label} Band Price",
                 bandDisplayText,
                 bandPosition + new Vector3(0f, 0.035f, 0f),
-                rotation,
+                bandRotation,
                 bandFontSize,
                 FontStyles.Bold,
                 _cityBandTextColor,
