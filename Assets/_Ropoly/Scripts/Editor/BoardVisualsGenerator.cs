@@ -125,19 +125,32 @@ namespace Ropoly.Editor
                     new Vector2(0.20f, 0.74f)
                 }
             },
-            ["country-russia"] = new CountryInfo
+            ["country-japan"] = new CountryInfo
             {
-                Id = "country-russia",
-                DisplayName = "RUSSIA",
-                Code = "RU",
-                Color = new Color(0.56f, 0.27f, 0.68f), // Royal Violet
+                Id = "country-japan",
+                DisplayName = "JAPAN",
+                Code = "JP",
+                Color = new Color(0.20f, 0.60f, 0.86f), // Cerulean Blue
                 Polygon = new[]
                 {
-                    new Vector2(0.12f, 0.78f), new Vector2(0.28f, 0.86f), new Vector2(0.52f, 0.86f),
-                    new Vector2(0.76f, 0.84f), new Vector2(0.92f, 0.80f), new Vector2(0.88f, 0.62f),
-                    new Vector2(0.94f, 0.48f), new Vector2(0.82f, 0.42f), new Vector2(0.66f, 0.52f),
-                    new Vector2(0.48f, 0.54f), new Vector2(0.34f, 0.56f), new Vector2(0.20f, 0.48f),
-                    new Vector2(0.14f, 0.60f)
+                    new Vector2(0.35f, 0.88f), new Vector2(0.55f, 0.86f), new Vector2(0.72f, 0.70f),
+                    new Vector2(0.68f, 0.52f), new Vector2(0.50f, 0.44f), new Vector2(0.38f, 0.32f),
+                    new Vector2(0.25f, 0.22f), new Vector2(0.18f, 0.30f), new Vector2(0.28f, 0.48f),
+                    new Vector2(0.42f, 0.62f), new Vector2(0.32f, 0.76f)
+                }
+            },
+            ["country-russia"] = new CountryInfo
+            {
+                Id = "country-japan",
+                DisplayName = "JAPAN",
+                Code = "JP",
+                Color = new Color(0.20f, 0.60f, 0.86f), // Cerulean Blue
+                Polygon = new[]
+                {
+                    new Vector2(0.35f, 0.88f), new Vector2(0.55f, 0.86f), new Vector2(0.72f, 0.70f),
+                    new Vector2(0.68f, 0.52f), new Vector2(0.50f, 0.44f), new Vector2(0.38f, 0.32f),
+                    new Vector2(0.25f, 0.22f), new Vector2(0.18f, 0.30f), new Vector2(0.28f, 0.48f),
+                    new Vector2(0.42f, 0.62f), new Vector2(0.32f, 0.76f)
                 }
             },
             ["country-india"] = new CountryInfo
@@ -187,10 +200,10 @@ namespace Ropoly.Editor
             new() { Id = "city-rio-de-janeiro", DisplayName = "Rio de Janeiro", CountryId = "country-brazil", NormalizedCityCoord = new Vector2(0.68f, 0.34f), LandmarkName = "Christ the Redeemer", AssetFile = "RioDeJaneiro" },
             new() { Id = "city-sao-paulo", DisplayName = "Sao Paulo", CountryId = "country-brazil", NormalizedCityCoord = new Vector2(0.60f, 0.30f), LandmarkName = "Octavio Frias Bridge", AssetFile = "SaoPaulo" },
 
-            // Russia
-            new() { Id = "city-moscow", DisplayName = "Moscow", CountryId = "country-russia", NormalizedCityCoord = new Vector2(0.24f, 0.66f), LandmarkName = "Saint Basil's Cathedral", AssetFile = "Moscow" },
-            new() { Id = "city-saint-petersburg", DisplayName = "Saint Petersburg", CountryId = "country-russia", NormalizedCityCoord = new Vector2(0.20f, 0.76f), LandmarkName = "Spilled Blood Cathedral", AssetFile = "SaintPetersburg" },
-            new() { Id = "city-kazan", DisplayName = "Kazan", CountryId = "country-russia", NormalizedCityCoord = new Vector2(0.32f, 0.64f), LandmarkName = "Qol Sharif Mosque", AssetFile = "Kazan" },
+            // Japan
+            new() { Id = "city-tokyo", DisplayName = "Tokyo", CountryId = "country-japan", NormalizedCityCoord = new Vector2(0.55f, 0.45f), LandmarkName = "Tokyo Tower", AssetFile = "Tokyo" },
+            new() { Id = "city-osaka", DisplayName = "Osaka", CountryId = "country-japan", NormalizedCityCoord = new Vector2(0.40f, 0.35f), LandmarkName = "Osaka Castle", AssetFile = "Osaka" },
+            new() { Id = "city-kyoto", DisplayName = "Kyoto", CountryId = "country-japan", NormalizedCityCoord = new Vector2(0.45f, 0.38f), LandmarkName = "Kinkaku-ji", AssetFile = "Kyoto" },
 
             // India
             new() { Id = "city-delhi", DisplayName = "Delhi", CountryId = "country-india", NormalizedCityCoord = new Vector2(0.44f, 0.74f), LandmarkName = "India Gate", AssetFile = "Delhi" },

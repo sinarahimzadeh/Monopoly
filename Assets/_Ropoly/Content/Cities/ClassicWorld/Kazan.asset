@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a69b585d2fd87e44d80d4d6ce3649764, type: 3}
-  m_Name: Kazan
+  m_Name: Kyoto
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
-  _contentId: city-kazan
-  _displayName: Kazan
+  _contentId: city-kyoto
+  _displayName: Kyoto
   _artwork: {fileID: 21300000, guid: 82b53f659115a5748b5996d4e07214fd, type: 3}
   _purchasePrice: 180
   _mortgageValue: 90

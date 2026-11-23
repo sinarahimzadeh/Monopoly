@@ -12,7 +12,7 @@ namespace Ropoly.Presentation.Board
         private float _boardSize = 18f;
 
         [SerializeField]
-        [Range(1.5f, 4f)]
+        [Range(1.2f, 4f)]
         private float _cornerSize = 2.4f;
 
         [SerializeField]
@@ -91,7 +91,7 @@ namespace Ropoly.Presentation.Board
         private void OnValidate()
         {
             _boardSize = Mathf.Max(10f, _boardSize);
-            _cornerSize = Mathf.Clamp(_cornerSize, 1.5f, _boardSize / 3f);
+            _cornerSize = Mathf.Clamp(_cornerSize, 1.2f, _boardSize / 3f);
             _tileGap = Mathf.Clamp(_tileGap, 0f, 0.2f);
             _tileDepth = Mathf.Clamp(_tileDepth, 0.05f, 0.5f);
             _accentDepth = Mathf.Clamp(_accentDepth, 0.15f, _cornerSize * 0.4f);

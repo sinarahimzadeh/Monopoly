@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 00ef015a9ad3df546bad06faa0fcefd5, type: 3}
-  m_Name: Russia
+  m_Name: Japan
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CountryDefinition
-  _countryId: country-russia
-  _displayName: Russia
+  _countryId: country-japan
+  _displayName: Japan
   _expectedCityCount: 3
   _setColor: {r: 0.20392157, g: 0.59607846, b: 0.85882354, a: 1}
-  _flag: {fileID: 21300000, guid: 8196c28a362dc374a90d826817afc496, type: 3}
+  _flag: {fileID: 21300000, guid: 7b9e382f10ac483ba51299c54e819a12, type: 3}
   _countryMap: {fileID: 0}
   _cities:
   - {fileID: 11400000, guid: 96c3ed2546595ff41830c62b736d073a, type: 2}
   - {fileID: 11400000, guid: 24824cc477349524ab3b8b2a4d0d4bb5, type: 2}
   - {fileID: 11400000, guid: 5275ada3e1594cb48a6a3be2634ee24d, type: 2}
-  _gdpPerCapitaUsd: 14962
+  _gdpPerCapitaUsd: 33806
   _economicDataYear: 2024
   _economicDataSource: World Bank, World Development Indicators (NY.GDP.PCAP.CD)

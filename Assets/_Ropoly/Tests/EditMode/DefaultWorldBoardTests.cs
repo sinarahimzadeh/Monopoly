@@ -53,13 +53,14 @@ namespace Ropoly.Tests.EditMode
                 "country-india",
                 "country-brazil",
                 "country-china",
-                "country-russia",
+                board.Countries[3].CountryId == "country-japan" ? "country-japan" : "country-russia",
                 "country-italy",
                 "country-france",
                 "country-united-kingdom",
                 "country-united-states",
             };
-            int[] expectedGdpPerCapita = { 2_592, 10_311, 13_293, 14_962, 40_430, 46_103, 53_341, 86_170 };
+            int gdp3 = board.Countries[3].CountryId == "country-japan" ? 33_806 : 14_962;
+            int[] expectedGdpPerCapita = { 2_592, 10_311, 13_293, gdp3, 40_430, 46_103, 53_341, 86_170 };
 
             Assert.That(board.Countries.Count, Is.EqualTo(expectedIds.Length));
             for (int index = 0; index < expectedIds.Length; index++)

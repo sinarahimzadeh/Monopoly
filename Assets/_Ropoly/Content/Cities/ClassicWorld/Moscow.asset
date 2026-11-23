@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a69b585d2fd87e44d80d4d6ce3649764, type: 3}
-  m_Name: Moscow
+  m_Name: Tokyo
   m_EditorClassIdentifier: Ropoly.Infrastructure::Ropoly.Infrastructure.Content.Board.CityDefinition
-  _contentId: city-moscow
-  _displayName: Moscow
+  _contentId: city-tokyo
+  _displayName: Tokyo
   _artwork: {fileID: 21300000, guid: adf3258c3a4d87545a0bf873af51f6f9, type: 3}
   _purchasePrice: 200
   _mortgageValue: 100

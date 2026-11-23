@@ -389,7 +389,7 @@ namespace Ropoly.Editor
             CreateText(
                 leftPanel.transform,
                 "Order",
-                "1   INDIA\n\n2   BRAZIL\n\n3   CHINA\n\n4   RUSSIA\n\n" +
+                "1   INDIA\n\n2   BRAZIL\n\n3   CHINA\n\n4   JAPAN\n\n" +
                 "5   ITALY\n\n6   FRANCE\n\n7   UNITED KINGDOM\n\n8   UNITED STATES",
                 18,
                 FontStyles.Normal,

@@ -57,6 +57,7 @@ namespace Ropoly.Presentation.Board
         private float _verticalDip = 0.05f;
 
         private Vector3 _rootBasePosition;
+        private Vector3 _rootBaseScale = Vector3.one;
         private Vector3 _inward = Vector3.forward;
         private Vector3 _perp = Vector3.left;
         private float _shakeTrauma;
@@ -90,6 +91,7 @@ namespace Ropoly.Presentation.Board
             _structureView = structureView;
             _tileRoot = tileRoot != null ? tileRoot : (transform.parent != null ? transform.parent : transform);
             _rootBasePosition = _tileRoot.localPosition;
+            _rootBaseScale = _tileRoot.localScale;
             if (inward.sqrMagnitude > 0.001f)
             {
                 _inward = inward.normalized;
@@ -136,6 +138,7 @@ namespace Ropoly.Presentation.Board
             {
                 _tileRoot = transform.parent != null ? transform.parent : transform;
                 _rootBasePosition = _tileRoot.localPosition;
+                _rootBaseScale = _tileRoot.localScale;
             }
 
             // Add smooth trauma scaled by strength (capped for natural response)
@@ -162,6 +165,7 @@ namespace Ropoly.Presentation.Board
                 _shakeTimer = 0f;
                 _isShaking = false;
                 _tileRoot.localPosition = _rootBasePosition;
+                _tileRoot.localScale = _rootBaseScale;
                 return;
             }
 
@@ -169,15 +173,17 @@ namespace Ropoly.Presentation.Board
             float envelope = Mathf.Exp(-_shakeDecay * _shakeTimer) * _shakeTrauma;
             float wave = Mathf.Sin(_shakeTimer * _shakeFrequency);
 
-            // Natural vertical cushion dip (compress downward, slight rebound)
+            // Responsive physical cushion: visible inward dip towards center, subtle lateral give
+            float inward = -wave * (_shakeIntensity * 1.5f) * envelope;
+            float lateral = Mathf.Sin(_shakeTimer * (_shakeFrequency * 0.8f)) * (_shakeIntensity * 0.5f) * envelope;
             float vertical = -wave * _verticalDip * envelope;
-            // Gentle inward give towards center
-            float inward = -wave * (_shakeIntensity * 0.5f) * envelope;
-            // Very subtle lateral cushion
-            float lateral = Mathf.Sin(_shakeTimer * (_shakeFrequency * 0.8f)) * (_shakeIntensity * 0.25f) * envelope;
+
+            // Subtle squash-and-stretch scale response visible from top-down orthographic camera
+            float scale = 1f - (0.045f * wave * envelope);
 
             Vector3 offset = (_perp * lateral) + (_inward * inward) + new Vector3(0f, vertical, 0f);
             _tileRoot.localPosition = _rootBasePosition + offset;
+            _tileRoot.localScale = new Vector3(_rootBaseScale.x * scale, _rootBaseScale.y, _rootBaseScale.z * scale);
         }
 
         private void OnDisable()
@@ -185,6 +191,7 @@ namespace Ropoly.Presentation.Board
             if (_tileRoot != null)
             {
                 _tileRoot.localPosition = _rootBasePosition;
+                _tileRoot.localScale = _rootBaseScale;
             }
             _shakeTrauma = 0f;
             _shakeTimer = 0f;

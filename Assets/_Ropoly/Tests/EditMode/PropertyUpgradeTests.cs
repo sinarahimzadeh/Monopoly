@@ -35,6 +35,7 @@ namespace Ropoly.Tests.EditMode
                 { "country-india", 50 },
                 { "country-brazil", 50 },
                 { "country-china", 100 },
+                { "country-japan", 100 },
                 { "country-russia", 100 },
                 { "country-italy", 150 },
                 { "country-france", 150 },

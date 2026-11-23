@@ -56,14 +56,14 @@ namespace Ropoly.Editor
             CityDefinition shenzhen = CreateCity("Shenzhen", "city-shenzhen", "Shenzhen", 150, 100);
             CityDefinition shanghai = CreateCity("Shanghai", "city-shanghai", "Shanghai", 160, 100);
 
-            CityDefinition kazan = CreateCity("Kazan", "city-kazan", "Kazan", 180, 100);
-            CityDefinition saintPetersburg = CreateCity(
-                "SaintPetersburg",
-                "city-saint-petersburg",
-                "Saint Petersburg",
+            CityDefinition kyoto = CreateCity("Kyoto", "city-kyoto", "Kyoto", 180, 100);
+            CityDefinition osaka = CreateCity(
+                "Osaka",
+                "city-osaka",
+                "Osaka",
                 190,
                 100);
-            CityDefinition moscow = CreateCity("Moscow", "city-moscow", "Moscow", 200, 100);
+            CityDefinition tokyo = CreateCity("Tokyo", "city-tokyo", "Tokyo", 200, 100);
 
             CityDefinition rome = CreateCity("Rome", "city-rome", "Rome", 220, 150);
             CityDefinition milan = CreateCity("Milan", "city-milan", "Milan", 230, 150);
@@ -116,15 +116,15 @@ namespace Ropoly.Editor
                 beijing,
                 shenzhen,
                 shanghai);
-            CountryDefinition russia = CreateCountry(
-                "Russia",
-                "country-russia",
-                "Russia",
-                14_962,
+            CountryDefinition japan = CreateCountry(
+                "Japan",
+                "country-japan",
+                "Japan",
+                33_806,
                 "#3498DB",
-                kazan,
-                saintPetersburg,
-                moscow);
+                kyoto,
+                osaka,
+                tokyo);
             CountryDefinition italy = CreateCountry(
                 "Italy",
                 "country-italy",
@@ -236,7 +236,7 @@ namespace Ropoly.Editor
                 india,
                 brazil,
                 china,
-                russia,
+                japan,
                 italy,
                 france,
                 unitedKingdom,
@@ -263,10 +263,10 @@ namespace Ropoly.Editor
                 heathrowAirport,
                 shanghai,
                 worldEvent,
-                kazan,
-                saintPetersburg,
+                kyoto,
+                osaka,
                 vacation,
-                moscow,
+                tokyo,
                 localOpportunity,
                 rome,
                 milan,
