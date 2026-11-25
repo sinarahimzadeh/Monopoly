@@ -85,7 +85,7 @@ Material:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
-    - _AmbientStrength: 0.78
+    - _AmbientStrength: 0.02
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 1
@@ -97,7 +97,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EmissionStrength: 0.9
+    - _EmissionStrength: 0
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
@@ -108,10 +108,10 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _RimPower: 2
-    - _RimStrength: 0.84
+    - _RimStrength: 0
     - _ShadowSoftness: 0.14
     - _ShadowThreshold: 0.08
-    - _Smoothness: 0.42
+    - _Smoothness: 0.05
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -121,11 +121,11 @@ Material:
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.055, g: 0.025, b: 0.11, a: 1}
-    - _Color: {r: 0.054999977, g: 0.035, b: 0.089999996, a: 1}
-    - _EmissionColor: {r: 0.52, g: 1, b: 0.91, a: 1}
-    - _RimColor: {r: 0.52, g: 1, b: 0.91, a: 1}
-    - _ShadeColor: {r: 0.012, g: 0.006, b: 0.03, a: 1}
+    - _BaseColor: {r: 0.005, g: 0.005, b: 0.006, a: 1}
+    - _Color: {r: 0.005, g: 0.005, b: 0.006, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _RimColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ShadeColor: {r: 0.002, g: 0.002, b: 0.003, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -51,9 +51,11 @@ namespace Ropoly.Presentation.Dice
                 settings.RimColor,
                 settings.RimStrength,
                 rimPower: 2.6f,
-                smoothness: 0.62f,
+                smoothness: 0.25f,
                 emissionColor: Color.black,
                 emissionStrength: 0f);
+            float pipRimStrength = settings.PipGlowStrength > 0.001f ? 0.72f : 0f;
+            float pipSmoothness = settings.PipGlowStrength > 0.001f ? 0.42f : 0.05f;
             foreach (MeshRenderer pip in _pipRenderers)
             {
                 ApplyStyle(
@@ -61,9 +63,9 @@ namespace Ropoly.Presentation.Dice
                     settings.PipColor,
                     settings.PipColor * 0.55f,
                     settings.PipGlowColor,
-                    rimStrength: 0.72f,
+                    rimStrength: pipRimStrength,
                     rimPower: 2f,
-                    smoothness: 0.42f,
+                    smoothness: pipSmoothness,
                     emissionColor: settings.PipGlowColor,
                     emissionStrength: settings.PipGlowStrength);
             }

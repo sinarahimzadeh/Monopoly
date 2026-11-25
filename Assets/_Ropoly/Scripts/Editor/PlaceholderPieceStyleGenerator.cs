@@ -54,25 +54,31 @@ namespace Ropoly.Editor
             Material diceBody = ConfigureToonMaterial(
                 DiceBodyMaterialPath,
                 toonShader,
-                new Color(0.98f, 0.965f, 1f, 1f),
-                new Color(0.74f, 0.68f, 0.9f, 1f),
-                new Color(0.43f, 1f, 0.88f, 1f),
-                rimStrength: 0.62f,
+                Color.white,
+                new Color(0.76f, 0.77f, 0.8f, 1f),
+                Color.white,
+                rimStrength: 0f,
                 rimPower: 2.6f,
-                smoothness: 0.62f,
-                emissionColor: new Color(0.32f, 0.16f, 0.52f, 1f),
-                emissionStrength: 0.08f);
+                smoothness: 0.25f,
+                emissionColor: Color.black,
+                emissionStrength: 0f,
+                shadowThreshold: 0.25f,
+                shadowSoftness: 0.22f,
+                ambientStrength: 0.06f);
             Material dicePips = ConfigureToonMaterial(
                 DicePipMaterialPath,
                 toonShader,
-                new Color(0.055f, 0.025f, 0.11f, 1f),
-                new Color(0.012f, 0.006f, 0.03f, 1f),
-                new Color(0.52f, 1f, 0.91f, 1f),
-                rimStrength: 0.84f,
+                new Color(0.005f, 0.005f, 0.006f, 1f),
+                new Color(0.002f, 0.002f, 0.003f, 1f),
+                Color.black,
+                rimStrength: 0f,
                 rimPower: 2f,
-                smoothness: 0.42f,
-                emissionColor: new Color(0.52f, 1f, 0.91f, 1f),
-                emissionStrength: 0.9f);
+                smoothness: 0.05f,
+                emissionColor: Color.black,
+                emissionStrength: 0f,
+                shadowThreshold: 0.08f,
+                shadowSoftness: 0.14f,
+                ambientStrength: 0.02f);
             ConfigureShadowMaterial(
                 DiceShadowMaterialPath,
                 shadowShader,
@@ -94,7 +100,10 @@ namespace Ropoly.Editor
             float rimPower,
             float smoothness,
             Color emissionColor,
-            float emissionStrength)
+            float emissionStrength,
+            float shadowThreshold,
+            float shadowSoftness,
+            float ambientStrength)
         {
             Material material = LoadOrCreateMaterial(path, shader);
             material.shader = shader;
@@ -103,9 +112,9 @@ namespace Ropoly.Editor
             material.SetColor("_RimColor", rimColor);
             material.SetFloat("_RimStrength", rimStrength);
             material.SetFloat("_RimPower", rimPower);
-            material.SetFloat("_ShadowThreshold", 0.08f);
-            material.SetFloat("_ShadowSoftness", 0.14f);
-            material.SetFloat("_AmbientStrength", 0.78f);
+            material.SetFloat("_ShadowThreshold", shadowThreshold);
+            material.SetFloat("_ShadowSoftness", shadowSoftness);
+            material.SetFloat("_AmbientStrength", ambientStrength);
             material.SetFloat("_Smoothness", smoothness);
             material.SetColor("_EmissionColor", emissionColor);
             material.SetFloat("_EmissionStrength", emissionStrength);
@@ -157,18 +166,15 @@ namespace Ropoly.Editor
 
             SerializedObject serialized = new SerializedObject(settings);
             serialized.FindProperty("_dieSize").floatValue = 1.28f;
-            serialized.FindProperty("_bodyColor").colorValue =
-                new Color(0.98f, 0.965f, 1f, 1f);
+            serialized.FindProperty("_bodyColor").colorValue = Color.white;
             serialized.FindProperty("_pipColor").colorValue =
-                new Color(0.055f, 0.025f, 0.11f, 1f);
+                new Color(0.005f, 0.005f, 0.006f, 1f);
             serialized.FindProperty("_bodyShadeColor").colorValue =
-                new Color(0.74f, 0.68f, 0.9f, 1f);
-            serialized.FindProperty("_rimColor").colorValue =
-                new Color(0.43f, 1f, 0.88f, 1f);
-            serialized.FindProperty("_pipGlowColor").colorValue =
-                new Color(0.52f, 1f, 0.91f, 1f);
-            serialized.FindProperty("_rimStrength").floatValue = 0.62f;
-            serialized.FindProperty("_pipGlowStrength").floatValue = 0.9f;
+                new Color(0.76f, 0.77f, 0.8f, 1f);
+            serialized.FindProperty("_rimColor").colorValue = Color.white;
+            serialized.FindProperty("_pipGlowColor").colorValue = Color.black;
+            serialized.FindProperty("_rimStrength").floatValue = 0f;
+            serialized.FindProperty("_pipGlowStrength").floatValue = 0f;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(settings);
         }

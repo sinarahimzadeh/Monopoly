@@ -92,21 +92,28 @@ Shader "Ropoly/Soft Toon Surface"
                 half3 normalWS = normalize(input.normalWS);
                 half3 viewDirection = SafeNormalize(GetWorldSpaceViewDir(input.positionWS));
                 Light mainLight = GetMainLight(input.shadowCoord);
+                half3 lightDir = dot(mainLight.color, mainLight.color) > 0.0001h
+                    ? normalize(mainLight.direction)
+                    : normalize(half3(-0.35h, 0.85h, 0.40h));
 
-                half lightAmount = dot(normalWS, mainLight.direction);
+                half lightAmount = dot(normalWS, lightDir);
                 half toonBand = smoothstep(
                     _ShadowThreshold - _ShadowSoftness,
                     _ShadowThreshold + _ShadowSoftness,
                     lightAmount);
                 half attenuation = mainLight.distanceAttenuation * mainLight.shadowAttenuation;
                 half3 toonColor = lerp(_ShadeColor.rgb, _BaseColor.rgb, toonBand);
-                half3 direct = toonColor * mainLight.color * attenuation;
+                // Keep a neutral studio floor so white dice stay crisp white even under dim scene lighting.
+                half3 keyRadiance = max(
+                    min(mainLight.color * attenuation, half3(1.10h, 1.10h, 1.10h)),
+                    half3(0.96h, 0.96h, 0.96h));
+                half3 direct = toonColor * keyRadiance;
                 half3 ambient = SampleSH(normalWS) * _BaseColor.rgb * _AmbientStrength;
 
                 half rim = pow(1.0h - saturate(dot(normalWS, viewDirection)), _RimPower);
                 half3 rimLight = _RimColor.rgb * rim * _RimStrength;
 
-                half3 halfVector = SafeNormalize(mainLight.direction + viewDirection);
+                half3 halfVector = SafeNormalize(lightDir + viewDirection);
                 half specularPower = lerp(12.0h, 96.0h, _Smoothness);
                 half specular = pow(saturate(dot(normalWS, halfVector)), specularPower);
                 half3 highlight = mainLight.color * specular * _Smoothness * 0.6h;

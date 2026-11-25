@@ -13,27 +13,27 @@ namespace Ropoly.Presentation.Dice
         private float _dieSize = 1.05f;
 
         [SerializeField]
-        private Color _bodyColor = new Color(0.96f, 0.95f, 1f, 1f);
+        private Color _bodyColor = Color.white;
 
         [SerializeField]
-        private Color _pipColor = new Color(0.055f, 0.035f, 0.09f, 1f);
+        private Color _pipColor = new Color(0.005f, 0.005f, 0.006f, 1f);
 
         [SerializeField]
-        private Color _bodyShadeColor = new Color(0.48f, 0.42f, 0.68f, 1f);
+        private Color _bodyShadeColor = new Color(0.76f, 0.77f, 0.8f, 1f);
 
         [SerializeField]
-        private Color _rimColor = new Color(0.43f, 1f, 0.88f, 1f);
+        private Color _rimColor = Color.white;
 
         [SerializeField]
-        private Color _pipGlowColor = new Color(0.94f, 0.28f, 0.72f, 1f);
+        private Color _pipGlowColor = Color.black;
 
         [SerializeField]
         [Range(0f, 2f)]
-        private float _rimStrength = 0.48f;
+        private float _rimStrength = 0f;
 
         [SerializeField]
         [Range(0f, 3f)]
-        private float _pipGlowStrength = 0.14f;
+        private float _pipGlowStrength = 0f;
 
         [Header("Board placement")]
         [SerializeField]

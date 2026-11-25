@@ -430,9 +430,9 @@ namespace Ropoly.Presentation.Board
             _generatedRoot = generatedRoot.transform;
 
             BoardSnapshot board = _boardDefinition.CreateSnapshot();
-            CreateBoardSurface(board);
+            CreateBoardSurface();
             CreateTiles(board);
-            CreateCenterBranding(board);
+            CreateCenterBranding();
         }
 
 #if UNITY_EDITOR
@@ -503,7 +503,7 @@ namespace Ropoly.Presentation.Board
             }
         }
 
-        private void CreateBoardSurface(BoardSnapshot board)
+        private void CreateBoardSurface()
         {
             float boardSize = _theme.BoardSize;
             CreateCube(
@@ -522,20 +522,6 @@ namespace Ropoly.Presentation.Board
                 _theme.CenterColor,
                 includeCollider: false,
                 _generatedRoot);
-
-            float dashWidth = centerSize / Mathf.Max(1, board.Countries.Count) - 0.12f;
-            float dashStart = -centerSize * 0.5f + dashWidth * 0.5f + 0.06f;
-            for (int index = 0; index < board.Countries.Count; index++)
-            {
-                Color color = ParseColor(board.Countries[index].SetColorHex, _theme.CornerColor);
-                CreateCube(
-                    $"Country Tier {index + 1}",
-                    new Vector3(dashStart + (index * (dashWidth + 0.12f)), 0.23f, 3.35f),
-                    new Vector3(dashWidth, 0.05f, 0.15f),
-                    color,
-                    includeCollider: false,
-                    _generatedRoot);
-            }
         }
 
         private void CreateTiles(BoardSnapshot board)
@@ -1440,39 +1426,18 @@ namespace Ropoly.Presentation.Board
                 parent);
         }
 
-        private void CreateCenterBranding(BoardSnapshot board)
+        private void CreateCenterBranding()
         {
             Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
             CreateWorldText(
                 "Ropoly Logo",
                 "ROPOLY",
-                new Vector3(0f, 0.34f, 0.95f),
+                new Vector3(0f, 0.34f, 3.75f),
                 rotation,
                 2.2f,
                 FontStyles.Bold,
                 _theme.PrimaryTextColor,
                 new Vector2(8f, 2.3f),
-                _generatedRoot);
-            CreateWorldText(
-                "Board Name",
-                board.DisplayName.ToUpperInvariant(),
-                new Vector3(0f, 0.34f, 0.05f),
-                rotation,
-                1.05f,
-                FontStyles.Bold,
-                _theme.PriceTextColor,
-                new Vector2(8f, 0.9f),
-                _generatedRoot);
-            CreateWorldText(
-                "Board Summary",
-                $"{board.Cities.Count} CITIES   •   {board.Countries.Count} COUNTRY SETS\n" +
-                $"{board.Airports.Count} AIRPORTS   •   {board.Utilities.Count} UTILITIES",
-                new Vector3(0f, 0.34f, -1.0f),
-                rotation,
-                0.72f,
-                FontStyles.Normal,
-                _theme.SecondaryTextColor,
-                new Vector2(9f, 1.0f),
                 _generatedRoot);
             _statusText = CreateWorldText(
                 "Preview Status",
