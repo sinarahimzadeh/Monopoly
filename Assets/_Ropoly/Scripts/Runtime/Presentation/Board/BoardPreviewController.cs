@@ -5,6 +5,7 @@ using Ropoly.Presentation.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 namespace Ropoly.Presentation.Board
 {
@@ -105,11 +106,16 @@ namespace Ropoly.Presentation.Board
         private Color _statusTextColor = new Color(0.97f, 0.90f, 0.65f, 1f);
 
         [SerializeField]
-        private Color _roundReportTextColor = new Color(0.72f, 0.78f, 0.90f, 0.95f);
+        private Color _roundReportTextColor = new Color(0.74f, 0.80f, 0.92f, 0.96f);
+
+        [Tooltip("Maximum match log entries kept (0 = unlimited match history).")]
+        [SerializeField]
+        [Min(0)]
+        private int _maxRoundReportEntries = 0;
 
         [SerializeField]
-        [Range(1, 5)]
-        private int _maxRoundReportEntries = 3;
+        [Range(0.5f, 8f)]
+        private float _creditScrollSpeed = 2.4f;
 
         public float CityFlagOpacity => _cityFlagOpacity;
         public float CityFlagBlur => _cityFlagBlur;
@@ -137,8 +143,14 @@ namespace Ropoly.Presentation.Board
         private TMP_FontAsset _font;
         private TMP_Text _statusText;
         private TMP_Text _statusShadowText;
-        private TMP_Text _roundReportText;
-        private TMP_Text _roundReportShadowText;
+        private Canvas _reportCanvas;
+        private Image _reportBackdropImage;
+        private ScrollRect _reportScrollRect;
+        private RectTransform _reportViewportRect;
+        private RectTransform _reportContentRect;
+        private TextMeshProUGUI _roundReportText;
+        private bool _creditScrollActive;
+        private float _lastCreditScrollPos = 1f;
 
         public BoardDefinition BoardDefinition => _boardDefinition;
         public BoardPreviewTheme Theme => _theme;
@@ -165,17 +177,19 @@ namespace Ropoly.Presentation.Board
             _roundReportLog ??= new RoundReportLog(_maxRoundReportEntries);
             if (_roundReportLog.AddEntry(entry))
             {
-                SetRoundReportText(_roundReportLog.FormatReport());
+                SetRoundReportText(_roundReportLog.FormatReport(), scrollToLatest: true);
             }
         }
 
         public void ClearRoundReport()
         {
             _roundReportLog?.Clear();
-            SetRoundReportText(string.Empty);
+            _creditScrollActive = false;
+            _lastCreditScrollPos = 1f;
+            SetRoundReportText(string.Empty, scrollToLatest: false);
         }
 
-        private void SetRoundReportText(string value)
+        private void SetRoundReportText(string value, bool scrollToLatest)
         {
             string resolved = value ?? string.Empty;
             if (_roundReportText != null)
@@ -183,9 +197,39 @@ namespace Ropoly.Presentation.Board
                 _roundReportText.text = resolved;
             }
 
-            if (_roundReportShadowText != null)
+            if (_reportBackdropImage != null)
             {
-                _roundReportShadowText.text = resolved;
+                float alpha = string.IsNullOrEmpty(resolved) ? 0f : 0.36f;
+                _reportBackdropImage.color = new Color(0.045f, 0.032f, 0.095f, alpha);
+            }
+
+            if (_reportContentRect != null && _reportScrollRect != null &&
+                (UnityEngine.Application.isPlaying || !string.IsNullOrEmpty(resolved)))
+            {
+                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_reportContentRect);
+
+                bool hasOverflow = _reportViewportRect != null &&
+                                   _reportContentRect.rect.height > _reportViewportRect.rect.height + 1f;
+                if (!hasOverflow)
+                {
+                    _creditScrollActive = false;
+                    _reportScrollRect.verticalNormalizedPosition = 1f;
+                    _lastCreditScrollPos = 1f;
+                }
+                else if (scrollToLatest)
+                {
+                    if (UnityEngine.Application.isPlaying)
+                    {
+                        _creditScrollActive = true;
+                        _lastCreditScrollPos = _reportScrollRect.verticalNormalizedPosition;
+                    }
+                    else
+                    {
+                        _reportScrollRect.verticalNormalizedPosition = 0f;
+                        _lastCreditScrollPos = 0f;
+                    }
+                }
             }
         }
 
@@ -427,6 +471,43 @@ namespace Ropoly.Presentation.Board
             }
         }
 #endif
+
+        private void Update()
+        {
+            if (!UnityEngine.Application.isPlaying || _reportScrollRect == null)
+            {
+                return;
+            }
+
+            if (_reportCanvas != null && _reportCanvas.worldCamera == null)
+            {
+                _reportCanvas.worldCamera = Camera.main;
+            }
+
+            if (!_creditScrollActive)
+            {
+                return;
+            }
+
+            // Pause auto-scroll if the user dragged or wheeled upward to read earlier entries.
+            float currentPos = _reportScrollRect.verticalNormalizedPosition;
+            if (currentPos > _lastCreditScrollPos + 0.004f)
+            {
+                _creditScrollActive = false;
+                return;
+            }
+
+            float nextPos = Mathf.MoveTowards(currentPos, 0f, Time.deltaTime * _creditScrollSpeed);
+            _reportScrollRect.verticalNormalizedPosition = nextPos;
+            _lastCreditScrollPos = nextPos;
+
+            if (nextPos <= 0.001f)
+            {
+                _reportScrollRect.verticalNormalizedPosition = 0f;
+                _lastCreditScrollPos = 0f;
+                _creditScrollActive = false;
+            }
+        }
 
         private void OnDestroy()
         {
@@ -1492,9 +1573,9 @@ namespace Ropoly.Presentation.Board
                 _generatedRoot);
 
             string initialStatus = GameDialogCatalog.Get(GameDialogKeys.LobbyChooseCreature);
-            Vector3 statusPos = new Vector3(0f, 0.34f, -2.05f);
+            Vector3 statusPos = new Vector3(0f, 0.34f, -1.95f);
             Vector3 shadowOffset = new Vector3(0.02f, -0.005f, -0.02f);
-            Vector2 statusBounds = new Vector2(11.6f, 0.78f);
+            Vector2 statusBounds = new Vector2(11.6f, 0.72f);
             Color shadowColor = new Color(0.03f, 0.02f, 0.06f, 0.92f);
 
             TextMeshPro statusShadow = CreateWorldText(
@@ -1502,7 +1583,7 @@ namespace Ropoly.Presentation.Board
                 initialStatus,
                 statusPos + shadowOffset,
                 rotation,
-                0.50f,
+                0.48f,
                 FontStyles.Bold,
                 shadowColor,
                 statusBounds,
@@ -1515,7 +1596,7 @@ namespace Ropoly.Presentation.Board
                 initialStatus,
                 statusPos,
                 rotation,
-                0.50f,
+                0.48f,
                 FontStyles.Bold,
                 _statusTextColor,
                 statusBounds,
@@ -1524,53 +1605,161 @@ namespace Ropoly.Presentation.Board
             _statusText = statusText;
 
             _roundReportLog ??= new RoundReportLog(_maxRoundReportEntries);
-            string reportContent = _roundReportLog.FormatReport();
-            Vector3 reportPos = new Vector3(0f, 0.34f, -4.05f);
-            Vector2 reportBounds = new Vector2(11.4f, 2.75f);
+            CreateRoundReportScrollPanel(rotation, _roundReportLog.FormatReport());
+        }
 
-            TextMeshPro reportShadow = CreateWorldText(
-                "Round Report Shadow",
-                reportContent,
-                reportPos + shadowOffset,
-                rotation,
-                0.31f,
-                FontStyles.Normal,
-                shadowColor,
-                reportBounds,
-                _generatedRoot);
-            ConfigureRoundReportText(reportShadow);
-            _roundReportShadowText = reportShadow;
+        private void CreateRoundReportScrollPanel(Quaternion rotation, string initialContent)
+        {
+            const float PanelWidthPx = 1140f;
+            const float PanelHeightPx = 365f;
+            const float WorldScale = 0.01f;
 
-            TextMeshPro reportText = CreateWorldText(
-                "Round Report",
-                reportContent,
-                reportPos,
-                rotation,
-                0.31f,
-                FontStyles.Normal,
-                _roundReportTextColor,
-                reportBounds,
-                _generatedRoot);
-            ConfigureRoundReportText(reportText);
+            GameObject canvasObject = new GameObject(
+                "Round Report Canvas",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(CanvasScaler),
+                typeof(GraphicRaycaster));
+            canvasObject.transform.SetParent(_generatedRoot, false);
+            canvasObject.transform.SetPositionAndRotation(new Vector3(0f, 0.34f, -4.30f), rotation);
+            canvasObject.transform.localScale = Vector3.one * WorldScale;
+
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.pixelPerfect = true;
+            canvas.sortingOrder = 5;
+            if (UnityEngine.Application.isPlaying)
+            {
+                canvas.worldCamera = Camera.main;
+            }
+            _reportCanvas = canvas;
+
+            RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
+            canvasRect.sizeDelta = new Vector2(PanelWidthPx, PanelHeightPx);
+
+            GraphicRaycaster raycaster = canvasObject.GetComponent<GraphicRaycaster>();
+            raycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None;
+
+            Image backdrop = canvasObject.AddComponent<Image>();
+            backdrop.color = new Color(0.045f, 0.032f, 0.095f, string.IsNullOrEmpty(initialContent) ? 0f : 0.36f);
+            backdrop.raycastTarget = true;
+            _reportBackdropImage = backdrop;
+
+            ScrollRect scrollRect = canvasObject.AddComponent<ScrollRect>();
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.scrollSensitivity = 36f;
+            scrollRect.inertia = true;
+            scrollRect.decelerationRate = 0.135f;
+            _reportScrollRect = scrollRect;
+
+            // Viewport with RectMask2D so overflow scrolls cleanly like movie credits
+            GameObject viewportObject = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+            viewportObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform viewportRect = viewportObject.GetComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.offsetMin = new Vector2(0f, 0f);
+            viewportRect.offsetMax = new Vector2(-24f, 0f);
+            Image viewportImage = viewportObject.GetComponent<Image>();
+            viewportImage.color = new Color(0f, 0f, 0f, 0.004f);
+            viewportImage.raycastTarget = true;
+            _reportViewportRect = viewportRect;
+            scrollRect.viewport = viewportRect;
+
+            // Content container auto-sizing vertically with new entries
+            GameObject contentObject = new GameObject(
+                "Content",
+                typeof(RectTransform),
+                typeof(VerticalLayoutGroup),
+                typeof(ContentSizeFitter));
+            contentObject.transform.SetParent(viewportObject.transform, false);
+            RectTransform contentRect = contentObject.GetComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0f, 1f);
+            contentRect.anchorMax = new Vector2(1f, 1f);
+            contentRect.pivot = new Vector2(0.5f, 1f);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = Vector2.zero;
+
+            VerticalLayoutGroup layoutGroup = contentObject.GetComponent<VerticalLayoutGroup>();
+            layoutGroup.padding = new RectOffset(14, 14, 6, 8);
+            layoutGroup.childControlWidth = true;
+            layoutGroup.childControlHeight = true;
+            layoutGroup.childForceExpandWidth = true;
+            layoutGroup.childForceExpandHeight = false;
+
+            ContentSizeFitter sizeFitter = contentObject.GetComponent<ContentSizeFitter>();
+            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            _reportContentRect = contentRect;
+            scrollRect.content = contentRect;
+
+            // Log TextMeshProUGUI using Ropoly UI SDF
+            GameObject textObject = new GameObject("Round Report Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textObject.transform.SetParent(contentObject.transform, false);
+            TextMeshProUGUI reportText = textObject.GetComponent<TextMeshProUGUI>();
+            reportText.font = _font;
+            reportText.fontSize = 30f;
+            reportText.fontStyle = FontStyles.Normal;
+            reportText.color = _roundReportTextColor;
+            reportText.alignment = TextAlignmentOptions.Top;
+            reportText.textWrappingMode = TextWrappingModes.Normal;
+            reportText.overflowMode = TextOverflowModes.Overflow;
+            reportText.characterSpacing = 2.0f;
+            reportText.lineSpacing = 10f;
+            reportText.richText = false;
+            reportText.raycastTarget = false;
+            reportText.text = initialContent ?? string.Empty;
             _roundReportText = reportText;
+
+            // Vertical Scrollbar on the right edge (auto-shows once entries overflow ~8 lines)
+            GameObject scrollbarObject = new GameObject("Scrollbar Vertical", typeof(RectTransform), typeof(Image), typeof(Scrollbar));
+            scrollbarObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform scrollbarRect = scrollbarObject.GetComponent<RectTransform>();
+            scrollbarRect.anchorMin = new Vector2(1f, 0f);
+            scrollbarRect.anchorMax = new Vector2(1f, 1f);
+            scrollbarRect.pivot = new Vector2(1f, 0.5f);
+            scrollbarRect.anchoredPosition = new Vector2(-4f, 0f);
+            scrollbarRect.sizeDelta = new Vector2(14f, -12f);
+            Image trackImage = scrollbarObject.GetComponent<Image>();
+            trackImage.color = new Color(0.18f, 0.15f, 0.30f, 0.65f);
+
+            GameObject slidingArea = new GameObject("Sliding Area", typeof(RectTransform));
+            slidingArea.transform.SetParent(scrollbarObject.transform, false);
+            RectTransform slidingRect = slidingArea.GetComponent<RectTransform>();
+            slidingRect.anchorMin = Vector2.zero;
+            slidingRect.anchorMax = Vector2.one;
+            slidingRect.offsetMin = new Vector2(2f, 2f);
+            slidingRect.offsetMax = new Vector2(-2f, -2f);
+
+            GameObject handleObject = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handleObject.transform.SetParent(slidingArea.transform, false);
+            RectTransform handleRect = handleObject.GetComponent<RectTransform>();
+            handleRect.anchorMin = Vector2.zero;
+            handleRect.anchorMax = Vector2.one;
+            handleRect.offsetMin = Vector2.zero;
+            handleRect.offsetMax = Vector2.zero;
+            Image handleImage = handleObject.GetComponent<Image>();
+            handleImage.color = new Color(0.78f, 0.82f, 0.94f, 0.80f);
+
+            Scrollbar scrollbar = scrollbarObject.GetComponent<Scrollbar>();
+            scrollbar.direction = Scrollbar.Direction.BottomToTop;
+            scrollbar.handleRect = handleRect;
+            scrollbar.targetGraphic = handleImage;
+
+            scrollRect.verticalScrollbar = scrollbar;
+            scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            SetRoundReportText(initialContent, scrollToLatest: false);
         }
 
         private static void ConfigureCenterStatusText(TextMeshPro text)
         {
             text.characterSpacing = 4.5f;
             text.fontSizeMin = 0.28f;
-            text.fontSizeMax = 0.50f;
+            text.fontSizeMax = 0.48f;
             text.rectTransform.localScale = new Vector3(1f, 1.15f, 1f);
-        }
-
-        private static void ConfigureRoundReportText(TextMeshPro text)
-        {
-            text.enableAutoSizing = false;
-            text.alignment = TextAlignmentOptions.Top;
-            text.textWrappingMode = TextWrappingModes.Normal;
-            text.overflowMode = TextOverflowModes.Truncate;
-            text.characterSpacing = 2.0f;
-            text.lineSpacing = 8f;
         }
 
         private void ResolveTilePresentation(
@@ -1658,27 +1847,27 @@ namespace Ropoly.Presentation.Board
 
             bool horizontalTile = tileIndex < 10 || (tileIndex > 20 && tileIndex < 30);
 
-            // Compute center of property building lot in middle of tile
+            // Compute center of property building lot in middle of flag face
             Vector3 lotOffset;
             if (tileIndex < 10)
             {
                 // Bottom edge (inward is +Z)
-                lotOffset = new Vector3(0f, 0.33f, -0.05f);
+                lotOffset = new Vector3(0f, 0.33f, -0.15f);
             }
             else if (tileIndex > 20 && tileIndex < 30)
             {
                 // Top edge (inward is -Z)
-                lotOffset = new Vector3(0f, 0.33f, 0.05f);
+                lotOffset = new Vector3(0f, 0.33f, 0.15f);
             }
             else if (tileIndex > 10 && tileIndex < 20)
             {
-                // Left edge (inward is +X): Lot on inner right side
-                lotOffset = new Vector3(0.38f, 0.33f, 0f);
+                // Left edge (inward is +X): Centered over flag panel clear of the band
+                lotOffset = new Vector3(-0.18f, 0.33f, 0f);
             }
             else
             {
-                // Right edge (inward is -X): Lot on inner left side
-                lotOffset = new Vector3(-0.38f, 0.33f, 0f);
+                // Right edge (inward is -X): Centered over flag panel clear of the band
+                lotOffset = new Vector3(0.18f, 0.33f, 0f);
             }
 
             GameObject lotObject = new GameObject("PropertyStructures");
@@ -2614,8 +2803,14 @@ namespace Ropoly.Presentation.Board
             _generatedRoot = null;
             _statusText = null;
             _statusShadowText = null;
+            _reportCanvas = null;
+            _reportBackdropImage = null;
+            _reportScrollRect = null;
+            _reportViewportRect = null;
+            _reportContentRect = null;
             _roundReportText = null;
-            _roundReportShadowText = null;
+            _creditScrollActive = false;
+            _lastCreditScrollPos = 1f;
 
             _tileViews.Clear();
 

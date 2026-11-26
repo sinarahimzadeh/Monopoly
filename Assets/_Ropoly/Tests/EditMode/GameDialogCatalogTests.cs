@@ -60,25 +60,33 @@ namespace Ropoly.Tests.EditMode
         }
 
         [Test]
-        public void RoundReportLog_CapsEntriesAndIgnoresBlankOrConsecutiveDuplicates()
+        public void RoundReportLog_KeepsFullHistoryByDefaultAndOptionallyCaps()
         {
-            RoundReportLog log = new RoundReportLog(maxEntries: 3);
+            RoundReportLog unlimitedLog = new RoundReportLog();
+            Assert.That(unlimitedLog.AddEntry(null), Is.False);
+            Assert.That(unlimitedLog.AddEntry("   "), Is.False);
 
-            Assert.That(log.AddEntry(null), Is.False);
-            Assert.That(log.AddEntry("   "), Is.False);
-            Assert.That(log.AddEntry("• Player 1 bought Delhi ($60)"), Is.True);
-            Assert.That(log.AddEntry("• Player 1 bought Delhi ($60)"), Is.False);
-            Assert.That(log.AddEntry("• Player 2 bought Brasília ($100)"), Is.True);
-            Assert.That(log.AddEntry("• Player 3 paid $80 rent to Player 1"), Is.True);
-            Assert.That(log.AddEntry("• Player 4 was sent to Detention"), Is.True);
+            for (int i = 1; i <= 12; i++)
+            {
+                Assert.That(unlimitedLog.AddEntry($"• Player {(i - 1) % 4 + 1} action {i}"), Is.True);
+            }
 
-            Assert.That(log.Entries.Count, Is.EqualTo(3));
-            Assert.That(log.Entries[0], Is.EqualTo("• Player 2 bought Brasília ($100)"));
-            Assert.That(log.Entries[2], Is.EqualTo("• Player 4 was sent to Detention"));
+            Assert.That(unlimitedLog.AddEntry("• Player 4 action 12"), Is.False);
+            Assert.That(unlimitedLog.Entries.Count, Is.EqualTo(12));
+            Assert.That(unlimitedLog.Entries[0], Is.EqualTo("• Player 1 action 1"));
+            Assert.That(unlimitedLog.Entries[11], Is.EqualTo("• Player 4 action 12"));
 
-            log.Clear();
-            Assert.That(log.Entries, Is.Empty);
-            Assert.That(log.FormatReport(), Is.EqualTo(string.Empty));
+            RoundReportLog cappedLog = new RoundReportLog(maxEntries: 3);
+            Assert.That(cappedLog.AddEntry("• A"), Is.True);
+            Assert.That(cappedLog.AddEntry("• B"), Is.True);
+            Assert.That(cappedLog.AddEntry("• C"), Is.True);
+            Assert.That(cappedLog.AddEntry("• D"), Is.True);
+            Assert.That(cappedLog.Entries.Count, Is.EqualTo(3));
+            Assert.That(cappedLog.Entries[0], Is.EqualTo("• B"));
+
+            unlimitedLog.Clear();
+            Assert.That(unlimitedLog.Entries, Is.Empty);
+            Assert.That(unlimitedLog.FormatReport(), Is.EqualTo(string.Empty));
         }
     }
 }

@@ -51,7 +51,7 @@ namespace Ropoly.Presentation.Board
         {
             if (_wavingFlagMesh == null)
             {
-                _wavingFlagMesh = CreateWavingFlagMesh(0.52f, 0.34f, 0.32f);
+                _wavingFlagMesh = CreateWavingFlagMesh(0.26f, 0.16f, 0.28f);
             }
 
             return _wavingFlagMesh;
@@ -61,7 +61,7 @@ namespace Ropoly.Presentation.Board
         {
             if (_hotelFlagpoleMesh == null)
             {
-                _hotelFlagpoleMesh = CreateFlagpoleMesh(0.42f, 0.022f);
+                _hotelFlagpoleMesh = CreateFlagpoleMesh(0.32f, 0.02f);
             }
 
             return _hotelFlagpoleMesh;
@@ -71,7 +71,7 @@ namespace Ropoly.Presentation.Board
         {
             if (_hotelWavingFlagMesh == null)
             {
-                _hotelWavingFlagMesh = CreateWavingFlagMesh(0.42f, 0.26f, 0.20f);
+                _hotelWavingFlagMesh = CreateWavingFlagMesh(0.22f, 0.14f, 0.18f);
             }
 
             return _hotelWavingFlagMesh;
@@ -457,9 +457,19 @@ namespace Ropoly.Presentation.Board
         private int _upgradeLevel;
         private bool _isOwned;
         private bool _isHorizontal;
+        private bool _showOwnershipFlag = true;
 
         public int UpgradeLevel => _upgradeLevel;
         public bool IsOwned => _isOwned;
+
+        public void SetShowOwnershipFlag(bool show)
+        {
+            _showOwnershipFlag = show;
+            if (_isOwned)
+            {
+                RefreshActiveStructures();
+            }
+        }
 
         public void Initialize(bool isHorizontal, Transform parent, Vector3 localPosition)
         {
@@ -631,9 +641,9 @@ namespace Ropoly.Presentation.Board
 
             if (_upgradeLevel <= 0)
             {
-                // Level 0: Metallic Flagpole & Waving Owner Pennant (Base ownership claim)
-                _flagObject.SetActive(true);
-                _flagObject.transform.localPosition = _isHorizontal ? new Vector3(-0.20f, 0, 0) : new Vector3(0, 0, -0.20f);
+                // Level 0: Base ownership flag only shown when tile has no dedicated color band
+                _flagObject.SetActive(_showOwnershipFlag);
+                _flagObject.transform.localPosition = _isHorizontal ? new Vector3(-0.12f, 0, 0) : new Vector3(0, 0, -0.12f);
                 _flagObject.transform.localRotation = _isHorizontal ? Quaternion.identity : Quaternion.Euler(0, 90f, 0);
 
                 foreach (GameObject house in _houses)
@@ -658,9 +668,9 @@ namespace Ropoly.Presentation.Board
                 return;
             }
 
-            // Levels 1 to 4: 1 to 4 3D Miniature Houses + Owner Pennant Flag
+            // Levels 1 to 4: 1 to 4 3D Miniature Houses + optional Owner Pennant Flag
             _hotelObject.SetActive(false);
-            _flagObject.SetActive(true);
+            _flagObject.SetActive(_showOwnershipFlag);
             _flagObject.transform.localRotation = _isHorizontal ? Quaternion.identity : Quaternion.Euler(0, 90f, 0);
 
             int houseCount = _upgradeLevel;

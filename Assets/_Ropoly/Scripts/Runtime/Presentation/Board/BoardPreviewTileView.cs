@@ -213,6 +213,11 @@ namespace Ropoly.Presentation.Board
                 _ownerBandRenderer.sharedMaterial = neutralMaterial;
             }
 
+            if (_structureView != null)
+            {
+                _structureView.SetShowOwnershipFlag(bandRenderer == null);
+            }
+
             RefreshOwnerBandUpgradeText();
         }
 
