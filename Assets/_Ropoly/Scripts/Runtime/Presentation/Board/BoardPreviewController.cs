@@ -1660,8 +1660,8 @@ namespace Ropoly.Presentation.Board
             RectTransform viewportRect = viewportObject.GetComponent<RectTransform>();
             viewportRect.anchorMin = Vector2.zero;
             viewportRect.anchorMax = Vector2.one;
-            viewportRect.offsetMin = new Vector2(0f, 0f);
-            viewportRect.offsetMax = new Vector2(-24f, 0f);
+            viewportRect.offsetMin = new Vector2(4f, 6f);
+            viewportRect.offsetMax = new Vector2(-24f, -6f);
             Image viewportImage = viewportObject.GetComponent<Image>();
             viewportImage.color = new Color(0f, 0f, 0f, 0.004f);
             viewportImage.raycastTarget = true;
@@ -1683,7 +1683,7 @@ namespace Ropoly.Presentation.Board
             contentRect.sizeDelta = Vector2.zero;
 
             VerticalLayoutGroup layoutGroup = contentObject.GetComponent<VerticalLayoutGroup>();
-            layoutGroup.padding = new RectOffset(14, 14, 6, 8);
+            layoutGroup.padding = new RectOffset(14, 14, 10, 10);
             layoutGroup.childControlWidth = true;
             layoutGroup.childControlHeight = true;
             layoutGroup.childForceExpandWidth = true;

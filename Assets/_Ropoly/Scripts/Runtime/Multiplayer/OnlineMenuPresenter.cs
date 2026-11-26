@@ -6,6 +6,7 @@ using Ropoly.Infrastructure.Content.Players;
 using Ropoly.Multiplayer.Protocol;
 using Ropoly.Presentation.Navigation;
 using Ropoly.Presentation.Settings;
+using Ropoly.Presentation.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -112,6 +113,8 @@ namespace Ropoly.Multiplayer
             {
                 onlineLabel.text = "ONLINE GAME";
             }
+
+            RopolyUiTheme.ApplyButton(onlineButton, RopolyUiTheme.PositiveActionColor, usePill: true);
 
             BuildOverlay(canvasTransform);
             _service.ConnectionStateChanged += HandleConnectionStateChanged;
@@ -420,7 +423,16 @@ namespace Ropoly.Multiplayer
         {
             var gameObject = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             gameObject.transform.SetParent(parent, false);
-            gameObject.GetComponent<Image>().color = color;
+            Image image = gameObject.GetComponent<Image>();
+            image.color = color;
+            if (name.EndsWith("Shell", StringComparison.Ordinal))
+            {
+                RopolyUiTheme.ApplyPanel(image, color);
+            }
+            else if (color.a > 0.05f && !name.EndsWith("Overlay", StringComparison.Ordinal))
+            {
+                RopolyUiTheme.ApplyCard(image, color);
+            }
             return gameObject;
         }
 
@@ -464,13 +476,9 @@ namespace Ropoly.Multiplayer
             SetRect(gameObject.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), position, size);
             var button = gameObject.AddComponent<Button>();
             button.targetGraphic = gameObject.GetComponent<Image>();
-            ColorBlock colors = button.colors;
-            colors.highlightedColor = Color.Lerp(color, Color.white, 0.16f);
-            colors.pressedColor = Color.Lerp(color, Color.black, 0.2f);
-            colors.disabledColor = new Color(color.r, color.g, color.b, 0.35f);
-            button.colors = colors;
             labelText = CreateText("Label", gameObject.transform, label, fontSize, FontStyles.Bold,
                 TextAlignmentOptions.Center, Vector2.zero, size, Color.white);
+            RopolyUiTheme.ApplyButton(button, color, usePill: true);
             return button;
         }
 

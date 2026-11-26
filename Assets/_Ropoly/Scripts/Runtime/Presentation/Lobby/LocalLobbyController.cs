@@ -8,6 +8,7 @@ using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Localization;
 using Ropoly.Presentation.Players;
 using Ropoly.Presentation.Settings;
+using Ropoly.Presentation.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -135,6 +136,7 @@ namespace Ropoly.Presentation.Lobby
                 rules.AuctionBidTimeoutSeconds);
             BindInterface();
             EnsureRulesButton();
+            StyleGameInterface();
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);
             ClearSpawnedTokens();
@@ -296,10 +298,130 @@ namespace Ropoly.Presentation.Lobby
             RectTransform rulesRect = rulesObj.transform as RectTransform;
             if (startRect != null && rulesRect != null)
             {
-                rulesRect.sizeDelta = new Vector2(160f, startRect.sizeDelta.y);
+                rulesRect.sizeDelta = new Vector2(180f, 44f);
                 rulesRect.anchoredPosition = new Vector2(
                     startRect.anchoredPosition.x,
                     startRect.anchoredPosition.y + startRect.sizeDelta.y + 12f);
+            }
+
+            RopolyUiTheme.ApplyButton(_rulesButton, RopolyUiTheme.SecondaryActionColor, usePill: true);
+        }
+
+        private void StyleGameInterface()
+        {
+            Transform canvasTransform = _matchHudPanel != null ? _matchHudPanel.transform.parent : null;
+            if (canvasTransform != null)
+            {
+                HidePrototypeObject(canvasTransform, "BoardContentPanel");
+                HidePrototypeObject(canvasTransform, "ValueOrderPanel");
+                HidePrototypeObject(canvasTransform, "Footer");
+
+                Transform header = canvasTransform.Find("Header");
+                if (header != null)
+                {
+                    Image headerImage = header.GetComponent<Image>();
+                    if (headerImage != null)
+                    {
+                        headerImage.color = Color.clear;
+                        headerImage.raycastTarget = false;
+                    }
+
+                    Transform previewBadge = header.Find("PreviewBadge");
+                    if (previewBadge != null)
+                    {
+                        previewBadge.gameObject.SetActive(false);
+                    }
+                }
+            }
+
+            if (_lobbyOverlay != null)
+            {
+                RopolyUiTheme.StyleHierarchy(_lobbyOverlay.transform);
+            }
+
+            if (_startButton != null)
+            {
+                RopolyUiTheme.ApplyButton(_startButton, RopolyUiTheme.PositiveActionColor, usePill: true);
+            }
+
+            if (_rulesButton != null)
+            {
+                RopolyUiTheme.ApplyButton(_rulesButton, RopolyUiTheme.SecondaryActionColor, usePill: true);
+            }
+
+            if (_matchHudPanel != null)
+            {
+                Image hudBg = _matchHudPanel.GetComponent<Image>();
+                if (hudBg != null)
+                {
+                    RopolyUiTheme.ApplyPanel(hudBg, RopolyUiTheme.PanelBackground);
+                }
+
+                RectTransform hudRect = _matchHudPanel.transform as RectTransform;
+                if (hudRect != null)
+                {
+                    hudRect.sizeDelta = new Vector2(338f, 710f);
+                    hudRect.anchoredPosition = new Vector2(-190f, -12f);
+                }
+
+                Transform title = _matchHudPanel.transform.Find("Title");
+                if (title != null && title.transform is RectTransform titleRect)
+                {
+                    titleRect.anchorMin = new Vector2(0.5f, 1f);
+                    titleRect.anchorMax = new Vector2(0.5f, 1f);
+                    titleRect.pivot = new Vector2(0.5f, 0.5f);
+                    titleRect.anchoredPosition = new Vector2(0f, -26f);
+                    titleRect.sizeDelta = new Vector2(298f, 34f);
+                }
+
+                Transform status = _matchHudPanel.transform.Find("Status");
+                if (status != null)
+                {
+                    if (status.transform is RectTransform statusRect)
+                    {
+                        statusRect.anchorMin = new Vector2(0.5f, 1f);
+                        statusRect.anchorMax = new Vector2(0.5f, 1f);
+                        statusRect.pivot = new Vector2(0.5f, 0.5f);
+                        statusRect.anchoredPosition = new Vector2(0f, -54f);
+                        statusRect.sizeDelta = new Vector2(298f, 22f);
+                    }
+
+                    TMP_Text statusText = status.GetComponent<TMP_Text>();
+                    if (statusText != null)
+                    {
+                        statusText.text = "TAP A PLAYER TO TRADE";
+                        statusText.color = RopolyUiTheme.MintAccent;
+                    }
+                }
+            }
+
+            for (int index = 0; index < _hudRows.Length; index++)
+            {
+                if (_hudRows[index] == null)
+                {
+                    continue;
+                }
+
+                RectTransform rowRect = _hudRows[index].transform as RectTransform;
+                if (rowRect != null)
+                {
+                    rowRect.anchorMin = new Vector2(0.5f, 1f);
+                    rowRect.anchorMax = new Vector2(0.5f, 1f);
+                    rowRect.pivot = new Vector2(0.5f, 0.5f);
+                    rowRect.sizeDelta = new Vector2(298f, 70f);
+                    rowRect.anchoredPosition = new Vector2(0f, -118f - (index * 80f));
+                }
+
+                _hudRows[index].SetTurnActive(false);
+            }
+        }
+
+        private static void HidePrototypeObject(Transform parent, string childName)
+        {
+            Transform child = parent.Find(childName);
+            if (child != null)
+            {
+                child.gameObject.SetActive(false);
             }
         }
 
@@ -467,6 +589,10 @@ namespace Ropoly.Presentation.Lobby
         public void RefreshMatchHud()
         {
             IReadOnlyList<PlayerState> players = _session.State.Players;
+            int activePlayerIndex = _session.State.Phase == MatchPhase.InProgress && _session.State.Turn != null
+                ? _session.State.Turn.CurrentPlayerIndex
+                : -1;
+
             for (int index = 0; index < _hudRows.Length; index++)
             {
                 bool included = index < players.Count;
@@ -478,6 +604,7 @@ namespace Ropoly.Presentation.Lobby
 
                 CreatureDefinition creature = FindCreature(players[index].CreatureId);
                 _hudRows[index].Refresh(players[index], creature);
+                _hudRows[index].SetTurnActive(index == activePlayerIndex);
                 _hudRows[index].BindClick(index, HandlePlayerRowClicked);
             }
         }

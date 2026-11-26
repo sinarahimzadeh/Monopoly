@@ -8,6 +8,7 @@ using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Dice;
 using Ropoly.Presentation.Lobby;
 using Ropoly.Presentation.Localization;
+using Ropoly.Presentation.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -200,7 +201,17 @@ namespace Ropoly.Presentation.Trading
                 ? _diceController.PrimaryButton.transform.parent
                 : transform;
             _hudTradeButton = CreateButton("TradeButton", parent, "TRADE",
-                new Vector2(-210f, -50f), new Vector2(130f, 50f), PurpleColor, 16f, out _hudTradeButtonLabel);
+                new Vector2(0f, 44f), new Vector2(264f, 42f), RopolyUiTheme.TradeActionColor, 16f, out _hudTradeButtonLabel);
+            if (_hudTradeButton.transform is RectTransform tradeRect)
+            {
+                tradeRect.anchorMin = new Vector2(0.5f, 0f);
+                tradeRect.anchorMax = new Vector2(0.5f, 0f);
+                tradeRect.pivot = new Vector2(0.5f, 0.5f);
+                tradeRect.anchoredPosition = new Vector2(0f, 44f);
+                tradeRect.sizeDelta = new Vector2(264f, 42f);
+            }
+
+            RopolyUiTheme.ApplyButton(_hudTradeButton, RopolyUiTheme.TradeActionColor, usePill: true);
             _hudTradeButton.onClick.AddListener(OnHudTradeClicked);
             _hudTradeButton.gameObject.SetActive(true);
         }
@@ -211,8 +222,9 @@ namespace Ropoly.Presentation.Trading
             Stretch(_overlay.GetComponent<RectTransform>());
             _overlay.transform.SetAsLastSibling();
 
-            GameObject shell = CreatePanel("TradeShell", _overlay.transform, PanelColor);
+            GameObject shell = CreatePanel("TradeShell", _overlay.transform, RopolyUiTheme.PanelBackground);
             SetRect(shell.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(960f, 680f));
+            RopolyUiTheme.ApplyPanel(shell.GetComponent<Image>(), RopolyUiTheme.PanelBackground);
 
             BuildProposalPanel(shell.transform);
             BuildIncomingPanel(shell.transform);
@@ -820,6 +832,10 @@ namespace Ropoly.Presentation.Trading
             go.transform.SetParent(parent, false);
             var img = go.GetComponent<Image>();
             img.color = color;
+            if (color.a > 0.05f && !name.EndsWith("Overlay", StringComparison.Ordinal))
+            {
+                RopolyUiTheme.ApplyCard(img, color);
+            }
             return go;
         }
 
@@ -865,15 +881,9 @@ namespace Ropoly.Presentation.Trading
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
             var button = go.AddComponent<Button>();
-            var colors = button.colors;
-            colors.normalColor = buttonColor;
-            colors.highlightedColor = Color.Lerp(buttonColor, Color.white, 0.25f);
-            colors.pressedColor = Color.Lerp(buttonColor, Color.black, 0.25f);
-            colors.disabledColor = new Color(buttonColor.r * 0.5f, buttonColor.g * 0.5f, buttonColor.b * 0.5f, 0.5f);
-            button.colors = colors;
-
             labelComponent = CreateText("Label", go.transform, label, fontSize, FontStyles.Bold,
                 TextAlignmentOptions.Center, Vector2.zero, size, Color.white);
+            RopolyUiTheme.ApplyButton(button, buttonColor, usePill: true);
             return button;
         }
 

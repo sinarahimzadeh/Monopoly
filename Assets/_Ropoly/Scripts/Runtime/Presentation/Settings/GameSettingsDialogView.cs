@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Ropoly.Core.Rules;
 using Ropoly.Infrastructure.Content;
+using Ropoly.Presentation.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -222,12 +223,7 @@ namespace Ropoly.Presentation.Settings
             if (button == null || label == null) return;
 
             Color targetColor = isSelected ? PillActiveColor : PillInactiveColor;
-            var colors = button.colors;
-            colors.normalColor = targetColor;
-            colors.highlightedColor = Color.Lerp(targetColor, Color.white, 0.2f);
-            colors.pressedColor = Color.Lerp(targetColor, Color.black, 0.2f);
-            colors.disabledColor = targetColor;
-            button.colors = colors;
+            RopolyUiTheme.ApplyButton(button, targetColor, usePill: true, addShadow: false);
             button.interactable = isInteractive;
 
             label.color = isSelected ? Color.white : TextMutedColor;
@@ -436,6 +432,14 @@ namespace Ropoly.Presentation.Settings
             go.transform.SetParent(parent, false);
             var img = go.GetComponent<Image>();
             img.color = color;
+            if (name.EndsWith("Shell", StringComparison.Ordinal))
+            {
+                RopolyUiTheme.ApplyPanel(img, color);
+            }
+            else if (color.a > 0.05f && !name.EndsWith("Overlay", StringComparison.Ordinal))
+            {
+                RopolyUiTheme.ApplyCard(img, color);
+            }
             return go;
         }
 
@@ -481,15 +485,9 @@ namespace Ropoly.Presentation.Settings
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
             var button = go.AddComponent<Button>();
-            var colors = button.colors;
-            colors.normalColor = buttonColor;
-            colors.highlightedColor = Color.Lerp(buttonColor, Color.white, 0.25f);
-            colors.pressedColor = Color.Lerp(buttonColor, Color.black, 0.25f);
-            colors.disabledColor = new Color(buttonColor.r * 0.45f, buttonColor.g * 0.45f, buttonColor.b * 0.45f, 0.45f);
-            button.colors = colors;
-
             labelComponent = CreateText("Label", go.transform, label, fontSize, FontStyles.Bold,
                 TextAlignmentOptions.Center, Vector2.zero, size, Color.white);
+            RopolyUiTheme.ApplyButton(button, buttonColor, usePill: true);
             return button;
         }
 

@@ -49,6 +49,13 @@ namespace Ropoly.Presentation.Dice
 
         private void Awake()
         {
+            Ropoly.Presentation.UI.RopolyUiTheme.StyleHierarchy(transform);
+            Ropoly.Presentation.UI.RopolyUiTheme.ApplyButton(_mortgageButton, Ropoly.Presentation.UI.RopolyUiTheme.PositiveActionColor, usePill: true);
+            Ropoly.Presentation.UI.RopolyUiTheme.ApplyButton(_sellButton, Ropoly.Presentation.UI.RopolyUiTheme.SecondaryActionColor, usePill: true);
+            Ropoly.Presentation.UI.RopolyUiTheme.ApplyButton(_bankruptcyButton, Ropoly.Presentation.UI.RopolyUiTheme.DangerActionColor, usePill: true);
+            Ropoly.Presentation.UI.RopolyUiTheme.ApplyButton(_previousButton, Ropoly.Presentation.UI.RopolyUiTheme.SecondaryActionColor, usePill: true);
+            Ropoly.Presentation.UI.RopolyUiTheme.ApplyButton(_nextButton, Ropoly.Presentation.UI.RopolyUiTheme.SecondaryActionColor, usePill: true);
+
             _previousButton.onClick.AddListener(SelectPrevious);
             _nextButton.onClick.AddListener(SelectNext);
             _mortgageButton.onClick.AddListener(MortgageSelected);

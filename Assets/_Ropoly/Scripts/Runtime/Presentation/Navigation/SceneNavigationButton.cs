@@ -1,5 +1,7 @@
 using Ropoly.Application.Navigation;
+using Ropoly.Presentation.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Ropoly.Presentation.Navigation
 {
@@ -12,6 +14,18 @@ namespace Ropoly.Presentation.Navigation
         private string _destinationScene = string.Empty;
 
         private ISceneFlowService _sceneFlow;
+
+        private void Awake()
+        {
+            Button button = GetComponent<Button>();
+            if (button != null)
+            {
+                Color tint = string.Equals(_destinationScene, AppSceneNames.MainMenu, System.StringComparison.OrdinalIgnoreCase)
+                    ? RopolyUiTheme.SecondaryActionColor
+                    : RopolyUiTheme.PrimaryActionColor;
+                RopolyUiTheme.ApplyButton(button, tint, usePill: true);
+            }
+        }
 
         public void Initialize(ISceneFlowService sceneFlow)
         {

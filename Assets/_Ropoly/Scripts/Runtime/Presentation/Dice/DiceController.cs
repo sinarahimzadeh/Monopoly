@@ -15,6 +15,7 @@ using Ropoly.Presentation.Navigation;
 using Ropoly.Presentation.Players;
 using Ropoly.Presentation.Results;
 using Ropoly.Presentation.Trading;
+using Ropoly.Presentation.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -197,6 +198,7 @@ namespace Ropoly.Presentation.Dice
             _primaryButton.onClick.AddListener(HandlePrimaryAction);
             _secondaryButton.onClick.RemoveAllListeners();
             _secondaryButton.onClick.AddListener(HandleSecondaryAction);
+            StyleControls();
 
             if (_tradeDialogView == null)
             {
@@ -1639,6 +1641,7 @@ namespace Ropoly.Presentation.Dice
         private void RefreshAwaitingRoll()
         {
             _debtResolutionView?.Hide();
+            _lobby?.RefreshMatchHud();
             TurnState turn = _lobby.Session.State.Turn;
             PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
             _turnLabel.text = $"TURN {turn.TurnNumber}  •  {player.DisplayName}";
@@ -1859,12 +1862,85 @@ namespace Ropoly.Presentation.Dice
             }
         }
 
+        private void StyleControls()
+        {
+            _singleButtonWidth = 264f;
+            _decisionButtonWidth = 127f;
+            _decisionButtonGap = 10f;
+
+            Transform controlsTransform = _primaryButton != null ? _primaryButton.transform.parent : null;
+            if (controlsTransform is RectTransform controlsRect)
+            {
+                controlsRect.anchorMin = new Vector2(0.5f, 0f);
+                controlsRect.anchorMax = new Vector2(0.5f, 0f);
+                controlsRect.pivot = new Vector2(0.5f, 0f);
+                controlsRect.anchoredPosition = new Vector2(0f, 18f);
+                controlsRect.sizeDelta = new Vector2(298f, 276f);
+
+                Image controlsImage = controlsTransform.GetComponent<Image>();
+                if (controlsImage == null)
+                {
+                    controlsImage = controlsTransform.gameObject.AddComponent<Image>();
+                    controlsImage.raycastTarget = false;
+                }
+
+                RopolyUiTheme.ApplyCard(controlsImage, RopolyUiTheme.SubPanelBackground);
+            }
+
+            if (_turnLabel != null && _turnLabel.transform is RectTransform turnRect)
+            {
+                turnRect.anchorMin = new Vector2(0.5f, 1f);
+                turnRect.anchorMax = new Vector2(0.5f, 1f);
+                turnRect.pivot = new Vector2(0.5f, 0.5f);
+                turnRect.anchoredPosition = new Vector2(0f, -28f);
+                turnRect.sizeDelta = new Vector2(272f, 28f);
+            }
+
+            if (_resultLabel != null && _resultLabel.transform is RectTransform resultRect)
+            {
+                resultRect.anchorMin = new Vector2(0.5f, 1f);
+                resultRect.anchorMax = new Vector2(0.5f, 1f);
+                resultRect.pivot = new Vector2(0.5f, 0.5f);
+                resultRect.anchoredPosition = new Vector2(0f, -56f);
+                resultRect.sizeDelta = new Vector2(272f, 24f);
+            }
+
+            ConfigureActionButtonRect(_primaryButton, 106f);
+            ConfigureActionButtonRect(_secondaryButton, 106f);
+
+            RopolyUiTheme.ApplyButton(_primaryButton, RopolyUiTheme.PrimaryActionColor, usePill: true);
+            RopolyUiTheme.ApplyButton(_secondaryButton, RopolyUiTheme.SecondaryActionColor, usePill: true);
+            SetDecisionMode(_secondaryButton != null && _secondaryButton.gameObject.activeSelf);
+        }
+
+        private static void ConfigureActionButtonRect(Button button, float anchoredY)
+        {
+            if (button != null && button.transform is RectTransform rect)
+            {
+                rect.anchorMin = new Vector2(0.5f, 0f);
+                rect.anchorMax = new Vector2(0.5f, 0f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, anchoredY);
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, 50f);
+            }
+        }
+
         private void SetDecisionMode(bool decisionMode)
         {
             if (_secondaryButton == null)
             {
                 return;
             }
+
+            bool isPurchaseAction = decisionMode &&
+                _primaryButtonLabel != null &&
+                (_primaryButtonLabel.text.StartsWith("BUY", StringComparison.OrdinalIgnoreCase) ||
+                 _primaryButtonLabel.text.StartsWith("UPGRADE", StringComparison.OrdinalIgnoreCase));
+
+            RopolyUiTheme.ApplyButton(
+                _primaryButton,
+                isPurchaseAction ? RopolyUiTheme.PositiveActionColor : RopolyUiTheme.PrimaryActionColor,
+                usePill: true);
 
             RectTransform primaryRect = _primaryButton.transform as RectTransform;
             if (primaryRect != null)

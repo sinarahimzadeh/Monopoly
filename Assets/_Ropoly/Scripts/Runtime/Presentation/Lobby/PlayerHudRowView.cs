@@ -1,5 +1,6 @@
 using Ropoly.Core.Match;
 using Ropoly.Infrastructure.Content.Players;
+using Ropoly.Presentation.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +21,37 @@ namespace Ropoly.Presentation.Lobby
 
         [SerializeField]
         private TMP_Text _cashLabel;
+
+        private Image _cardImage;
+
+        private void Awake()
+        {
+            EnsureCardStyled();
+        }
+
+        /// <summary>
+        /// Highlights this player card when it is currently their turn.
+        /// </summary>
+        public void SetTurnActive(bool isActive)
+        {
+            EnsureCardStyled();
+            if (_cardImage != null)
+            {
+                _cardImage.color = isActive ? RopolyUiTheme.ActiveCardBackground : RopolyUiTheme.CardBackground;
+            }
+        }
+
+        private void EnsureCardStyled()
+        {
+            if (_cardImage == null)
+            {
+                _cardImage = GetComponent<Image>();
+                if (_cardImage != null)
+                {
+                    RopolyUiTheme.ApplyCard(_cardImage, RopolyUiTheme.CardBackground);
+                }
+            }
+        }
 
         public void Refresh(PlayerState player, CreatureDefinition creature)
         {

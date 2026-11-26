@@ -4,6 +4,7 @@ using Ropoly.Core.Match;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Dice;
 using Ropoly.Presentation.Lobby;
+using Ropoly.Presentation.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -274,6 +275,14 @@ namespace Ropoly.Presentation.Results
             go.transform.SetParent(parent, false);
             var img = go.GetComponent<Image>();
             img.color = color;
+            if (name.EndsWith("Shell", StringComparison.Ordinal))
+            {
+                RopolyUiTheme.ApplyPanel(img, color);
+            }
+            else if (color.a > 0.05f && !name.EndsWith("Overlay", StringComparison.Ordinal))
+            {
+                RopolyUiTheme.ApplyCard(img, color);
+            }
             return go;
         }
 
@@ -319,15 +328,9 @@ namespace Ropoly.Presentation.Results
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
             var button = go.AddComponent<Button>();
-            var colors = button.colors;
-            colors.normalColor = buttonColor;
-            colors.highlightedColor = Color.Lerp(buttonColor, Color.white, 0.25f);
-            colors.pressedColor = Color.Lerp(buttonColor, Color.black, 0.25f);
-            colors.disabledColor = new Color(buttonColor.r * 0.5f, buttonColor.g * 0.5f, buttonColor.b * 0.5f, 0.5f);
-            button.colors = colors;
-
             labelComponent = CreateText("Label", go.transform, label, fontSize, FontStyles.Bold,
                 TextAlignmentOptions.Center, Vector2.zero, size, Color.white);
+            RopolyUiTheme.ApplyButton(button, buttonColor, usePill: true);
             return button;
         }
 
