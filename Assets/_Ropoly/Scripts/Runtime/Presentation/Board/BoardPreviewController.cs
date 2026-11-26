@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Ropoly.Core.Board;
 using Ropoly.Infrastructure.Content.Board;
+using Ropoly.Presentation.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -99,6 +100,17 @@ namespace Ropoly.Presentation.Board
         [Range(0.01f, 0.15f)]
         private float _tileVerticalDip = 0.05f;
 
+        [Header("Center Status & Round Report")]
+        [SerializeField]
+        private Color _statusTextColor = new Color(0.97f, 0.90f, 0.65f, 1f);
+
+        [SerializeField]
+        private Color _roundReportTextColor = new Color(0.72f, 0.78f, 0.90f, 0.95f);
+
+        [SerializeField]
+        [Range(1, 5)]
+        private int _maxRoundReportEntries = 3;
+
         public float CityFlagOpacity => _cityFlagOpacity;
         public float CityFlagBlur => _cityFlagBlur;
         public Color CityFlagTint => _cityFlagTint;
@@ -120,9 +132,13 @@ namespace Ropoly.Presentation.Board
         private readonly List<Material> _customFlagMaterials = new List<Material>();
         private readonly Dictionary<int, BoardPreviewTileView> _tileViews =
             new Dictionary<int, BoardPreviewTileView>();
+        private RoundReportLog _roundReportLog;
         private Transform _generatedRoot;
         private TMP_FontAsset _font;
         private TMP_Text _statusText;
+        private TMP_Text _statusShadowText;
+        private TMP_Text _roundReportText;
+        private TMP_Text _roundReportShadowText;
 
         public BoardDefinition BoardDefinition => _boardDefinition;
         public BoardPreviewTheme Theme => _theme;
@@ -132,9 +148,44 @@ namespace Ropoly.Presentation.Board
 
         public void SetStatusText(string value)
         {
+            string resolved = value ?? string.Empty;
             if (_statusText != null)
             {
-                _statusText.text = value;
+                _statusText.text = resolved;
+            }
+
+            if (_statusShadowText != null)
+            {
+                _statusShadowText.text = resolved;
+            }
+        }
+
+        public void AddRoundReport(string entry)
+        {
+            _roundReportLog ??= new RoundReportLog(_maxRoundReportEntries);
+            if (_roundReportLog.AddEntry(entry))
+            {
+                SetRoundReportText(_roundReportLog.FormatReport());
+            }
+        }
+
+        public void ClearRoundReport()
+        {
+            _roundReportLog?.Clear();
+            SetRoundReportText(string.Empty);
+        }
+
+        private void SetRoundReportText(string value)
+        {
+            string resolved = value ?? string.Empty;
+            if (_roundReportText != null)
+            {
+                _roundReportText.text = resolved;
+            }
+
+            if (_roundReportShadowText != null)
+            {
+                _roundReportShadowText.text = resolved;
             }
         }
 
@@ -1439,16 +1490,87 @@ namespace Ropoly.Presentation.Board
                 _theme.PrimaryTextColor,
                 new Vector2(8f, 2.3f),
                 _generatedRoot);
-            _statusText = CreateWorldText(
-                "Preview Status",
-                "LOCAL LOBBY  •  CHOOSE YOUR CREATURE",
-                new Vector3(0f, 0.34f, -2.35f),
+
+            string initialStatus = GameDialogCatalog.Get(GameDialogKeys.LobbyChooseCreature);
+            Vector3 statusPos = new Vector3(0f, 0.34f, -2.05f);
+            Vector3 shadowOffset = new Vector3(0.02f, -0.005f, -0.02f);
+            Vector2 statusBounds = new Vector2(11.6f, 0.78f);
+            Color shadowColor = new Color(0.03f, 0.02f, 0.06f, 0.92f);
+
+            TextMeshPro statusShadow = CreateWorldText(
+                "Preview Status Shadow",
+                initialStatus,
+                statusPos + shadowOffset,
                 rotation,
                 0.50f,
                 FontStyles.Bold,
-                _theme.EventColor,
-                new Vector2(10f, 0.7f),
+                shadowColor,
+                statusBounds,
                 _generatedRoot);
+            ConfigureCenterStatusText(statusShadow);
+            _statusShadowText = statusShadow;
+
+            TextMeshPro statusText = CreateWorldText(
+                "Preview Status",
+                initialStatus,
+                statusPos,
+                rotation,
+                0.50f,
+                FontStyles.Bold,
+                _statusTextColor,
+                statusBounds,
+                _generatedRoot);
+            ConfigureCenterStatusText(statusText);
+            _statusText = statusText;
+
+            _roundReportLog ??= new RoundReportLog(_maxRoundReportEntries);
+            string reportContent = _roundReportLog.FormatReport();
+            Vector3 reportPos = new Vector3(0f, 0.34f, -4.05f);
+            Vector2 reportBounds = new Vector2(11.4f, 2.75f);
+
+            TextMeshPro reportShadow = CreateWorldText(
+                "Round Report Shadow",
+                reportContent,
+                reportPos + shadowOffset,
+                rotation,
+                0.31f,
+                FontStyles.Normal,
+                shadowColor,
+                reportBounds,
+                _generatedRoot);
+            ConfigureRoundReportText(reportShadow);
+            _roundReportShadowText = reportShadow;
+
+            TextMeshPro reportText = CreateWorldText(
+                "Round Report",
+                reportContent,
+                reportPos,
+                rotation,
+                0.31f,
+                FontStyles.Normal,
+                _roundReportTextColor,
+                reportBounds,
+                _generatedRoot);
+            ConfigureRoundReportText(reportText);
+            _roundReportText = reportText;
+        }
+
+        private static void ConfigureCenterStatusText(TextMeshPro text)
+        {
+            text.characterSpacing = 4.5f;
+            text.fontSizeMin = 0.28f;
+            text.fontSizeMax = 0.50f;
+            text.rectTransform.localScale = new Vector3(1f, 1.15f, 1f);
+        }
+
+        private static void ConfigureRoundReportText(TextMeshPro text)
+        {
+            text.enableAutoSizing = false;
+            text.alignment = TextAlignmentOptions.Top;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Truncate;
+            text.characterSpacing = 2.0f;
+            text.lineSpacing = 8f;
         }
 
         private void ResolveTilePresentation(
@@ -2491,6 +2613,9 @@ namespace Ropoly.Presentation.Board
             PurgeSceneGeneratedBoards();
             _generatedRoot = null;
             _statusText = null;
+            _statusShadowText = null;
+            _roundReportText = null;
+            _roundReportShadowText = null;
 
             _tileViews.Clear();
 

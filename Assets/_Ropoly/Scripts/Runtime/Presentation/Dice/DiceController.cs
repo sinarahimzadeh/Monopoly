@@ -10,6 +10,7 @@ using Ropoly.Core.Trading;
 using Ropoly.Presentation.Auctions;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Lobby;
+using Ropoly.Presentation.Localization;
 using Ropoly.Presentation.Navigation;
 using Ropoly.Presentation.Players;
 using Ropoly.Presentation.Results;
@@ -415,21 +416,13 @@ namespace Ropoly.Presentation.Dice
                 PlayerState player = _lobby.Session.State.Players[turn.CurrentPlayerIndex];
                 if (player.IsInDetention)
                 {
-                    if (player.HeldDetentionWaivers > 0 && _lobby.Session.TryUseDetentionWaiver())
+                    if (player.HeldDetentionWaivers > 0 && ApplyExternalDetentionWaiver())
                     {
-                        _lobby.RefreshMatchHud();
-                        RefreshAwaitingRoll();
-                        _resultLabel.text = "USED WAIVER • READY TO ROLL";
-                        _boardPreview.SetStatusText($"{player.DisplayName} USED WAIVER  •  ROLL THE DICE");
                         return;
                     }
 
-                    if (player.Cash >= 50 && _lobby.Session.TryPayDetentionBail())
+                    if (player.Cash >= 50 && ApplyExternalDetentionBail())
                     {
-                        _lobby.RefreshMatchHud();
-                        RefreshAwaitingRoll();
-                        _resultLabel.text = "PAID $50 BAIL • READY TO ROLL";
-                        _boardPreview.SetStatusText($"{player.DisplayName} PAID $50 BAIL  •  ROLL THE DICE");
                         return;
                     }
                 }
@@ -442,15 +435,7 @@ namespace Ropoly.Presentation.Dice
                 return;
             }
 
-            PropertyPurchaseOffer offer = _pendingOffer;
-            if (!_lobby.Session.TryDeclineCurrentProperty())
-            {
-                return;
-            }
-
-            _pendingOffer = null;
-            string propertyName = offer == null ? "PROPERTY" : offer.DisplayName.ToUpperInvariant();
-            FinishPropertyDecision($"SKIPPED {propertyName}");
+            ApplyExternalPropertyDecline();
         }
 
         public void RollDice()
@@ -560,8 +545,22 @@ namespace Ropoly.Presentation.Dice
             }
 
             _pendingOffer = null;
-            string propertyName = offer == null ? "PROPERTY" : offer.DisplayName.ToUpperInvariant();
-            FinishPropertyDecision($"SKIPPED {propertyName}");
+            string displayName = offer == null
+                ? GameDialogCatalog.Get(GameDialogKeys.NounProperty)
+                : offer.DisplayName;
+            string statusMessage = GameDialogCatalog.Format(
+                GameDialogKeys.SkippedProperty,
+                ("property", displayName.ToUpperInvariant()));
+            if (_lobby.Session.ActiveAuction == null && offer != null)
+            {
+                string playerName = _lobby.Session.State.Players[offer.PlayerIndex].DisplayName;
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportSkippedProperty,
+                    ("player", playerName),
+                    ("property", displayName)));
+            }
+
+            FinishPropertyDecision(statusMessage);
             return true;
         }
 
@@ -571,7 +570,9 @@ namespace Ropoly.Presentation.Dice
             if (result != PropertyUpgradeResult.Success)
             {
                 _resultLabel.text = $"UPGRADE FAILED ({result})";
-                _boardPreview.SetStatusText($"CANNOT UPGRADE  •  {result}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.CannotUpgrade,
+                    ("reason", result)));
                 return false;
             }
 
@@ -581,16 +582,28 @@ namespace Ropoly.Presentation.Dice
                 _lobby.RefreshMatchHud();
                 string tileName = _boardPreview.GetTileDisplayName(tileIndex);
                 string buildingName = property.UpgradeLevel >= 5
-                    ? "HOTEL"
-                    : $"HOUSE {property.UpgradeLevel}";
+                    ? GameDialogCatalog.Get(GameDialogKeys.NounHotel)
+                    : GameDialogCatalog.Format(GameDialogKeys.NounHouseLevel, ("level", property.UpgradeLevel));
                 _resultLabel.text = $"{tileName.ToUpperInvariant()}  •  {buildingName}";
+
+                string ownerName = property.OwnerPlayerIndex >= 0 &&
+                    property.OwnerPlayerIndex < _lobby.Session.State.Players.Count
+                    ? _lobby.Session.State.Players[property.OwnerPlayerIndex].DisplayName
+                    : string.Empty;
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportUpgradedProperty,
+                    ("player", ownerName),
+                    ("building", buildingName),
+                    ("property", tileName)));
 
                 if (_lobby.Session.CanUpgradeProperty(tileIndex, out _))
                 {
                     _pendingUpgradeTileIndex = tileIndex;
                     _primaryButtonLabel.text = $"UPGRADE ${property.UpgradeCost:N0}";
-                    _boardPreview.SetStatusText(
-                        $"BUILT {buildingName} ON {tileName.ToUpperInvariant()}  •  UPGRADE AGAIN OR FINISH TURN");
+                    _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                        GameDialogKeys.BuiltUpgradeMore,
+                        ("building", buildingName),
+                        ("property", tileName.ToUpperInvariant())));
                     return true;
                 }
             }
@@ -599,13 +612,13 @@ namespace Ropoly.Presentation.Dice
             SetDecisionMode(false);
             _primaryButtonLabel.text = "NEXT PLAYER";
             _primaryButton.interactable = true;
-            _boardPreview.SetStatusText("UPGRADE COMPLETE  •  END TURN");
+            _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.UpgradeComplete));
             return true;
         }
 
         public bool ApplyExternalDetentionWaiver()
         {
-            if (!_lobby.Session.TryUseDetentionWaiver())
+            if (_lobby.Session == null || !_lobby.Session.TryUseDetentionWaiver())
             {
                 return false;
             }
@@ -615,13 +628,18 @@ namespace Ropoly.Presentation.Dice
             _lobby.RefreshMatchHud();
             RefreshAwaitingRoll();
             _resultLabel.text = "USED WAIVER • READY TO ROLL";
-            _boardPreview.SetStatusText($"{player.DisplayName} USED WAIVER  •  ROLL THE DICE");
+            _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.DetentionUsedWaiver,
+                ("player", player.DisplayName)));
+            _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportEscapedDetentionWaiver,
+                ("player", player.DisplayName)));
             return true;
         }
 
         public bool ApplyExternalDetentionBail()
         {
-            if (!_lobby.Session.TryPayDetentionBail())
+            if (_lobby.Session == null || !_lobby.Session.TryPayDetentionBail())
             {
                 return false;
             }
@@ -631,7 +649,12 @@ namespace Ropoly.Presentation.Dice
             _lobby.RefreshMatchHud();
             RefreshAwaitingRoll();
             _resultLabel.text = "PAID $50 BAIL • READY TO ROLL";
-            _boardPreview.SetStatusText($"{player.DisplayName} PAID $50 BAIL  •  ROLL THE DICE");
+            _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.DetentionPaidBail,
+                ("player", player.DisplayName)));
+            _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportEscapedDetentionBail,
+                ("player", player.DisplayName)));
             return true;
         }
 
@@ -647,7 +670,7 @@ namespace Ropoly.Presentation.Dice
             if (result == PropertyPurchaseResult.InsufficientCash)
             {
                 _resultLabel.text = "NOT ENOUGH CASH";
-                _boardPreview.SetStatusText("NOT ENOUGH CASH  •  SKIP THIS PROPERTY");
+                _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.CannotAffordSkip));
                 return false;
             }
 
@@ -665,7 +688,15 @@ namespace Ropoly.Presentation.Dice
             }
 
             _lobby.RefreshMatchHud();
-            FinishPropertyDecision($"BOUGHT {offer.DisplayName.ToUpperInvariant()}");
+            string buyerName = _lobby.Session.State.Players[offer.PlayerIndex].DisplayName;
+            _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportBoughtProperty,
+                ("player", buyerName),
+                ("property", offer.DisplayName),
+                ("amount", $"{offer.PurchasePrice:N0}")));
+            FinishPropertyDecision(GameDialogCatalog.Format(
+                GameDialogKeys.BoughtProperty,
+                ("property", offer.DisplayName.ToUpperInvariant())));
             return true;
         }
 
@@ -736,8 +767,11 @@ namespace Ropoly.Presentation.Dice
                 session.PlayerEliminated += HandlePlayerEliminated;
                 session.MatchEnded -= HandleMatchEnded;
                 session.MatchEnded += HandleMatchEnded;
+                session.AuctionCompleted -= HandleAuctionCompleted;
+                session.AuctionCompleted += HandleAuctionCompleted;
             }
 
+            _boardPreview.ClearRoundReport();
             _debtResolutionView?.Hide();
             _matchResultsView?.Hide();
             _auctionDialogView?.Close();
@@ -752,12 +786,37 @@ namespace Ropoly.Presentation.Dice
             RefreshAwaitingRoll();
         }
 
+        private void HandleAuctionCompleted(PropertyAuctionState auction)
+        {
+            if (auction == null || _lobby?.Session == null)
+            {
+                return;
+            }
+
+            if (auction.WinnerPlayerIndex >= 0 &&
+                auction.WinnerPlayerIndex < _lobby.Session.State.Players.Count)
+            {
+                string winnerName = _lobby.Session.State.Players[auction.WinnerPlayerIndex].DisplayName;
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportAuctionWon,
+                    ("winner", winnerName),
+                    ("property", auction.PropertyDisplayName),
+                    ("amount", $"{auction.WinningBid:N0}")));
+            }
+            else
+            {
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportAuctionUnowned,
+                    ("property", auction.PropertyDisplayName)));
+            }
+        }
+
         private IEnumerator AnimateRoll(DiceRoll roll)
         {
             _primaryButton.interactable = false;
             _primaryButtonLabel.text = "ROLLING...";
             _resultLabel.text = "DICE IN THE AIR";
-            _boardPreview.SetStatusText("ROLLING THE DICE...");
+            _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.RollingDice));
 
             Vector3 firstStartPosition = _firstDie.transform.position;
             Vector3 secondStartPosition = _secondDie.transform.position;
@@ -819,7 +878,12 @@ namespace Ropoly.Presentation.Dice
             if (turn.Phase == TurnPhase.AwaitingTurnEnd && currentPlayer.IsInDetention && roll.IsDouble)
             {
                 _resultLabel.text = "3 CONSECUTIVE DOUBLES • TO DETENTION";
-                _boardPreview.SetStatusText($"{currentPlayer.DisplayName} ROLLED 3 DOUBLES  •  SENT DIRECTLY TO DETENTION");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.DetentionThreeDoubles,
+                    ("player", currentPlayer.DisplayName)));
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportSentToDetention,
+                    ("player", currentPlayer.DisplayName)));
                 _movementRoutine = StartCoroutine(AnimateFlyToDetention(turn.CurrentPlayerIndex, currentPlayer.BoardPosition));
                 yield break;
             }
@@ -827,7 +891,10 @@ namespace Ropoly.Presentation.Dice
             if (turn.Phase == TurnPhase.AwaitingTurnEnd && currentPlayer.IsInDetention && !roll.IsDouble)
             {
                 _resultLabel.text = $"NO DOUBLES ({currentPlayer.DetentionTurns}/3)";
-                _boardPreview.SetStatusText($"{currentPlayer.DisplayName} REMAINS IN DETENTION (TURN {currentPlayer.DetentionTurns}/3)");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.DetentionRemains,
+                    ("player", currentPlayer.DisplayName),
+                    ("turn", currentPlayer.DetentionTurns)));
                 _primaryButtonLabel.text = "NEXT PLAYER";
                 _primaryButton.interactable = true;
                 SetDecisionMode(false);
@@ -895,15 +962,24 @@ namespace Ropoly.Presentation.Dice
                 !_lobby.Session.TryBeginMovement(out PlayerMovement movement))
             {
                 _primaryButtonLabel.text = "MOVEMENT ERROR";
-                _boardPreview.SetStatusText("COULD NOT MOVE THE CURRENT PLAYER");
+                _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.MovementErrorStart));
                 return;
             }
 
             _primaryButton.interactable = false;
             _primaryButtonLabel.text = "MOVING...";
             PlayerState player = _lobby.Session.State.Players[movement.PlayerIndex];
-            _boardPreview.SetStatusText(
-                $"{player.DisplayName}  •  MOVING {movement.Spaces} SPACES");
+            if (_lobby.Session.State.Turn.RolledDoublesToEscapeDetention)
+            {
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportEscapedDetentionDoubles,
+                    ("player", player.DisplayName)));
+            }
+
+            _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.PlayerMoving,
+                ("player", player.DisplayName),
+                ("spaces", movement.Spaces)));
             _movementRoutine = StartCoroutine(AnimateMovement(movement));
         }
 
@@ -1028,7 +1104,7 @@ namespace Ropoly.Presentation.Dice
             if (!_lobby.Session.TryCompleteMovement())
             {
                 _primaryButtonLabel.text = "MOVEMENT ERROR";
-                _boardPreview.SetStatusText("COULD NOT COMPLETE PLAYER MOVEMENT");
+                _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.MovementErrorComplete));
                 return;
             }
 
@@ -1063,12 +1139,25 @@ namespace Ropoly.Presentation.Dice
             if (card != null)
             {
                 _resultLabel.text = card.Title.ToUpperInvariant();
-                _boardPreview.SetStatusText($"{player.DisplayName}  •  {card.Description}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.CardDrawn,
+                    ("player", player.DisplayName),
+                    ("description", card.Description),
+                    ("reward", string.Empty)));
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportCardDrawn,
+                    ("player", player.DisplayName),
+                    ("card", card.Title)));
             }
             else if (player.IsInDetention)
             {
                 _resultLabel.text = "GO TO DETENTION";
-                _boardPreview.SetStatusText($"{player.DisplayName}  •  GO DIRECTLY TO DETENTION");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.DetentionGoDirectly,
+                    ("player", player.DisplayName)));
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportSentToDetention,
+                    ("player", player.DisplayName)));
             }
 
             yield return new WaitForSeconds(0.75f);
@@ -1307,7 +1396,7 @@ namespace Ropoly.Presentation.Dice
             PlayerState player = _lobby.Session.State.Players[playerIndex];
             string tileName = _boardPreview.GetTileDisplayName(currentTile);
             string startReward = (passedStart && !wasRelocated)
-                ? $"  •  PASSED START +${cashAward}"
+                ? GameDialogCatalog.Format(GameDialogKeys.PassedStartSuffix, ("amount", $"{cashAward:N0}"))
                 : string.Empty;
 
             RentPayment rentPayment = _lobby.Session.State.Turn.RentPayment;
@@ -1329,8 +1418,10 @@ namespace Ropoly.Presentation.Dice
                 _primaryButton.interactable = offer.CanAfford;
                 _secondaryButtonLabel.text = "SKIP";
                 _secondaryButton.interactable = true;
-                _boardPreview.SetStatusText(
-                    $"UNOWNED {offer.DisplayName.ToUpperInvariant()}  •  BUY OR SKIP{startReward}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.UnownedPropertyPrompt,
+                    ("property", offer.DisplayName.ToUpperInvariant()),
+                    ("reward", startReward)));
                 return;
             }
 
@@ -1361,8 +1452,12 @@ namespace Ropoly.Presentation.Dice
                     _secondaryButtonLabel.text = "NEXT PLAYER";
                     _secondaryButton.interactable = true;
                     SetDecisionMode(true);
-                    _boardPreview.SetStatusText(
-                        $"{ownerName}  •  UPGRADE {tileName.ToUpperInvariant()} FOR ${property.UpgradeCost:N0} OR FINISH TURN{startReward}");
+                    _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                        GameDialogKeys.OwnPropertyUpgradePrompt,
+                        ("player", ownerName),
+                        ("property", tileName.ToUpperInvariant()),
+                        ("cost", $"{property.UpgradeCost:N0}"),
+                        ("reward", startReward)));
                     return;
                 }
             }
@@ -1370,23 +1465,60 @@ namespace Ropoly.Presentation.Dice
             if (player.IsInDetention)
             {
                 _resultLabel.text = "IN DETENTION";
-                _boardPreview.SetStatusText($"{player.DisplayName} IS NOW IN DETENTION");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.DetentionNowIn,
+                    ("player", player.DisplayName)));
+                if (!wasRelocated)
+                {
+                    _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                        GameDialogKeys.ReportSentToDetention,
+                        ("player", player.DisplayName)));
+                }
             }
             else if (_lobby.Session.State.Turn.DrawnCard != null)
             {
                 CardSnapshot drawn = _lobby.Session.State.Turn.DrawnCard;
                 _resultLabel.text = $"{drawn.Title.ToUpperInvariant()}";
-                _boardPreview.SetStatusText($"{player.DisplayName}  •  {drawn.Description}{startReward}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.CardDrawn,
+                    ("player", player.DisplayName),
+                    ("description", drawn.Description),
+                    ("reward", startReward)));
+                if (!wasRelocated)
+                {
+                    _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                        GameDialogKeys.ReportCardDrawn,
+                        ("player", player.DisplayName),
+                        ("card", drawn.Title)));
+                }
             }
             else if (_lobby.Session.State.Turn.VacationRewardAwarded > 0)
             {
-                _resultLabel.text = $"VACATION REWARD +${_lobby.Session.State.Turn.VacationRewardAwarded:N0}";
-                _boardPreview.SetStatusText($"{player.DisplayName}  •  COLLECTED VACATION REWARD +${_lobby.Session.State.Turn.VacationRewardAwarded:N0}{startReward}");
+                int bonus = _lobby.Session.State.Turn.VacationRewardAwarded;
+                _resultLabel.text = $"VACATION REWARD +${bonus:N0}";
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.VacationReward,
+                    ("player", player.DisplayName),
+                    ("amount", $"{bonus:N0}"),
+                    ("reward", startReward)));
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportVacationBonus,
+                    ("player", player.DisplayName),
+                    ("amount", $"{bonus:N0}")));
             }
             else
             {
-                _boardPreview.SetStatusText(
-                    $"LANDED ON {tileName.ToUpperInvariant()}{startReward}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.LandedOnTile,
+                    ("tile", tileName.ToUpperInvariant()),
+                    ("reward", startReward)));
+                if (passedStart && !wasRelocated && cashAward > 0)
+                {
+                    _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                        GameDialogKeys.ReportPassedStart,
+                        ("player", player.DisplayName),
+                        ("amount", $"{cashAward:N0}")));
+                }
             }
 
             if (_lobby.Session.State.Turn.CanRollAgain)
@@ -1408,9 +1540,11 @@ namespace Ropoly.Presentation.Dice
         private void PresentRentPayment(RentPayment payment, string startReward)
         {
             PlayerState payer = _lobby.Session.State.Players[payment.PayerPlayerIndex];
-            string ownerName = payment.OwnerPlayerIndex >= 0 && payment.OwnerPlayerIndex < _lobby.Session.State.Players.Count
+            bool isPlayerOwner = payment.OwnerPlayerIndex >= 0 &&
+                payment.OwnerPlayerIndex < _lobby.Session.State.Players.Count;
+            string ownerName = isPlayerOwner
                 ? _lobby.Session.State.Players[payment.OwnerPlayerIndex].DisplayName
-                : "THE BANK";
+                : GameDialogCatalog.Get(GameDialogKeys.NounTheBank);
             SetDecisionMode(false);
 
             if (!payment.IsPaid)
@@ -1418,9 +1552,12 @@ namespace Ropoly.Presentation.Dice
                 _resultLabel.text = $"OWES {ownerName}  •  ${payment.Amount:N0}";
                 _primaryButtonLabel.text = "RESOLVE DEBT";
                 _primaryButton.interactable = false;
-                _boardPreview.SetStatusText(
-                    $"{payer.DisplayName} NEEDS ${payment.Amount:N0} FOR " +
-                    $"{payment.PropertyDisplayName.ToUpperInvariant()}{startReward}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.DebtNeeded,
+                    ("player", payer.DisplayName),
+                    ("amount", $"{payment.Amount:N0}"),
+                    ("property", payment.PropertyDisplayName.ToUpperInvariant()),
+                    ("reward", startReward)));
                 _debtResolutionView?.Show(
                     _lobby.Session,
                     MortgageProperty,
@@ -1430,14 +1567,36 @@ namespace Ropoly.Presentation.Dice
             }
 
             _debtResolutionView?.Hide();
-            _resultLabel.text = payment.OwnerPlayerIndex >= 0
+            _resultLabel.text = isPlayerOwner
                 ? $"PAID ${payment.Amount:N0} RENT"
                 : $"PAID ${payment.Amount:N0} FEE";
             _primaryButtonLabel.text = _lobby.Session.State.Turn.CanRollAgain ? "ROLL AGAIN" : "NEXT PLAYER";
             _primaryButton.interactable = true;
-            _boardPreview.SetStatusText(
-                $"{payer.DisplayName} PAID {ownerName} ${payment.Amount:N0}" +
-                $" FOR {payment.PropertyDisplayName.ToUpperInvariant()}{startReward}");
+            _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.RentPaid,
+                ("player", payer.DisplayName),
+                ("owner", ownerName),
+                ("amount", $"{payment.Amount:N0}"),
+                ("property", payment.PropertyDisplayName.ToUpperInvariant()),
+                ("reward", startReward)));
+
+            if (isPlayerOwner)
+            {
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportPaidRent,
+                    ("player", payer.DisplayName),
+                    ("amount", $"{payment.Amount:N0}"),
+                    ("owner", ownerName),
+                    ("property", payment.PropertyDisplayName)));
+            }
+            else
+            {
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportPaidFee,
+                    ("player", payer.DisplayName),
+                    ("amount", $"{payment.Amount:N0}"),
+                    ("property", payment.PropertyDisplayName)));
+            }
         }
 
         private void FinishPropertyDecision(string message)
@@ -1497,19 +1656,25 @@ namespace Ropoly.Presentation.Dice
                     _secondaryButtonLabel.text = "USE WAIVER";
                     _secondaryButton.interactable = true;
                     SetDecisionMode(true);
-                    _boardPreview.SetStatusText($"{player.DisplayName}  •  IN DETENTION  •  ROLL DOUBLES OR USE WAIVER");
+                    _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                        GameDialogKeys.DetentionWaiverOrDoubles,
+                        ("player", player.DisplayName)));
                 }
                 else if (player.Cash >= 50)
                 {
                     _secondaryButtonLabel.text = "PAY $50 BAIL";
                     _secondaryButton.interactable = true;
                     SetDecisionMode(true);
-                    _boardPreview.SetStatusText($"{player.DisplayName}  •  IN DETENTION  •  ROLL DOUBLES OR PAY $50 BAIL");
+                    _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                        GameDialogKeys.DetentionBailOrDoubles,
+                        ("player", player.DisplayName)));
                 }
                 else
                 {
                     SetDecisionMode(false);
-                    _boardPreview.SetStatusText($"{player.DisplayName}  •  IN DETENTION  •  ROLL DOUBLES TO ESCAPE");
+                    _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                        GameDialogKeys.DetentionDoublesOnly,
+                        ("player", player.DisplayName)));
                 }
             }
             else
@@ -1518,7 +1683,9 @@ namespace Ropoly.Presentation.Dice
                 _primaryButtonLabel.text = "ROLL DICE";
                 _primaryButton.interactable = true;
                 SetDecisionMode(false);
-                _boardPreview.SetStatusText($"{player.DisplayName}  •  ROLL THE DICE");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.PlayerRollTurn,
+                    ("player", player.DisplayName)));
             }
         }
 
@@ -1537,13 +1704,21 @@ namespace Ropoly.Presentation.Dice
             AssetLiquidationResult result = _lobby.Session.TryMortgageProperty(tileIndex);
             if (result != AssetLiquidationResult.Success)
             {
-                _boardPreview.SetStatusText($"MORTGAGE FAILED  •  {result}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.MortgageFailed,
+                    ("reason", result)));
                 _debtResolutionView?.Refresh();
                 return false;
             }
 
+            string tileName = _boardPreview.GetTileDisplayName(tileIndex);
+            PlayerState actingPlayer = _lobby.Session.State.Players[_lobby.Session.State.Turn.CurrentPlayerIndex];
+            _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportPropertyMortgaged,
+                ("player", actingPlayer.DisplayName),
+                ("property", tileName)));
             _lobby.RefreshMatchHud();
-            TryFinishDebtAfterAssetAction("PROPERTY MORTGAGED");
+            TryFinishDebtAfterAssetAction(GameDialogCatalog.Get(GameDialogKeys.ActionPropertyMortgaged));
             return true;
         }
 
@@ -1559,33 +1734,51 @@ namespace Ropoly.Presentation.Dice
 
         public bool ApplyExternalSellProperty(int tileIndex)
         {
+            string tileName = _boardPreview.GetTileDisplayName(tileIndex);
+            PlayerState actingPlayer = _lobby.Session.State.Players[_lobby.Session.State.Turn.CurrentPlayerIndex];
+
             if (_lobby.Session.TryGetPropertyAt(tileIndex, out PropertyState property) && property.UpgradeLevel > 0)
             {
                 PropertyDowngradeResult downgradeResult = _lobby.Session.TryDowngradeProperty(tileIndex, out int refund);
                 if (downgradeResult != PropertyDowngradeResult.Success)
                 {
-                    _boardPreview.SetStatusText($"DOWNGRADE FAILED  •  {downgradeResult}");
+                    _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                        GameDialogKeys.DowngradeFailed,
+                        ("reason", downgradeResult)));
                     _debtResolutionView?.Refresh();
                     return false;
                 }
 
                 _boardPreview.SetTileUpgradeLevel(tileIndex, property.UpgradeLevel);
+                _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                    GameDialogKeys.ReportBuildingSold,
+                    ("player", actingPlayer.DisplayName),
+                    ("property", tileName),
+                    ("amount", $"{refund:N0}")));
                 _lobby.RefreshMatchHud();
-                TryFinishDebtAfterAssetAction($"BUILDING SOLD (+${refund:N0})");
+                TryFinishDebtAfterAssetAction(GameDialogCatalog.Format(
+                    GameDialogKeys.ActionBuildingSold,
+                    ("amount", $"{refund:N0}")));
                 return true;
             }
 
             AssetLiquidationResult result = _lobby.Session.TrySellPropertyToBank(tileIndex);
             if (result != AssetLiquidationResult.Success)
             {
-                _boardPreview.SetStatusText($"SALE FAILED  •  {result}");
+                _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                    GameDialogKeys.SaleFailed,
+                    ("reason", result)));
                 _debtResolutionView?.Refresh();
                 return false;
             }
 
             _boardPreview.ClearTileOwner(tileIndex);
+            _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportPropertySold,
+                ("player", actingPlayer.DisplayName),
+                ("property", tileName)));
             _lobby.RefreshMatchHud();
-            TryFinishDebtAfterAssetAction("PROPERTY SOLD TO BANK");
+            TryFinishDebtAfterAssetAction(GameDialogCatalog.Get(GameDialogKeys.ActionPropertySoldToBank));
             return true;
         }
 
@@ -1600,7 +1793,9 @@ namespace Ropoly.Presentation.Dice
             }
 
             _resultLabel.text = actionMessage;
-            _boardPreview.SetStatusText($"{actionMessage}  •  MORE CASH IS STILL NEEDED");
+            _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.MoreCashNeeded,
+                ("action", actionMessage)));
             _debtResolutionView?.Refresh();
         }
 
@@ -1640,16 +1835,23 @@ namespace Ropoly.Presentation.Dice
                 return;
             }
 
-            string reasonText = reason switch
+            string reasonText = GameDialogCatalog.Get(reason switch
             {
-                EliminationReason.DebtTimeout => "DEBT TIMEOUT",
-                EliminationReason.InactivityTimeout => "INACTIVITY",
-                EliminationReason.DisconnectTimeout => "DISCONNECTED",
-                _ => "BANKRUPTCY"
-            };
+                EliminationReason.DebtTimeout => GameDialogKeys.ReasonDebtTimeout,
+                EliminationReason.InactivityTimeout => GameDialogKeys.ReasonInactivityTimeout,
+                EliminationReason.DisconnectTimeout => GameDialogKeys.ReasonDisconnectTimeout,
+                _ => GameDialogKeys.ReasonBankruptcy
+            });
 
             PlayerState player = _lobby.Session.State.Players[playerIndex];
-            _boardPreview.SetStatusText($"{player.DisplayName} ELIMINATED  •  {reasonText}");
+            _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.PlayerEliminated,
+                ("player", player.DisplayName),
+                ("reason", reasonText)));
+            _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportPlayerEliminated,
+                ("player", player.DisplayName),
+                ("reason", reasonText)));
 
             if (!IsBusy)
             {
@@ -1875,7 +2077,12 @@ namespace Ropoly.Presentation.Dice
             _primaryButtonLabel.text = "GAME OVER";
             _primaryButton.interactable = false;
             _secondaryButton.gameObject.SetActive(false);
-            _boardPreview.SetStatusText($"{result.WinnerDisplayName} WINS THE MATCH");
+            _boardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.MatchWinner,
+                ("winner", result.WinnerDisplayName)));
+            _boardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportMatchWinner,
+                ("winner", result.WinnerDisplayName)));
             _tradeDialogView?.CloseAllModals();
             _debtResolutionView?.Hide();
             _auctionDialogView?.Close();

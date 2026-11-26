@@ -7,6 +7,7 @@ using Ropoly.Core.Trading;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Dice;
 using Ropoly.Presentation.Lobby;
+using Ropoly.Presentation.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -419,7 +420,8 @@ namespace Ropoly.Presentation.Trading
 
             if (_targetSeat < 0)
             {
-                _diceController.BoardPreview.SetStatusText("NO OPPONENTS AVAILABLE TO TRADE");
+                _diceController.BoardPreview.SetStatusText(
+                    GameDialogCatalog.Get(GameDialogKeys.TradeNoOpponents));
                 return;
             }
 
@@ -726,29 +728,44 @@ namespace Ropoly.Presentation.Trading
                 ShowWaitingModal(offer);
             }
 
-            _diceController.BoardPreview.SetStatusText(
-                $"{_session.State.Players[offer.ProposerPlayerIndex].DisplayName} PROPOSED A TRADE TO {_session.State.Players[offer.TargetPlayerIndex].DisplayName}");
+            string proposerName = _session.State.Players[offer.ProposerPlayerIndex].DisplayName;
+            string targetName = _session.State.Players[offer.TargetPlayerIndex].DisplayName;
+            _diceController.BoardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.TradeProposed,
+                ("proposer", proposerName),
+                ("target", targetName)));
         }
 
         private void HandleTradeCompleted(TradeOffer offer)
         {
             CloseAllModals();
             _diceController.RefreshMatchHud();
-            _diceController.BoardPreview.SetStatusText(
-                $"TRADE COMPLETED: {_session.State.Players[offer.ProposerPlayerIndex].DisplayName} & {_session.State.Players[offer.TargetPlayerIndex].DisplayName}");
+            string proposerName = _session.State.Players[offer.ProposerPlayerIndex].DisplayName;
+            string targetName = _session.State.Players[offer.TargetPlayerIndex].DisplayName;
+            _diceController.BoardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.TradeCompleted,
+                ("proposer", proposerName),
+                ("target", targetName)));
+            _diceController.BoardPreview.AddRoundReport(GameDialogCatalog.Format(
+                GameDialogKeys.ReportTradeCompleted,
+                ("proposer", proposerName),
+                ("target", targetName)));
         }
 
         private void HandleTradeRejected(TradeOffer offer)
         {
             CloseAllModals();
-            _diceController.BoardPreview.SetStatusText(
-                $"{_session.State.Players[offer.TargetPlayerIndex].DisplayName} REJECTED THE TRADE OFFER");
+            string targetName = _session.State.Players[offer.TargetPlayerIndex].DisplayName;
+            _diceController.BoardPreview.SetStatusText(GameDialogCatalog.Format(
+                GameDialogKeys.TradeRejected,
+                ("target", targetName)));
         }
 
         private void HandleTradeCancelled(TradeOffer offer)
         {
             CloseAllModals();
-            _diceController.BoardPreview.SetStatusText("TRADE OFFER WAS CANCELLED");
+            _diceController.BoardPreview.SetStatusText(
+                GameDialogCatalog.Get(GameDialogKeys.TradeCancelled));
         }
 
         private void HandlePlayerEliminated(int playerIndex, EliminationReason reason)

@@ -5,6 +5,7 @@ using Ropoly.Core.Rules;
 using Ropoly.Infrastructure.Content;
 using Ropoly.Infrastructure.Content.Players;
 using Ropoly.Presentation.Board;
+using Ropoly.Presentation.Localization;
 using Ropoly.Presentation.Players;
 using Ropoly.Presentation.Settings;
 using TMPro;
@@ -205,7 +206,8 @@ namespace Ropoly.Presentation.Lobby
             RefreshMatchHud();
             _lobbyOverlay.SetActive(false);
             _matchHudPanel.SetActive(true);
-            _boardPreview.SetStatusText("MATCH READY  •  ROLL THE DICE");
+            _boardPreview.ClearRoundReport();
+            _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.MatchReady));
             MatchStarted?.Invoke(_session);
         }
 
@@ -726,7 +728,8 @@ namespace Ropoly.Presentation.Lobby
             RefreshMatchHud();
             _lobbyOverlay.SetActive(false);
             _matchHudPanel.SetActive(true);
-            _boardPreview.SetStatusText("MATCH READY  •  ROLL THE DICE");
+            _boardPreview.ClearRoundReport();
+            _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.MatchReady));
             MatchStarted?.Invoke(_session);
         }
 
@@ -772,6 +775,8 @@ namespace Ropoly.Presentation.Lobby
 
             _lobbyOverlay.SetActive(true);
             _matchHudPanel.SetActive(false);
+            _boardPreview.ClearRoundReport();
+            _boardPreview.SetStatusText(GameDialogCatalog.Get(GameDialogKeys.LobbyChooseCreature));
             _activePlayerIndex = 0;
             RefreshInterface();
         }

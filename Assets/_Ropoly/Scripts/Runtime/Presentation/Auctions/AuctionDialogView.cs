@@ -6,6 +6,7 @@ using Ropoly.Core.Match;
 using Ropoly.Presentation.Board;
 using Ropoly.Presentation.Dice;
 using Ropoly.Presentation.Lobby;
+using Ropoly.Presentation.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -371,7 +372,7 @@ namespace Ropoly.Presentation.Auctions
             if (isHighBidder)
             {
                 SetButtonsInteractable(false);
-                _statusMessageText.text = "YOU ARE THE CURRENT HIGHEST BIDDER";
+                _statusMessageText.text = GameDialogCatalog.Get(GameDialogKeys.AuctionHighestBidder);
                 return;
             }
 
@@ -465,12 +466,15 @@ namespace Ropoly.Presentation.Auctions
                 auction.WinnerPlayerIndex < _session.State.Players.Count)
             {
                 PlayerState winner = _session.State.Players[auction.WinnerPlayerIndex];
-                _statusMessageText.text = $"SOLD TO {winner.DisplayName.ToUpperInvariant()} FOR ${auction.WinningBid:N0}!";
+                _statusMessageText.text = GameDialogCatalog.Format(
+                    GameDialogKeys.AuctionSoldTo,
+                    ("winner", winner.DisplayName.ToUpperInvariant()),
+                    ("amount", $"{auction.WinningBid:N0}"));
                 _statusMessageText.color = MintColor;
             }
             else
             {
-                _statusMessageText.text = "AUCTION ENDED • PROPERTY REMAINS UNOWNED";
+                _statusMessageText.text = GameDialogCatalog.Get(GameDialogKeys.AuctionEndedUnowned);
                 _statusMessageText.color = CoralColor;
             }
 
